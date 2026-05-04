@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🛡️ ExamGuard
 
 **ExamGuard** is a high-performance, AI-powered exam management and proctoring system designed to provide a secure and seamless examination experience for both students and administrators.
@@ -117,3 +118,6 @@ This project is licensed under the MIT License.
 ---
 
 Developed with ❤️ for secure education.
+=======
+# EXAM_NEW
+>>>>>>> a6221a92c5753a6aae2579935ca08f1867ad8b17
