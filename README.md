@@ -34,15 +34,35 @@ Built with a modern tech stack and optimized for hybrid deployment, ExamGuard en
 
 ## 📂 Project Structure
 
-```text
-├── app/               # Next.js App Router (Frontend logic)
-├── python_api/        # FastAPI Backend
-├── supabase/          # Database migrations and schemas
-├── components/        # Reusable UI components
-├── lib/               # Utility functions and API clients
-├── public/            # Static assets
-└── DEPLOYMENT.md      # Detailed deployment instructions
-```
+### 🌐 Frontend (Next.js)
+- **`app/`**: Core application routing and pages.
+  - `admin/`: Administrator dashboard for managing exams and students.
+  - `exam/`: The main examination interface with proctoring integration.
+  - `login/`: Secure authentication portal.
+  - `instructions/`: Pre-exam safety and setup guidelines.
+- **`components/`**: Interactive UI elements.
+  - `FaceMonitor.tsx`: Real-time AI proctoring via camera feed.
+  - `AntiCheat.tsx`: Detects tab switching and unauthorized window activity.
+  - `ExamTimer.tsx`: Synchronized countdown and auto-submit logic.
+- **`lib/`**: Shared utilities, API clients, and Supabase wrappers.
+
+### 🐍 Backend (FastAPI)
+- **`python_api/`**: High-performance Python backend.
+  - `routers/`: Modular API endpoints for auth, exam data, and proctoring logs.
+  - `models/`: Pydantic schemas for strict data validation.
+  - `core/`: Security middleware and application configuration.
+  - `index.py`: Main entry point for the FastAPI server.
+
+### 🗄️ Database (Supabase)
+- **`supabase/`**: PostgreSQL schema and data management.
+  - `schema.sql`: Full database structure and table definitions.
+  - `seed.sql`: Pre-loaded exam questions and sample administrative data.
+  - `migrations/`: SQL scripts for version-controlled database updates.
+
+### 🛠️ Configuration
+- **`Dockerfile`**: Containerization settings for easy deployment.
+- **`railway.json` / `render.yaml`**: Pre-configured deployment manifests.
+- **`DEPLOYMENT.md`**: Step-by-step guide for setting up production environments.
 
 ---
 
