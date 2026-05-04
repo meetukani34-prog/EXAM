@@ -1,4 +1,7 @@
-python_api/
 Dockerfile
 railway.json
-api/
+render.yaml
+.env
+.env.local
+node_modules
+.next
