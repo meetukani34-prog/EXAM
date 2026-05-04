@@ -383,13 +383,18 @@ export default function AdminPage() {
           </div>
           <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <input
+              id="admin-password-input"
               type="password"
               className={adminStyles.input}
               placeholder="Admin password"
               value={pass}
               onChange={(e) => setPass(e.target.value)}
               autoFocus
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#e2e8f0" }}
+              style={{ 
+                background: "rgba(255,255,255,0.08) !important", 
+                border: "1px solid rgba(255,255,255,0.15)", 
+                color: "#ffffff !important" 
+              }}
             />
             {passError && <p className="text-danger" style={{ fontSize: 13 }}>{passError}</p>}
             <button type="submit" className="btn btn-primary btn-lg" style={{ background: "linear-gradient(135deg, #8b5cf6, #3b82f6)", border: "none", borderRadius: 12 }}>
