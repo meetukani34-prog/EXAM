@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import {
+  fetchPublicExamConfig,
   fetchAdminQuestions,
   createAdminQuestion,
   updateAdminQuestion,
@@ -292,27 +293,57 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!authed) return;
-    setLoading(true);
-    fetchStudents().finally(() => setLoading(false));
-    fetchAdminQuestions().then(qs => {
-      const list: BranchExamSummary[] = [];
-      qs.forEach(q => {
-        const br = q.branch || "CS";
-        const ex = q.exam_name || "ExamGuard Assessment";
-        if (!list.find(x => x.branch === br && x.exam_name === ex)) {
-          list.push({ branch: br, exam_name: ex, question_count: 1 });
-        }
-      });
-      setQuizzes(list);
-    }).catch(console.error);
+    
+    // 1. Fetch Students and Quizzes (Discovery)
+    const syncEverything = async () => {
+      try {
+        fetchStudents();
+        
+        const [qs, configs] = await Promise.all([
+          fetchAdminQuestions(),
+          fetchPublicExamConfig()
+        ]);
 
+        const list: BranchExamSummary[] = [];
+        
+        // Discovery from questions
+        qs.forEach((q: any) => {
+          const br = q.branch || "CS";
+          const ex = q.exam_name || "ExamGuard Assessment";
+          if (!list.find(x => x.branch === br && x.exam_name === ex)) {
+            list.push({ branch: br, exam_name: ex, question_count: 1 });
+          }
+        });
+
+        // Discovery from existing configs (ensure visibility of empty folders)
+        configs.forEach((c: any) => {
+          if (!list.find(x => x.exam_name === c.exam_title)) {
+            list.push({ branch: "CS", exam_name: c.exam_title, question_count: 0 });
+          }
+        });
+
+        setQuizzes(list);
+      } catch (err) {
+        console.error("[ADMIN] Sync Error:", err);
+      }
+    };
+
+    syncEverything();
+
+    // 2. Real-time subscriptions for status updates
     const channel = supabase
       .channel("admin-exam-status")
       .on("postgres_changes", { event: "*", schema: "public", table: "exam_status" }, () => fetchStudents())
       .subscribe();
 
-    const interval = setInterval(fetchStudents, 5_000);
-    return () => { supabase.removeChannel(channel); clearInterval(interval); };
+    const statusInterval = setInterval(fetchStudents, 5000);
+    const discoveryInterval = setInterval(syncEverything, 30000);
+    
+    return () => { 
+      supabase.removeChannel(channel); 
+      clearInterval(statusInterval);
+      clearInterval(discoveryInterval);
+    };
   }, [authed, fetchStudents]);
 
   const handleCleanup = async () => {
