@@ -17,18 +17,30 @@ Built with a modern tech stack and optimized for hybrid deployment, ExamGuard en
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Languages
 
-### Frontend
+### 🌍 Languages
+- **TypeScript**: Frontend logic & Type safety.
+- **Python**: Backend API & Data processing.
+- **SQL**: Database schema & Migrations.
+- **CSS**: Premium styling & Animations.
+- **Markdown**: Project documentation.
+
+### 🌐 Frontend
 - **Framework**: [Next.js 16](https://nextjs.org) (React 19)
-- **Styling**: Vanilla CSS & [Framer Motion](https://www.framer.com/motion/) for premium animations.
-- **AI**: [Face-API.js](https://github.com/justadudewhohacks/face-api.js/) for proctoring.
-- **State Management**: React Hooks & Supabase Auth.
+- **Styling**: Vanilla CSS & [Framer Motion](https://www.framer.com/motion/)
+- **AI/ML**: [Face-API.js](https://github.com/justadudewhohacks/face-api.js/) for proctoring.
+- **Auth**: Supabase SSR Auth.
 
-### Backend
+### 🐍 Backend
 - **Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.10+)
-- **Database**: [Supabase](https://supabase.com/) (PostgreSQL)
-- **Authentication**: JWT & Supabase Auth.
+- **ORM/DB**: Supabase (PostgreSQL)
+- **Security**: JWT, CORS Middleware, & Environment encryption.
+
+### 🏗️ Infrastructure
+- **Containerization**: Docker (via `Dockerfile`)
+- **Deployment**: Vercel (Frontend) & Railway/Render (Backend)
+- **CI/CD**: GitHub Actions (Configurable)
 
 ---
 
