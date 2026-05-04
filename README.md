@@ -34,35 +34,29 @@ Built with a modern tech stack and optimized for hybrid deployment, ExamGuard en
 
 ## 📂 Project Structure
 
-### 🌐 Frontend (Next.js)
-- **`app/`**: Core application routing and pages.
-  - `admin/`: Administrator dashboard for managing exams and students.
-  - `exam/`: The main examination interface with proctoring integration.
-  - `login/`: Secure authentication portal.
-  - `instructions/`: Pre-exam safety and setup guidelines.
-- **`components/`**: Interactive UI elements.
-  - `FaceMonitor.tsx`: Real-time AI proctoring via camera feed.
-  - `AntiCheat.tsx`: Detects tab switching and unauthorized window activity.
-  - `ExamTimer.tsx`: Synchronized countdown and auto-submit logic.
-- **`lib/`**: Shared utilities, API clients, and Supabase wrappers.
-
-### 🐍 Backend (FastAPI)
-- **`python_api/`**: High-performance Python backend.
-  - `routers/`: Modular API endpoints for auth, exam data, and proctoring logs.
-  - `models/`: Pydantic schemas for strict data validation.
-  - `core/`: Security middleware and application configuration.
-  - `index.py`: Main entry point for the FastAPI server.
-
-### 🗄️ Database (Supabase)
-- **`supabase/`**: PostgreSQL schema and data management.
-  - `schema.sql`: Full database structure and table definitions.
-  - `seed.sql`: Pre-loaded exam questions and sample administrative data.
-  - `migrations/`: SQL scripts for version-controlled database updates.
-
-### 🛠️ Configuration
-- **`Dockerfile`**: Containerization settings for easy deployment.
-- **`railway.json` / `render.yaml`**: Pre-configured deployment manifests.
-- **`DEPLOYMENT.md`**: Step-by-step guide for setting up production environments.
+```text
+├── app/                   # Next.js App Router (Frontend logic)
+│   ├── admin/             # Administrator dashboard (Exams/Students)
+│   ├── exam/              # Main examination interface (Proctored)
+│   ├── login/             # Secure authentication portal
+│   └── instructions/      # Pre-exam guidelines
+├── python_api/            # FastAPI Backend
+│   ├── core/              # Security & Middleware
+│   ├── models/            # Data validation schemas
+│   ├── routers/           # API endpoints (Auth/Exams)
+│   └── index.py           # API entry point
+├── supabase/              # Database management
+│   ├── schema.sql         # Table definitions
+│   ├── seed.sql           # Initial questions & data
+│   └── migrations/        # Database version control
+├── components/            # Reusable UI components
+│   ├── FaceMonitor.tsx    # AI Real-time Proctoring
+│   ├── AntiCheat.tsx      # Window activity tracking
+│   └── ExamTimer.tsx      # Syncronized countdowns
+├── lib/                   # Shared utilities & API clients
+├── public/                # Static assets (Images/Icons)
+└── DEPLOYMENT.md          # Step-by-step deployment guide
+```
 
 ---
 
