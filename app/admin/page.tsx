@@ -14,6 +14,8 @@ import {
   updateAdminStudent,
   deleteAdminStudent,
   resetAdminStudent,
+  blockAdminStudent,
+  unblockAdminStudent,
   exportResults,
   deleteAdminFolder,
   renameAdminFolder,
@@ -1413,12 +1415,24 @@ function StudentsTab() {
     catch { alert("Failed to reset exam state"); }
   };
 
+  const handleToggleBlock = async (s: AdminStudent) => {
+    const action = s.is_blocked ? "unblock" : "block";
+    if (!confirm(`Are you sure you want to ${action} ${s.name}?`)) return;
+    try {
+      if (s.is_blocked) await unblockAdminStudent(s.student_id);
+      else await blockAdminStudent(s.student_id);
+      load();
+    } catch (err: any) {
+      alert(`Failed to ${action} student: ${err.message}`);
+    }
+  };
+
   return (
     <div className={adminStyles.managementPage}>
       <div className={adminStyles.header}>
         <h2 className={adminStyles.headerTitle}>Students ({students.length})</h2>
         <button className="btn btn-primary" onClick={() => { setEditing(null); setFormData({ usn: "", name: "", email: "", branch: "CS", password: "" }); setShowModal(true); }}>
-          + Add Student
+          + Add Student (DEBUG-V2)
         </button>
       </div>
 
@@ -1440,7 +1454,13 @@ function StudentsTab() {
                   <td>{s.name}</td>
                   <td style={{ fontSize: 12 }}>{s.email || "—"}</td>
                   <td><span className="badge badge-neutral">{s.branch || "CS"}</span></td>
-                  <td><StatusBadge status={s.status} lastActive={s.last_active} /></td>
+                  <td>
+                    {s.is_blocked ? (
+                      <span className="badge badge-danger" style={{ background: "rgba(211, 47, 47, 0.2)", color: "#ff5252", border: "1px solid #ff5252" }}>Blocked</span>
+                    ) : (
+                      <StatusBadge status={s.status} lastActive={s.last_active} />
+                    )}
+                  </td>
                   <td><WarningBadge count={s.warnings} /></td>
                   <td>
                     <div className={adminStyles.actionButtons}>
@@ -1450,12 +1470,23 @@ function StudentsTab() {
                         const match = ALL_BRANCH_DATA.find(b => b.name === bID || b.id === bID);
                         if (match) bID = match.id;
                         
-                        setEditing(s); 
+                        setEditing(s as any); 
                         setFormData({ usn: s.usn, name: s.name, email: s.email || "", branch: bID, password: "" }); 
                         setShowModal(true); 
                       }}>Edit</button>
                       <button className="btn btn-outline" onClick={() => { const p = prompt("Enter new password:"); if (p) updateAdminStudent(s.student_id, { password: p }).then(() => alert("Password reset")); }}>Reset PW</button>
                       <button className="btn btn-outline" style={{ color: "var(--accent)", borderColor: "var(--accent)" }} onClick={() => handleResetExam(s.student_id)}>Re-Exam</button>
+                      <button 
+                        className="btn btn-outline" 
+                        style={{ 
+                          color: s.is_blocked ? "#4caf50" : "#ff5252", 
+                          borderColor: s.is_blocked ? "#4caf50" : "#ff5252",
+                          fontWeight: "bold"
+                        }} 
+                        onClick={() => handleToggleBlock(s)}
+                      >
+                        {s.is_blocked ? "Unblock" : "Block"}
+                      </button>
                       <button className="btn btn-outline text-danger" onClick={() => handleDelete(s.student_id)}>Delete</button>
                     </div>
                   </td>

@@ -25,7 +25,7 @@ async def login(request: LoginRequest):
         # Try new 'usn' column first
         result = (
             db.table("students")
-            .select("id, usn, email, name, branch, password_hash, is_active_session, current_token")
+            .select("id, usn, email, name, branch, password_hash, is_active_session, current_token, is_blocked")
             .eq("usn", request.usn.strip().upper())
             .limit(1)
             .execute()
@@ -75,11 +75,17 @@ async def login(request: LoginRequest):
     else:
         student = result.data[0]
 
-    # 2. Verify password
     if not verify_password(request.password, student["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid roll number or password",
+        )
+
+    # 2.5 Check if student is blocked
+    if student.get("is_blocked", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been blocked by the administrator. You cannot attend the exam.",
         )
 
     # 3. Check for duplicate active session (safe get for legacy schemas)

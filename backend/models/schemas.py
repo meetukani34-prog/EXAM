@@ -140,6 +140,7 @@ class StudentUpdate(BaseModel):
     branch: Optional[str] = None
     password: Optional[str] = None
     is_active_session: Optional[bool] = None
+    is_blocked: Optional[bool] = None
 
 
 class StudentStatus(BaseModel):
@@ -153,6 +154,7 @@ class StudentStatus(BaseModel):
     last_active: Optional[str]
     submitted_at: Optional[str]
     started_at: Optional[str] = None
+    is_blocked: bool = False
 
 
 # ── Exam Config ───────────────────────────────────────────────

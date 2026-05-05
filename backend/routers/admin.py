@@ -147,7 +147,7 @@ async def upload_question_image(
 async def get_all_students(_: bool = Depends(verify_admin)):
     try:
         db = get_supabase()
-        result = db.table("exam_status").select("*, students(usn, email, name, branch)").execute()
+        result = db.table("exam_status").select("*, students(usn, email, name, branch, is_blocked)").execute()
 
         rows = []
         if result.data:
@@ -166,7 +166,8 @@ async def get_all_students(_: bool = Depends(verify_admin)):
                     warnings=r["warnings"],
                     last_active=r["last_active"],
                     submitted_at=r["submitted_at"],
-                    started_at=r.get("started_at")
+                    started_at=r.get("started_at"),
+                    is_blocked=student_info.get("is_blocked", False)
                 ))
         return rows
     except Exception as e:
@@ -220,11 +221,25 @@ async def update_student(student_id: str, request: StudentUpdate, _: bool = Depe
         update_data["is_active_session"] = request.is_active_session
         if not request.is_active_session:
             update_data["current_token"] = None
+    if request.is_blocked is not None:
+        update_data["is_blocked"] = request.is_blocked
 
     if update_data:
         db.table("students").update(update_data).eq("id", student_id).execute()
 
     return {"updated": True}
+
+@router.post("/students/{student_id}/block")
+async def block_student(student_id: str, _: bool = Depends(verify_admin)):
+    db = get_supabase()
+    db.table("students").update({"is_blocked": True}).eq("id", student_id).execute()
+    return {"blocked": True}
+
+@router.post("/students/{student_id}/unblock")
+async def unblock_student(student_id: str, _: bool = Depends(verify_admin)):
+    db = get_supabase()
+    db.table("students").update({"is_blocked": False}).eq("id", student_id).execute()
+    return {"blocked": False}
 
 @router.delete("/students/{student_id}")
 async def delete_student(student_id: str, _: bool = Depends(verify_admin)):

@@ -182,6 +182,7 @@ export interface AdminStudent {
   last_active: string | null;
   submitted_at: string | null;
   started_at: string | null;
+  is_blocked: boolean;
 }
 
 const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET || "admin@examguard2024";
@@ -272,12 +273,20 @@ export async function createAdminStudent(data: {
 
 export async function updateAdminStudent(
   id: string,
-  data: { name?: string; email?: string; branch?: string; password?: string; is_active_session?: boolean }
+  data: { name?: string; email?: string; branch?: string; password?: string; is_active_session?: boolean; is_blocked?: boolean }
 ): Promise<{ updated: boolean }> {
   return adminFetch<{ updated: boolean }>(`/admin/students/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
+}
+
+export async function blockAdminStudent(id: string): Promise<void> {
+  await adminFetch(`/admin/students/${id}/block`, { method: "POST" });
+}
+
+export async function unblockAdminStudent(id: string): Promise<void> {
+  await adminFetch(`/admin/students/${id}/unblock`, { method: "POST" });
 }
 
 export async function deleteAdminStudent(id: string): Promise<void> {

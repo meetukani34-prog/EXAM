@@ -85,6 +85,24 @@ async def get_current_student(
             detail="Invalid token payload: student_id or usn missing",
         )
 
+    # ── Blocking Check (Crystalline Lockdown) ──
+    try:
+        from db.supabase_client import get_supabase
+        db = get_supabase()
+        res = db.table("students").select("is_blocked").eq("id", student_id).execute()
+        if res.data and res.data[0].get("is_blocked"):
+             raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account has been blocked by the administrator.",
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[SECURITY] Error checking block status for {student_id}: {e}")
+        # Allow on DB error to prevent lockout during transient issues? 
+        # Actually, safety first: but if DB is down, nothing will work anyway.
+        pass
+
     return {
         "student_id": student_id,
         "usn": usn,
