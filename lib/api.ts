@@ -185,7 +185,8 @@ export interface AdminStudent {
   is_blocked: boolean;
 }
 
-const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET || "admin@examguard2024";
+const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET || process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin@examguard2024";
+
 
 function adminFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${path}`;

@@ -40,19 +40,7 @@ const IngestPage      = dynamic(() => import("./ingest/page"),      { ssr: false
 const OrbitalControl  = dynamic(() => import("./control/page"),     { ssr: false });
 
 // ── Types ─────────────────────────────────────────────────────
-interface StudentRow {
-  student_id: string;
-  usn: string;
-  name: string;
-  email: string | null;
-  branch: string;
-  status: "not_started" | "active" | "submitted";
-  warnings: number;
-  last_active: string | null;
-  submitted_at: string | null;
-  started_at: string | null;
-  current_question: number | null;
-}
+// Use AdminStudent from lib/api
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "—";
@@ -234,7 +222,7 @@ export default function AdminPage() {
   const [initialized, setInitialized] = useState(false);
   const [pass, setPass] = useState("");
   const [passError, setPassError] = useState("");
-  const [students, setStudents] = useState<StudentRow[]>([]);
+  const [students, setStudents] = useState<AdminStudent[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<"all" | "active" | "submitted" | "not_started">("all");
   const [search, setSearch] = useState("");
@@ -271,23 +259,10 @@ export default function AdminPage() {
   const fetchStudents = useCallback(async () => {
     try {
       const data = await fetchAdminStudents();
-      const rows: StudentRow[] = (data || []).map((s: any) => ({
-        student_id: s.student_id,
-        usn: s.usn || s.roll_number,
-        name: s.name,
-        email: s.email,
-        branch: s.branch || "CS",
-        status: s.status,
-        warnings: s.warnings,
-        last_active: s.last_active,
-        submitted_at: s.submitted_at,
-        started_at: s.started_at,
-        current_question: null,
-      }));
-      setStudents(rows);
+      setStudents(data || []);
       setLastUpdate(new Date());
-      const violations = rows.filter((s) => s.status === "active").reduce((a, s) => a + (s.warnings || 0), 0);
-      setLiveStats({ answers: 0, violations, submittals: rows.filter((s) => s.status === "submitted").length });
+      const violations = (data || []).filter((s: any) => s.status === "active").reduce((a: number, s: any) => a + (s.warnings || 0), 0);
+      setLiveStats({ answers: 0, violations, submittals: (data || []).filter((s: any) => s.status === "submitted").length });
     } catch (err) {
       console.error("[ADMIN] fetchStudents:", err);
     }
@@ -362,7 +337,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleForceSubmit = async (s: StudentRow) => {
+  const handleForceSubmit = async (s: AdminStudent) => {
     if (!confirm(`Force submit exam for ${s.name}? This will calculate score based on currently saved answers.`)) return;
     try {
       await forceSubmitAdminStudent(s.student_id);
@@ -681,7 +656,7 @@ export default function AdminPage() {
       {activeTab === "ingest"      && <IngestPage />}
       {activeTab === "control"     && <OrbitalControl />}
       {activeTab === "questions"   && <QuestionsTab />}
-      {activeTab === "students"    && <StudentsTab />}
+      {activeTab === "students"    && <StudentsTab students={students} load={fetchStudents} />}
     </div>
   );
 }
@@ -689,7 +664,7 @@ export default function AdminPage() {
 // ── Violation Alerts Feed ─────────────────────────────────────
 const VIOLATION_TYPES = ["Tab switched", "Window focus lost", "Copy/paste detected", "Fullscreen exit"];
 
-function ViolationAlertsFeed({ students }: { students: StudentRow[] }) {
+function ViolationAlertsFeed({ students }: { students: AdminStudent[] }) {
   // Build a flat list of synthetic violation events from warnings count
   const alerts: { name: string; usn: string; type: string; badge: number }[] = [];
   students
@@ -1364,21 +1339,15 @@ function QuestionsTab() {
 }
 
 // ── Students Tab ──────────────────────────────────────────────
-function StudentsTab() {
-  const [students, setStudents] = useState<AdminStudent[]>([]);
-  const [loading, setLoading] = useState(true);
+function StudentsTab({ students, load }: { students: AdminStudent[], load: () => Promise<void> }) {
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AdminStudent | null>(null);
   const [formData, setFormData] = useState({ usn: "", name: "", email: "", branch: "CS", password: "" });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try { const data = await fetchAdminStudents(); setStudents(data); }
-    catch (e) { console.error(e); }
-    finally { setLoading(false); }
+  useEffect(() => {
+    if (students.length === 0) load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleSave = async () => {
     const usnRegex = /^[A-Z0-9]{5}[A-Z]{2}[0-9]{3}$/;
