@@ -294,14 +294,14 @@ async def force_submit_student(student_id: str, _: bool = Depends(verify_admin))
     db = get_supabase()
     
     # 1. Fetch student for context (branch)
-    student_res = db.table("students").select("branch").eq("id", student_id).single().execute()
+    student_res = db.table("students").select("branch").eq("id", student_id).execute()
     if not student_res.data:
         raise HTTPException(status_code=404, detail="Student not found")
-    branch = student_res.data["branch"]
+    branch = student_res.data[0]["branch"]
 
-    # 2. Get saved answers
-    results_res = db.table("exam_results").select("answers").eq("student_id", student_id).single().execute()
-    answers = results_res.data.get("answers") or {} if results_res.data else {}
+    # 2. Get saved answers (Safe check - may not exist if 0 answers)
+    results_res = db.table("exam_results").select("answers").eq("student_id", student_id).execute()
+    answers = results_res.data[0].get("answers") or {} if results_res.data else {}
     
     # 3. Calculate Score
     # Fetch questions for this branch
