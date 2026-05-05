@@ -1501,12 +1501,15 @@ function StudentsTab() {
         <div className={adminStyles.modalOverlay} onClick={() => setShowModal(false)}>
           <div className={adminStyles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>{editing ? "Edit Student" : "Add Student"}</h3>
-            {!editing && (
-              <div className={adminStyles.formGroup}>
-                <label>USN NO</label>
-                <input className={adminStyles.input} value={formData.usn} onChange={(e) => setFormData({ ...formData, usn: e.target.value.toUpperCase() })} placeholder="1MS21CS001" />
-              </div>
-            )}
+            <div className={adminStyles.formGroup}>
+              <label>USN NO</label>
+              <input 
+                className={adminStyles.input} 
+                value={formData.usn} 
+                onChange={(e) => setFormData({ ...formData, usn: e.target.value.toUpperCase() })} 
+                placeholder="1MS21CS001" 
+              />
+            </div>
             <div className={adminStyles.formGroup}>
               <label>Name</label>
               <input className={adminStyles.input} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />

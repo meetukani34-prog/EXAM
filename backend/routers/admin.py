@@ -213,6 +213,8 @@ async def update_student(student_id: str, request: StudentUpdate, _: bool = Depe
         update_data["name"] = request.name
     if request.email is not None:
         update_data["email"] = request.email
+    if request.usn is not None:
+        update_data["usn"] = request.usn.upper()
     if request.branch is not None:
         update_data["branch"] = request.branch
     if request.password is not None:

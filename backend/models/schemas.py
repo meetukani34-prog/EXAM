@@ -137,6 +137,7 @@ class StudentCreate(BaseModel):
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
+    usn: Optional[str] = None
     branch: Optional[str] = None
     password: Optional[str] = None
     is_active_session: Optional[bool] = None

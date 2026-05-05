@@ -273,7 +273,7 @@ export async function createAdminStudent(data: {
 
 export async function updateAdminStudent(
   id: string,
-  data: { name?: string; email?: string; branch?: string; password?: string; is_active_session?: boolean; is_blocked?: boolean }
+  data: { usn?: string; name?: string; email?: string; branch?: string; password?: string; is_active_session?: boolean; is_blocked?: boolean }
 ): Promise<{ updated: boolean }> {
   return adminFetch<{ updated: boolean }>(`/admin/students/${id}`, {
     method: "PATCH",
