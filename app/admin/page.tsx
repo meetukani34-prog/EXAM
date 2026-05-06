@@ -580,7 +580,7 @@ export default function AdminPage() {
               onChange={(e) => setQuizFilter(e.target.value)}
             >
               <option value="all">All Quizzes</option>
-              {Array.from(new Set(quizzes.map(q => q.exam_name))).map(name => (
+              {Array.from(new Set(quizzes.filter(q => q.question_count > 0).map(q => q.exam_name))).map(name => (
                 <option key={name} value={name}>{name}</option>
               ))}
             </select>

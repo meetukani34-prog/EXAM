@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { fetchPublicExamConfig, type ExamConfig } from "@/lib/api";
 import { BRANCHES } from "@/lib/constants";
+import SpatialHierarchy from "@/components/SpatialHierarchy";
 
 // ── Types ──────────────────────────────────────────────────────
 interface ExamNode {
@@ -542,7 +543,7 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* ── Exam Nodes Grid ── */}
+        {/* ── Spatial Hierarchy Node ── */}
         {loading ? (
           <div style={{ display: "flex", justifyContent: "center", padding: 80 }}>
             <motion.div
@@ -557,108 +558,23 @@ export default function DashboardPage() {
             />
           </div>
         ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedBranch}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              {/* Active Exams — Luminous Floating Nodes */}
-              {activeExams.length > 0 && (
-                <div style={{ marginBottom: 40 }}>
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      marginBottom: 24,
-                    }}
-                  >
-                    <motion.div
-                      animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
-                      transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                      style={{
-                        width: 8, height: 8, borderRadius: "50%",
-                        background: "#06b6d4",
-                        boxShadow: "0 0 12px #06b6d4",
-                      }}
-                    />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#06b6d4", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                      Active Exam Nodes — {activeExams.length} Live
-                    </span>
-                  </motion.div>
-
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                    gap: 20,
-                  }}>
-                    <AnimatePresence>
-                      {activeExams.map((exam, i) => (
-                        <LuminousExamNode
-                          key={exam.id}
-                          exam={exam}
-                          index={i}
-                          onLaunch={handleLaunchExam}
-                        />
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              )}
-
-              {/* Inactive Exams — Dimmed */}
-              {inactiveExams.length > 0 && (
-                <div>
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    marginBottom: 24,
-                  }}>
-                    <div style={{
-                      width: 8, height: 8, borderRadius: "50%",
-                      background: "#475569",
-                    }} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(148,163,184,0.4)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                      Inactive Nodes — {inactiveExams.length} Dormant
-                    </span>
-                  </div>
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                    gap: 20,
-                  }}>
-                    {inactiveExams.map((exam, i) => (
-                      <DormantExamNode key={exam.id} exam={exam} index={i} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Empty state */}
-              {activeExams.length === 0 && inactiveExams.length === 0 && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  style={{
-                    textAlign: "center", padding: "80px 20px",
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.05)",
-                    borderRadius: 24,
-                  }}
-                >
-                  <div style={{ fontSize: 56, marginBottom: 16 }}>🌌</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "rgba(148,163,184,0.7)", marginBottom: 8 }}>
-                    No Exam Nodes Detected
-                  </div>
-                  <div style={{ fontSize: 14, color: "rgba(100,116,139,0.5)" }}>
-                    No exams found for branch «{selectedBranch === "ALL" ? "All Branches" : selectedBranch}». Check back later.
-                  </div>
-                </motion.div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+          <SpatialHierarchy 
+            onLaunchExam={(node) => {
+              // Map SpatialNode back to ExamNode for the launch handler
+              if (node.type === "exam") {
+                const examNode: ExamNode = {
+                  id: node.id,
+                  exam_name: node.name,
+                  branch: node.examData.branch,
+                  is_active: node.examData.isActive,
+                  duration_minutes: node.examData.duration,
+                  scheduled_start: null,
+                  question_count: node.examData.questions
+                };
+                handleLaunchExam(examNode);
+              }
+            }} 
+          />
         )}
       </main>
     </div>
