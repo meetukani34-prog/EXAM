@@ -9,8 +9,19 @@ interface FaceMonitorProps {
   isSubmitted: boolean;
 }
 
-const FACE_CHECK_INTERVAL = 3000;
+const FACE_CHECK_INTERVAL = 5000;
 const NOFACE_THRESHOLD = 3;
+
+let modelLoadingPromise: Promise<void> | null = null;
+
+const loadModelsOnce = async (url: string) => {
+  if (modelLoadingPromise) return modelLoadingPromise;
+  modelLoadingPromise = (async () => {
+    await faceapi.nets.tinyFaceDetector.loadFromUri(url);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(url);
+  })();
+  return modelLoadingPromise;
+};
 
 export default function FaceMonitor({ onViolation, isSubmitted }: FaceMonitorProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -28,8 +39,7 @@ export default function FaceMonitor({ onViolation, isSubmitted }: FaceMonitorPro
     if (modelsLoaded.current) return;
     const MODEL_URL = "https://justadudewhohacks.github.io/face-api.js/models";
     try {
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await loadModelsOnce(MODEL_URL);
       modelsLoaded.current = true;
     } catch (e) {
       console.warn("Failed to load face-api models, continuing without face detection:", e);

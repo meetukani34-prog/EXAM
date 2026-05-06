@@ -403,3 +403,21 @@ h1, h2, h3, h4 {
   margin: 0 auto;
   padding: 40px 20px;
 }
+
+/* ── Optimization Animations ── */
+@keyframes dashboardOrbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 40px) scale(0.95); }
+}
+
+@keyframes luminousPulse {
+  0%, 100% { 
+    opacity: 0.95;
+    box-shadow: 0 0 20px var(--node-glow), 0 4px 40px rgba(0,0,0,0.4);
+  }
+  50% { 
+    opacity: 1;
+    box-shadow: 0 0 35px var(--node-glow), 0 4px 60px rgba(0,0,0,0.5);
+  }
+}

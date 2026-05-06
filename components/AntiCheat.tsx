@@ -135,17 +135,17 @@ export default function AntiCheat({ isSubmitted, onAutoSubmit }: AntiCheatProps)
     };
   }, [isSubmitted, triggerViolation]);
 
-  if (!showModal) return null;
-
   return (
     <>
       <FaceMonitor onViolation={triggerViolation} isSubmitted={isSubmitted} />
-      <WarningModal
-        warningCount={warningCount}
-        message={modalMessage}
-        onDismiss={warningCount < 3 ? () => setShowModal(false) : undefined}
-        onReenterFullscreen={() => enterFullscreen()}
-      />
+      {showModal && (
+        <WarningModal
+          warningCount={warningCount}
+          message={modalMessage}
+          onDismiss={warningCount < 3 ? () => setShowModal(false) : undefined}
+          onReenterFullscreen={() => enterFullscreen()}
+        />
+      )}
     </>
   );
 }

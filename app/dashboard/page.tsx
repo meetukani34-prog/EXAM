@@ -28,24 +28,18 @@ interface StudentInfo {
 
 // ── Branch color map ───────────────────────────────────────────
 const BRANCH_COLORS: Record<string, { primary: string; glow: string; accent: string }> = {
-  CS:      { primary: "#06b6d4", glow: "rgba(6,182,212,0.25)",   accent: "#22d3ee" },
-  CSE:     { primary: "#6366f1", glow: "rgba(99,102,241,0.25)",  accent: "#818cf8" },
-  AI:      { primary: "#8b5cf6", glow: "rgba(139,92,246,0.25)",  accent: "#a78bfa" },
-  DS:      { primary: "#10b981", glow: "rgba(16,185,129,0.25)",  accent: "#34d399" },
-  ISC:     { primary: "#f59e0b", glow: "rgba(245,158,11,0.25)",  accent: "#fbbf24" },
-  ECE:     { primary: "#ef4444", glow: "rgba(239,68,68,0.25)",   accent: "#f87171" },
+  CS: { primary: "#06b6d4", glow: "rgba(6,182,212,0.25)", accent: "#22d3ee" },
+  CSE: { primary: "#6366f1", glow: "rgba(99,102,241,0.25)", accent: "#818cf8" },
+  AI: { primary: "#8b5cf6", glow: "rgba(139,92,246,0.25)", accent: "#a78bfa" },
+  DS: { primary: "#10b981", glow: "rgba(16,185,129,0.25)", accent: "#34d399" },
+  ISC: { primary: "#f59e0b", glow: "rgba(245,158,11,0.25)", accent: "#fbbf24" },
+  ECE: { primary: "#ef4444", glow: "rgba(239,68,68,0.25)", accent: "#f87171" },
   "BCA-1st": { primary: "#ec4899", glow: "rgba(236,72,153,0.25)", accent: "#f472b6" },
   "BCA-2nd": { primary: "#14b8a6", glow: "rgba(20,184,166,0.25)", accent: "#2dd4bf" },
 };
 
 const DEFAULT_COLOR = { primary: "#6366f1", glow: "rgba(99,102,241,0.25)", accent: "#818cf8" };
 
-// ── Breathing animation keyframes ─────────────────────────────
-const breatheKeyframes = [
-  { boxShadow: "0 0 20px rgba(6,182,212,0.3), 0 0 60px rgba(6,182,212,0.1), inset 0 1px 0 rgba(255,255,255,0.1)" },
-  { boxShadow: "0 0 35px rgba(6,182,212,0.5), 0 0 90px rgba(6,182,212,0.2), inset 0 1px 0 rgba(255,255,255,0.15)" },
-  { boxShadow: "0 0 20px rgba(6,182,212,0.3), 0 0 60px rgba(6,182,212,0.1), inset 0 1px 0 rgba(255,255,255,0.1)" },
-];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -56,26 +50,8 @@ export default function DashboardPage() {
   const [warpTarget, setWarpTarget] = useState<ExamNode | null>(null);
   const [warpActive, setWarpActive] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const orbAnimRef = useRef<number>(0);
-  const [time, setTime] = useState(0);
 
-  // Aurora orb animation
-  useEffect(() => {
-    let t = 0;
-    const orbs = containerRef.current?.querySelectorAll("[data-dashboard-orb]");
-    const animate = () => {
-      t += 0.002;
-      setTime(t);
-      orbs?.forEach((orb, i) => {
-        const el = orb as HTMLElement;
-        const phase = i * (Math.PI * 2) / 3;
-        el.style.transform = `translate(${Math.sin(t + phase) * 40}px, ${Math.cos(t * 0.8 + phase) * 25}px)`;
-      });
-      orbAnimRef.current = requestAnimationFrame(animate);
-    };
-    animate();
-    return () => cancelAnimationFrame(orbAnimRef.current);
-  }, []);
+  // Real-time exam config listener via Supabase
 
   // Load student from session
   useEffect(() => {
@@ -119,7 +95,7 @@ export default function DashboardPage() {
         for (const config of activeConfigs) {
           // Find branches that have questions for this specific exam_title
           const relevantQuestions = qData.filter(q => q.exam_name === config.exam_title);
-          
+
           // Group by branch for this exam
           const branchCounts: Record<string, number> = {};
           relevantQuestions.forEach(q => {
@@ -197,7 +173,7 @@ export default function DashboardPage() {
   // ── Warp Transition: Launch into exam ─────────────────────
   const handleLaunchExam = useCallback(async (exam: ExamNode) => {
     if (!exam.is_active) return;
-    
+
     // If preview, update the mock student to match the branch of the clicked node
     if (sessionStorage.getItem("exam_preview") === "true") {
       const infoStr = sessionStorage.getItem("exam_student");
@@ -210,10 +186,10 @@ export default function DashboardPage() {
 
     setWarpTarget(exam);
     setWarpActive(true);
-    
+
     // Weightlessly persist exam metadata for the session horizon
     sessionStorage.setItem("exam_selected_title", exam.exam_name);
-    
+
     await new Promise(r => setTimeout(r, 1200));
     router.push("/exam");
   }, [router]);
@@ -239,23 +215,26 @@ export default function DashboardPage() {
         color: "#e2e8f0",
       }}
     >
-      {/* ── Aurora Orbs ── */}
+      {/* ── Aurora Orbs (CSS Animated) ── */}
       {[
-        { top: "5%", left: "10%", color: "rgba(99,102,241,0.12)", size: 500 },
-        { top: "50%", right: "5%", color: "rgba(6,182,212,0.1)", size: 400 },
-        { bottom: "10%", left: "35%", color: "rgba(139,92,246,0.08)", size: 350 },
+        { top: "5%", left: "10%", color: "rgba(99,102,241,0.12)", size: 500, duration: "25s", delay: "0s" },
+        { top: "50%", right: "5%", color: "rgba(6,182,212,0.1)", size: 400, duration: "30s", delay: "-5s" },
+        { bottom: "10%", left: "35%", color: "rgba(139,92,246,0.08)", size: 350, duration: "22s", delay: "-10s" },
       ].map((orb, i) => (
         <div
           key={i}
-          data-dashboard-orb=""
           style={{
             position: "fixed",
-            ...orb,
+            top: orb.top,
+            left: orb.left,
+            right: orb.right,
+            bottom: orb.bottom,
             width: orb.size,
             height: orb.size,
             background: `radial-gradient(circle, ${orb.color} 0%, transparent 70%)`,
             borderRadius: "50%",
             pointerEvents: "none",
+            animation: `dashboardOrbFloat ${orb.duration} infinite ease-in-out ${orb.delay}`,
             willChange: "transform",
           }}
         />
@@ -705,17 +684,9 @@ function LuminousExamNode({
       whileHover={{ y: -8, transition: { duration: 0.25, ease: "easeOut" } }}
       style={{ position: "relative" }}
     >
-      <motion.div
-        animate={{
-          boxShadow: [
-            `0 0 20px ${colors.glow}, 0 4px 40px rgba(0,0,0,0.4)`,
-            `0 0 40px ${colors.glow.replace("0.25", "0.45")}, 0 4px 60px rgba(0,0,0,0.5)`,
-            `0 0 20px ${colors.glow}, 0 4px 40px rgba(0,0,0,0.4)`,
-          ],
-        }}
-        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+      <div
         style={{
-          background: "rgba(255,255,255,0.04)",
+          backgroundColor: "rgba(255,255,255,0.04)",
           border: `1px solid ${colors.primary}30`,
           borderRadius: 24,
           padding: "28px 28px",
@@ -724,6 +695,8 @@ function LuminousExamNode({
           position: "relative",
           overflow: "hidden",
           cursor: "pointer",
+          animation: "luminousPulse 3s infinite ease-in-out",
+          ["--node-glow" as any]: colors.glow,
         }}
         onClick={() => onLaunch(exam)}
       >
@@ -834,7 +807,7 @@ function LuminousExamNode({
             transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
           >→</motion.span>
         </motion.button>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
