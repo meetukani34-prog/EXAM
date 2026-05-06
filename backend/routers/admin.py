@@ -147,27 +147,39 @@ async def upload_question_image(
 async def get_all_students(_: bool = Depends(verify_admin)):
     try:
         db = get_supabase()
-        result = db.table("exam_status").select("*, students(usn, email, name, branch, is_blocked)").execute()
+        # Query students first to ensure all registered students are visible
+        # We join exam_status to get their current progress
+        result = db.table("students").select("*, exam_status(*)").execute()
 
         rows = []
         if result.data:
-            for r in result.data:
-                student_info = r.get("students")
-                if not student_info:
-                    continue
+            for s in result.data:
+                # Handle cases where exam_status might be missing or multiple (though it should be 1-to-1)
+                e_status = s.get("exam_status")
+                if isinstance(e_status, list) and len(e_status) > 0:
+                    e_status = e_status[0]
+                elif not e_status:
+                    # Fallback for students without an exam_status row yet
+                    e_status = {
+                        "status": "not_started",
+                        "warnings": 0,
+                        "last_active": None,
+                        "submitted_at": None,
+                        "started_at": None
+                    }
 
                 rows.append(StudentStatus(
-                    student_id=r["student_id"],
-                    usn=student_info.get("usn", "UNKNOWN"),
-                    name=student_info.get("name", "UNKNOWN"),
-                    email=student_info.get("email"),
-                    branch=student_info.get("branch", "CS"),
-                    status=r["status"],
-                    warnings=r["warnings"],
-                    last_active=r["last_active"],
-                    submitted_at=r["submitted_at"],
-                    started_at=r.get("started_at"),
-                    is_blocked=student_info.get("is_blocked", False)
+                    student_id=s["id"],
+                    usn=s.get("usn") or s.get("roll_number") or "UNKNOWN",
+                    name=s.get("name", "UNKNOWN"),
+                    email=s.get("email"),
+                    branch=s.get("branch", "CS"),
+                    status=e_status.get("status", "not_started"),
+                    warnings=e_status.get("warnings", 0),
+                    last_active=e_status.get("last_active"),
+                    submitted_at=e_status.get("submitted_at"),
+                    started_at=e_status.get("started_at"),
+                    is_blocked=s.get("is_blocked", False)
                 ))
         return rows
     except Exception as e:
