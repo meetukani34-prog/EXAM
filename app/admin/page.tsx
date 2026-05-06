@@ -292,10 +292,12 @@ export default function AdminPage() {
           }
         });
 
-        // Discovery from existing configs (ensure visibility of empty folders)
+        // Discovery from existing configs (ensure visibility of empty but ACTIVE folders)
         configs.forEach((c: any) => {
           if (!list.find(x => x.exam_name === c.exam_title)) {
-            list.push({ branch: "CS", exam_name: c.exam_title, question_count: 0 });
+            if (c.is_active) {
+              list.push({ branch: "CS", exam_name: c.exam_title, question_count: 0 });
+            }
           }
         });
 

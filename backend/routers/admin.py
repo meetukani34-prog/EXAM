@@ -518,6 +518,9 @@ async def delete_folder(folder_name: str, _: bool = Depends(verify_admin)):
         tag_prefix = f"⟦EXAM:{folder_name}⟧"
         db.table("questions").delete().like("text", f"{tag_prefix}%").execute()
 
+    # Also delete associated config if it exists
+    db.table("exam_config").delete().eq("exam_title", folder_name).execute()
+
     return {"status": "success", "deleted_folder": folder_name}
 
 
