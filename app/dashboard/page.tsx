@@ -16,6 +16,7 @@ interface ExamNode {
   duration_minutes: number;
   scheduled_start: string | null;
   question_count?: number;
+  category?: string;
 }
 
 interface StudentInfo {
@@ -29,7 +30,7 @@ interface StudentInfo {
   examDurationMinutes: number;
 }
 
-type TabId = "home" | "profile";
+type TabId = "home" | "profile" | "aptitude" | "programming" | "learning" | "insights";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -70,7 +71,7 @@ export default function DashboardPage() {
       const configs = await fetchPublicExamConfig();
       const { data: qData } = await supabase
         .from("questions")
-        .select("branch, exam_name");
+        .select("branch, exam_name, category");
 
       const nodes: ExamNode[] = [];
       const seen = new Set<string>();
@@ -78,13 +79,18 @@ export default function DashboardPage() {
       if (qData && configs.length > 0) {
         for (const config of configs) {
           const relevantQuestions = qData.filter(q => q.exam_name === config.exam_title);
-          const branchCounts: Record<string, number> = {};
+          const branchCounts: Record<string, { count: number, category: string }> = {};
+          
           relevantQuestions.forEach(q => {
             const br = q.branch || "CS";
-            branchCounts[br] = (branchCounts[br] || 0) + 1;
+            const cat = q.category || "other";
+            if (!branchCounts[br]) {
+              branchCounts[br] = { count: 0, category: cat };
+            }
+            branchCounts[br].count += 1;
           });
 
-          Object.entries(branchCounts).forEach(([branch, count]) => {
+          Object.entries(branchCounts).forEach(([branch, info]) => {
             const nodeId = `${config.exam_title}-${branch}`;
             if (!seen.has(nodeId)) {
               nodes.push({
@@ -94,7 +100,8 @@ export default function DashboardPage() {
                 is_active: config.is_active,
                 duration_minutes: config.duration_minutes,
                 scheduled_start: config.scheduled_start,
-                question_count: count,
+                question_count: info.count,
+                category: info.category,
               });
               seen.add(nodeId);
             }
@@ -175,7 +182,7 @@ export default function DashboardPage() {
       ),
     },
     {
-      id: "aptitude" as any,
+      id: "aptitude",
       label: "Aptitude Test",
       icon: (
         <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -188,7 +195,7 @@ export default function DashboardPage() {
       ),
     },
     {
-      id: "programming" as any,
+      id: "programming",
       label: "Programming",
       icon: (
         <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -208,7 +215,7 @@ export default function DashboardPage() {
       ),
     },
     {
-      id: "learning" as any,
+      id: "learning",
       label: "Learning Path",
       icon: (
         <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -218,7 +225,7 @@ export default function DashboardPage() {
       ),
     },
     {
-      id: "insights" as any,
+      id: "insights",
       label: "Skills Insights",
       icon: (
         <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -327,11 +334,84 @@ export default function DashboardPage() {
               onLaunch={handleLaunchExam}
             />
           )}
+          {activeTab === "aptitude" && (
+            <CategoryTab 
+              title="Aptitude Assessments"
+              subtitle="Test your logical and verbal reasoning"
+              exams={studentExams.filter(e => e.category === "aptitude")}
+              onLaunch={handleLaunchExam}
+            />
+          )}
+          {activeTab === "programming" && (
+            <CategoryTab 
+              title="Programming Challenges"
+              subtitle="Showcase your coding skills"
+              exams={studentExams.filter(e => e.category === "programming")}
+              onLaunch={handleLaunchExam}
+            />
+          )}
+          {activeTab === "learning" && (
+            <div className={styles.sectionWrapper}>
+              <h1 className={styles.pageTitle}>Learning Path</h1>
+              <p className={styles.pageSubtitle}>Personalized roadmap for your career growth</p>
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>🎓</div>
+                <div className={styles.emptyTitle}>Coming Soon</div>
+                <div className={styles.emptyText}>We're curating personalized learning resources for you.</div>
+              </div>
+            </div>
+          )}
+          {activeTab === "insights" && (
+            <div className={styles.sectionWrapper}>
+              <h1 className={styles.pageTitle}>Skills Insights</h1>
+              <p className={styles.pageSubtitle}>Analyze your performance across different domains</p>
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>📊</div>
+                <div className={styles.emptyTitle}>Analysis in Progress</div>
+                <div className={styles.emptyText}>Detailed skill breakdowns will appear here after your first few exams.</div>
+              </div>
+            </div>
+          )}
           {activeTab === "profile" && student && (
             <ProfileTab student={student} />
           )}
         </main>
       </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// CATEGORY TAB
+// ══════════════════════════════════════════════════════════════
+function CategoryTab({
+  title, subtitle, exams, onLaunch
+}: {
+  title: string;
+  subtitle: string;
+  exams: ExamNode[];
+  onLaunch: (exam: ExamNode) => void;
+}) {
+  return (
+    <div className={styles.sectionWrapper}>
+      <h1 className={styles.pageTitle}>{title}</h1>
+      <p className={styles.pageSubtitle}>{subtitle}</p>
+
+      {exams.length > 0 ? (
+        <div className={styles.examsSection}>
+          {exams.map(exam => (
+            <ExamCard key={exam.id} exam={exam} onLaunch={onLaunch} />
+          ))}
+        </div>
+      ) : (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyIcon}>📂</div>
+          <div className={styles.emptyTitle}>No exams found</div>
+          <div className={styles.emptyText}>
+            There are no exams available in this category for your branch.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
