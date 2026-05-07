@@ -109,12 +109,14 @@
   border-radius: 12px;
   font-size: 14px;
   color: #ffffff !important;
+  caret-color: #ffffff;
   outline: none;
   transition: all 0.3s;
+  text-shadow: 0 0 1px rgba(0,0,0,0.5);
 }
 
 .inputField::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .inputField:focus {
@@ -158,10 +160,12 @@
 
 .link {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
+  color: #ffffff;
+  opacity: 0.9;
   text-decoration: none;
-  transition: color 0.2s;
+  transition: all 0.2s;
   cursor: pointer;
+  padding: 4px 8px;
 }
 
 .link:hover {

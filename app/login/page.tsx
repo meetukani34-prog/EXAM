@@ -99,6 +99,7 @@ export default function LoginPage() {
               value={usn}
               onChange={(e) => setUsn(e.target.value)}
               disabled={loading}
+              spellCheck="false"
               required
             />
           </div>
@@ -115,6 +116,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
+              spellCheck="false"
               required
             />
           </div>
