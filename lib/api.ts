@@ -189,6 +189,7 @@ export interface AdminQuestion {
   marks: number;
   exam_name: string;
   image_url: string | null;
+  category?: string;
 }
 
 export interface AdminStudent {

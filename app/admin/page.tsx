@@ -836,10 +836,12 @@ function QuestionsTab() {
     if (!formData.correct_answer) return alert("Please select a correct answer");
     if (!formData.branch) return alert("Please select a branch");
     try {
-      if (editing) await updateAdminQuestion(editing.id, formData);
-      else await createAdminQuestion(formData);
+      const payload = { ...formData, category: formCategory };
+      if (editing) await updateAdminQuestion(editing.id, payload);
+      else await createAdminQuestion(payload);
       setShowModal(false); setEditing(null);
       setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "" });
+      setFormCategory("other");
       load();
     } catch { alert("Failed to save question"); }
   };
@@ -1001,7 +1003,7 @@ function QuestionsTab() {
             {BRANCHES.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditing(null); setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "" }); setShowModal(true); }}>
+        <button className="btn btn-primary" onClick={() => { setEditing(null); setFormCategory("other"); setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "" }); setShowModal(true); }}>
           + Add Question
         </button>
       </div>
@@ -1174,7 +1176,7 @@ function QuestionsTab() {
                               <div className={adminStyles.cardHeader}>
                                 <div className={adminStyles.cardIndex} style={{ fontSize: 11, fontWeight: 700, color: palette.accent }}>Q{q.order_index + 1}</div>
                                 <div style={{ display: "flex", gap: 8 }}>
-                                  <button className="btn-icon" onClick={() => { setEditing(q); setFormData({ ...q }); setShowModal(true); }}>✏️</button>
+                                  <button className="btn-icon" onClick={() => { setEditing(q); setFormData({ ...q }); setFormCategory((q.category as any) || 'other'); setShowModal(true); }}>✏️</button>
                                   <button className="btn-icon btn-danger" onClick={() => handleDelete(q.id)}>🗑️</button>
                                 </div>
                               </div>
@@ -1276,6 +1278,15 @@ function QuestionsTab() {
                 <label>Category</label>
                 <select
                   className={adminStyles.input}
+                  style={{ 
+                    height: "44px", 
+                    fontSize: "15px", 
+                    fontWeight: "600",
+                    background: "rgba(139, 92, 246, 0.12) !important",
+                    border: "1.5px solid rgba(139, 92, 246, 0.3)",
+                    color: "#ffffff",
+                    cursor: "pointer"
+                  }}
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value as any)}
                 >

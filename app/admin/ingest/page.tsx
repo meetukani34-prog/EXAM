@@ -248,6 +248,7 @@ export default function IngestPage() {
       ...q,
       branch: selectedBranch,
       exam_name: examName,
+      category: selectedCategory,
       order_index: i,
     }));
 

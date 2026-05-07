@@ -58,6 +58,7 @@ async def get_all_questions(_: bool = Depends(verify_admin)):
         # Build the final object
         q["text"] = text
         q["exam_name"] = exam_name
+        q["category"] = q.get("category", "other")
         processed_questions.append(q)
 
     return AdminQuestionsResponse(questions=processed_questions, total=len(processed_questions))
