@@ -246,7 +246,8 @@
   background: rgba(255, 255, 255, 0.015);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 20px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .table {
@@ -280,7 +281,10 @@
 
 .actionButtons {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 320px; /* Ensure enough room before wrapping too aggressively */
 }
 
 .empty {
