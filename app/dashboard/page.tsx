@@ -236,7 +236,7 @@ export default function DashboardPage() {
       <nav className={styles.topNav}>
         <div className={styles.topNavLeft}>
           <div className={styles.logoMark}>
-            <span className={styles.logoTitle}>FOCUS<span>R</span></span>
+            FOCUS <div className={styles.logoCircle}>R</div>
           </div>
           <div className={styles.separator} />
           <svg className={styles.medalIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -387,6 +387,7 @@ function HomeTab({
           <div className={styles.insightValue}>8</div>
           <svg className={styles.sparkline} viewBox="0 0 100 40" style={{ height: 40, width: '100%', stroke: '#c2a16d', strokeWidth: 2, fill: 'none' }}>
             <path d="M0 35 L10 32 L20 38 L30 25 L40 28 L50 15 L60 22 L70 5 L80 12 L90 8 L100 15" />
+            <circle cx="70" cy="5" r="3" fill="#c2a16d" />
           </svg>
         </div>
         <div className={styles.insightCard}>

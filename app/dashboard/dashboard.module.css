@@ -57,15 +57,28 @@
   gap: 8px;
 }
 
-.logoTitle {
-  font-size: 20px;
+.logoMark {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 22px;
   font-weight: 900;
   color: #1e1b4b;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
 }
 
-.logoTitle span {
-  color: #ef4444;
+.logoCircle {
+  width: 26px;
+  height: 26px;
+  background: #ef4444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  margin-left: -2px;
 }
 
 .separator {
@@ -186,9 +199,9 @@
 }
 
 .sidebarItemActive {
-  background: linear-gradient(135deg, #eaddc0, #c2a16d) !important;
+  background: linear-gradient(135deg, #f1e6cf, #d4b886) !important;
   color: #43331a !important;
-  box-shadow: 0 4px 12px rgba(194, 161, 109, 0.2);
+  box-shadow: 0 4px 15px rgba(212, 184, 134, 0.3);
 }
 
 /* ── Main Content ── */
