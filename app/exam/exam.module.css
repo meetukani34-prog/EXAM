@@ -456,8 +456,16 @@
     gap: 16px;
     height: auto;
     overflow: visible;
+    display: flex;
+    flex-direction: column;
   }
   
+  .questionColumn {
+    order: 1; /* Questions ALWAYS at the top */
+    width: 100%;
+    overflow: visible !important;
+  }
+
   .questionList {
     overflow: visible;
     height: auto;
@@ -465,17 +473,17 @@
   }
 
   .sidebar {
-    order: 2; /* Put progress grid at the bottom */
+    order: 3; /* Progress grid ALWAYS at the bottom */
     height: auto;
   }
   
   .navGrid {
-    grid-template-columns: repeat(9, 1fr); /* 9 columns as per mockup */
+    grid-template-columns: repeat(8, 1fr); /* 8 columns for better mobile fit */
     gap: 8px;
   }
 
   .progressFooter {
-    order: 1; /* Progress bar stays between questions and grid */
+    order: 2; /* Progress bar in between */
     padding: 16px;
     flex-direction: column;
     gap: 12px;

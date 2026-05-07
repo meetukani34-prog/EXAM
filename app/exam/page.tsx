@@ -440,7 +440,7 @@ export default function ExamPage() {
 
       {/* ── Main layout ───────────────────────────────────── */}
       <main className={styles.main}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, overflow: "hidden" }}>
+        <div className={styles.questionColumn} style={{ display: "flex", flexDirection: "column", gap: 16, overflow: "hidden" }}>
           {/* Exam Title & Timer Row */}
           <div style={{
              display: "flex",
