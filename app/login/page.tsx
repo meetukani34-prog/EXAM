@@ -79,6 +79,17 @@ export default function LoginPage() {
       <div className={styles.bgImage} />
       <div className={styles.overlay} />
 
+      {/* Top Right Help Button */}
+      <button 
+        className={styles.helpBtn}
+        onClick={() => setShowForgotModal(true)}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        Get Help
+      </button>
+
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
