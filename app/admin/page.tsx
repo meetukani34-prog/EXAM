@@ -806,6 +806,7 @@ function QuestionsTab() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AdminQuestion | null>(null);
   const [selectedBranch, setSelectedBranch] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState<"all" | "aptitude" | "programming" | "other">("all");
   const [formData, setFormData] = useState<Omit<AdminQuestion, "id">>({ 
     text: "", 
     options: ["", "", "", ""], 
@@ -914,7 +915,24 @@ function QuestionsTab() {
       setLoading(false);
     }
   };
-  const filteredQuestions = selectedBranch === "All" ? questions : questions.filter((q) => q.branch === selectedBranch);
+  // ── Category classification ──
+  function getCategory(examName: string): "aptitude" | "programming" | "other" {
+    const n = examName.toLowerCase();
+    if (n.includes("aptitude") || n.includes("quant") || n.includes("reasoning") || n.includes("logical") || n.includes("verbal") || n.includes("english") || n.includes("comprehension") || n.includes("maths") || n.includes("numerical")) return "aptitude";
+    if (n.includes("program") || n.includes("code") || n.includes("coding") || n.includes("dsa") || n.includes("algorithm") || n.includes("data structure") || n.includes("python") || n.includes("java") || n.includes("c++") || n.includes("javascript")) return "programming";
+    return "other";
+  }
+
+  const branchFiltered = selectedBranch === "All" ? questions : questions.filter((q) => q.branch === selectedBranch);
+  const filteredQuestions = selectedCategory === "all" ? branchFiltered : branchFiltered.filter(q => getCategory(q.exam_name || "") === selectedCategory);
+
+  // Category counts
+  const catCounts = {
+    all: branchFiltered.length,
+    aptitude: branchFiltered.filter(q => getCategory(q.exam_name || "") === "aptitude").length,
+    programming: branchFiltered.filter(q => getCategory(q.exam_name || "") === "programming").length,
+    other: branchFiltered.filter(q => getCategory(q.exam_name || "") === "other").length,
+  };
 
   // Group by exam_name and branch
   const clusters: Record<string, AdminQuestion[]> = {};
@@ -985,6 +1003,37 @@ function QuestionsTab() {
         <button className="btn btn-primary" onClick={() => { setEditing(null); setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "" }); setShowModal(true); }}>
           + Add Question
         </button>
+      </div>
+
+      {/* ── Category Tabs ── */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        {([
+          { key: "all" as const, label: "All", emoji: "\ud83d\udccb" },
+          { key: "aptitude" as const, label: "Aptitude", emoji: "\ud83e\udde0" },
+          { key: "programming" as const, label: "Programming", emoji: "\ud83d\udcbb" },
+          { key: "other" as const, label: "Other", emoji: "\ud83d\udcc2" },
+        ]).map(cat => (
+          <button
+            key={cat.key}
+            onClick={() => setSelectedCategory(cat.key)}
+            style={{
+              padding: '8px 20px',
+              borderRadius: 10,
+              border: selectedCategory === cat.key ? '2px solid #4f46e5' : '1px solid #e2e8f0',
+              background: selectedCategory === cat.key ? '#eef2ff' : '#fff',
+              color: selectedCategory === cat.key ? '#4f46e5' : '#64748b',
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            {cat.emoji} {cat.label} ({catCounts[cat.key]})
+          </button>
+        ))}
       </div>
 
       {loading ? (
