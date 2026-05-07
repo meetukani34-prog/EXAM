@@ -115,7 +115,10 @@ export default function LoginPage() {
               className={styles.inputField}
               placeholder={isRegistering ? "USN No" : "Email ID / USN No"}
               value={usn}
-              onChange={(e) => setUsn(e.target.value.toUpperCase())}
+              onChange={(e) => {
+                const val = e.target.value;
+                setUsn(isRegistering ? val.toUpperCase() : val);
+              }}
               disabled={loading}
               spellCheck="false"
               required
@@ -288,7 +291,7 @@ export default function LoginPage() {
                         className={styles.inputField}
                         placeholder="USN No / Email ID"
                         value={helpUsn}
-                        onChange={(e) => setHelpUsn(e.target.value.toUpperCase())}
+                        onChange={(e) => setHelpUsn(e.target.value)} // Keep mixed case for help modal as it allows Email
                         style={{ paddingLeft: '16px' }}
                       />
                     </div>
