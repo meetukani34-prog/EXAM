@@ -65,6 +65,7 @@ export interface LoginResponse {
   exam_duration_minutes: number;
   exam_title: string;
   total_questions: number;
+  avatar_url?: string;
 }
 
 export async function loginStudent(
@@ -82,6 +83,13 @@ export async function logoutStudent(): Promise<void> {
   await apiFetch("/auth/logout", { method: "POST" }).catch(() => { });
   sessionStorage.removeItem("exam_token");
   sessionStorage.removeItem("exam_student");
+}
+
+export async function updateProfile(data: { name?: string; email?: string; avatar_url?: string }): Promise<void> {
+  await apiFetch("/auth/profile/update", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 // ── Questions ─────────────────────────────────────────────────

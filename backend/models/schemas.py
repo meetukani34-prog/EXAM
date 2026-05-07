@@ -23,6 +23,7 @@ class LoginResponse(BaseModel):
     exam_duration_minutes: int
     exam_title: str
     total_questions: int
+    avatar_url: Optional[str] = None
 
 
 class StartExamResponse(BaseModel):
@@ -156,6 +157,7 @@ class StudentStatus(BaseModel):
     submitted_at: Optional[str]
     started_at: Optional[str] = None
     is_blocked: bool = False
+    avatar_url: Optional[str] = None
 
 
 # ── Exam Config ───────────────────────────────────────────────

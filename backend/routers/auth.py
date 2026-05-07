@@ -25,7 +25,7 @@ async def login(request: LoginRequest):
         # Try new 'usn' column first
         result = (
             db.table("students")
-            .select("id, usn, email, name, branch, password_hash, is_active_session, current_token, is_blocked")
+            .select("id, usn, email, name, branch, password_hash, is_active_session, current_token, is_blocked, avatar_url")
             .eq("usn", request.usn.strip().upper())
             .limit(1)
             .execute()
@@ -205,7 +205,30 @@ async def login(request: LoginRequest):
         exam_duration_minutes=current_duration,
         exam_title=current_exam_title,
         total_questions=current_total_questions,
+        avatar_url=student.get("avatar_url")
     )
+
+
+@router.post("/profile/update")
+async def update_profile(
+    update_data: Dict[str, Any], 
+    current: dict = Depends(get_current_student)
+):
+    """Allow students to update their own profile info (name, email, avatar_url)."""
+    db = get_supabase()
+    
+    # Filter allowed fields
+    allowed = ["name", "email", "avatar_url"]
+    to_update = {k: v for k, v in update_data.items() if k in allowed}
+    
+    if not to_update:
+        return {"message": "No valid fields to update"}
+        
+    try:
+        db.table("students").update(to_update).eq("id", current["student_id"]).execute()
+        return {"success": True, "updated_fields": list(to_update.keys())}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/logout")

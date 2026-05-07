@@ -64,6 +64,7 @@ export default function LoginPage() {
           examDurationMinutes: 20, // STRICT OVERRIDE
           examTitle: data.exam_title,
           totalQuestions: data.total_questions,
+          avatarUrl: data.avatar_url,
         })
       );
 
