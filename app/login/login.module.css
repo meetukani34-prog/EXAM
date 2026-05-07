@@ -184,10 +184,9 @@
   backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  padding: 12px 24px;
+  padding: 0;
   display: flex;
   align-items: center;
-  gap: 24px;
   z-index: 5;
   font-size: 13px;
   white-space: nowrap;
@@ -195,12 +194,15 @@
 }
 
 .pulseBadge {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 4px 12px;
-  border-radius: 6px;
+  background: #1a1a1e;
+  padding: 12px 24px;
+  border-radius: 12px 0 0 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
+  z-index: 10;
+  box-shadow: 15px 0 25px #1a1a1e;
+  color: #fff;
 }
 
 .pulseContent {
