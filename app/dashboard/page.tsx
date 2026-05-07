@@ -30,7 +30,7 @@ interface StudentInfo {
   examDurationMinutes: number;
 }
 
-type TabId = "home" | "profile" | "aptitude" | "programming" | "learning" | "insights";
+type TabId = "home" | "profile" | "aptitude" | "programming" | "other" | "learning" | "insights";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -205,6 +205,17 @@ export default function DashboardPage() {
       ),
     },
     {
+      id: "other",
+      label: "Other Quiz",
+      icon: (
+        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      ),
+    },
+    {
       id: "profile",
       label: "Profile",
       icon: (
@@ -347,6 +358,14 @@ export default function DashboardPage() {
               title="Programming Challenges"
               subtitle="Showcase your coding skills"
               exams={studentExams.filter(e => e.category === "programming")}
+              onLaunch={handleLaunchExam}
+            />
+          )}
+          {activeTab === "other" && (
+            <CategoryTab 
+              title="General Assessments"
+              subtitle="Diverse quizzes and surveys"
+              exams={studentExams.filter(e => e.category === "other")}
               onLaunch={handleLaunchExam}
             />
           )}
