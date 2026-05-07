@@ -564,7 +564,34 @@ export default function ExamPage() {
               </QuestionCard>
             )}
           </div>
+
+          {/* ── Progress Footer (Mockup Request) ── */}
+          <div className={styles.progressFooter}>
+            <div className={styles.progressInfo}>
+              <div className={styles.progressLabels}>
+                <span className={styles.progressLabel}>Progress</span>
+                <span className={styles.progressCount}>
+                  {answeredCount} / {questions.length} answered
+                </span>
+              </div>
+              <div className={styles.progressBarContainer}>
+                <div 
+                  className={styles.progressBarFill} 
+                  style={{ width: `${(answeredCount / questions.length) * 100}%` }} 
+                />
+              </div>
+            </div>
+            
+            <button
+              className={styles.submitBtn}
+              onClick={() => setConfirmSubmit(true)}
+              disabled={submitting}
+            >
+              {submitting ? "Submitting..." : "Submit Exam"}
+            </button>
+          </div>
         </div>
+
 
         {/* ── Sidebar ── */}
         <aside className={styles.sidebar}>
