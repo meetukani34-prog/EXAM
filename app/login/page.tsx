@@ -163,7 +163,7 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '8px' }}>
             <button 
               type="button" 
               className={styles.forgotPass} 
@@ -172,7 +172,6 @@ export default function LoginPage() {
             >
               {isRegistering ? "Back to Login" : "First time? Register here"}
             </button>
-            <a href="#" className={styles.forgotPass}>Forgot password?</a>
           </div>
 
           {error && <div className={styles.error}>{error}</div>}
