@@ -13,6 +13,7 @@ import {
   createAdminStudent,
   updateAdminStudent,
   deleteAdminStudent,
+  deleteAllAdminStudents,
   resetAdminStudent,
   blockAdminStudent,
   unblockAdminStudent,
@@ -1380,6 +1381,17 @@ function StudentsTab({ students, load }: { students: AdminStudent[], load: () =>
     try { await deleteAdminStudent(id); load(); } catch { alert("Failed to delete"); }
   };
 
+  const handleDeleteAll = async () => {
+    if (!confirm("WARNING: Are you absolutely sure you want to delete ALL students and their exam data? This cannot be undone!")) return;
+    try {
+      await deleteAllAdminStudents();
+      load();
+      alert("All students have been deleted.");
+    } catch {
+      alert("Failed to delete all students.");
+    }
+  };
+
   const handleResetExam = async (id: string) => {
     if (!confirm("Allow this student to retake the exam? This will clear all their previous answers and warnings.")) return;
     try { await resetAdminStudent(id); load(); alert("Exam state reset successfully."); }
@@ -1402,9 +1414,14 @@ function StudentsTab({ students, load }: { students: AdminStudent[], load: () =>
     <div className={adminStyles.managementPage}>
       <div className={adminStyles.header}>
         <h2 className={adminStyles.headerTitle}>Students ({students.length})</h2>
-        <button className="btn btn-primary" onClick={() => { setEditing(null); setFormData({ usn: "", name: "", email: "", branch: "CS", password: "" }); setShowModal(true); }}>
-          + Add Student (DEBUG-V2)
-        </button>
+        <div style={{ display: "flex", gap: "12px" }}>
+          <button className="btn btn-outline text-danger" onClick={handleDeleteAll}>
+            Delete All Students
+          </button>
+          <button className="btn btn-primary" onClick={() => { setEditing(null); setFormData({ usn: "", name: "", email: "", branch: "CS", password: "" }); setShowModal(true); }}>
+            + Add Student (DEBUG-V3)
+          </button>
+        </div>
       </div>
 
       {loading ? (

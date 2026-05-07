@@ -36,8 +36,10 @@
 
 .header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   background: var(--bg-card);
   padding: 16px 24px;
   border-radius: var(--radius-lg);

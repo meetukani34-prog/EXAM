@@ -294,6 +294,10 @@ export async function deleteAdminStudent(id: string): Promise<void> {
   await adminFetch(`/admin/students/${id}`, { method: "DELETE" });
 }
 
+export async function deleteAllAdminStudents(): Promise<void> {
+  await adminFetch(`/admin/students-all`, { method: "DELETE" });
+}
+
 export async function resetAdminStudent(id: string): Promise<void> {
   await adminFetch(`/admin/students/${id}/reset`, { method: "POST" });
 }

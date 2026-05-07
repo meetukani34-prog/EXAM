@@ -261,6 +261,12 @@ async def delete_student(student_id: str, _: bool = Depends(verify_admin)):
     db.table("students").delete().eq("id", student_id).execute()
     return {"deleted": True}
 
+@router.delete("/students-all")
+async def delete_all_students(_: bool = Depends(verify_admin)):
+    db = get_supabase()
+    db.table("students").delete().neq("id", "dummy").execute()
+    return {"deleted_all": True}
+
 @router.post("/students/{student_id}/reset")
 async def reset_student_exam(student_id: str, _: bool = Depends(verify_admin)):
     """Reset a student's exam so they can retake it."""
