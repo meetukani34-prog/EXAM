@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isBranchOpen, setIsBranchOpen] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
+  const [modalType, setModalType] = useState<"recovery" | "support">("recovery");
   const [helpUsn, setHelpUsn] = useState("");
   const [helpProblem, setHelpProblem] = useState("");
   const [isHelpSubmitted, setIsHelpSubmitted] = useState(false);
@@ -85,7 +86,10 @@ export default function LoginPage() {
       {/* Top Right Help Button */}
       <button 
         className={styles.helpBtn}
-        onClick={() => setShowForgotModal(true)}
+        onClick={() => {
+          setModalType("support");
+          setShowForgotModal(true);
+        }}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -235,6 +239,7 @@ export default function LoginPage() {
               if (isRegistering) {
                 setIsRegistering(false);
               } else {
+                setModalType("recovery");
                 setShowForgotModal(true);
               }
             }}
@@ -283,7 +288,7 @@ export default function LoginPage() {
                     Close
                   </button>
                 </>
-              ) : (
+              ) : modalType === "recovery" ? (
                 <>
                   <svg className={styles.crest} viewBox="0 0 24 24" fill="currentColor" style={{ width: 40, height: 40, marginBottom: 12 }}>
                     <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.67-3.13 8.75-7 9.81-3.87-1.06-7-5.14-7-9.81V6.3l7-3.12z" />
@@ -323,6 +328,78 @@ export default function LoginPage() {
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
                       Multi-Factor
                     </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ 
+                    width: 60, height: 60, borderRadius: '50%', border: '3px solid #f59e0b', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#f59e0b' 
+                  }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                  </div>
+                  <h2 className={styles.modalTitle}>Campus Support</h2>
+                  <p className={styles.modalText} style={{ marginBottom: '24px', fontSize: 14 }}>
+                    Describe your issue and an administrator will assist you shortly.
+                  </p>
+                  
+                  <div className={styles.form} style={{ gap: '12px' }}>
+                    <div className={styles.inputWrap}>
+                      <input
+                        type="text"
+                        className={styles.inputField}
+                        placeholder="USN No / Email ID"
+                        value={helpUsn}
+                        onChange={(e) => setHelpUsn(e.target.value)}
+                        style={{ paddingLeft: '16px' }}
+                      />
+                    </div>
+                    <div className={styles.inputWrap}>
+                      <textarea
+                        className={styles.inputField}
+                        placeholder="Describe your problem..."
+                        value={helpProblem}
+                        onChange={(e) => setHelpProblem(e.target.value)}
+                        style={{ paddingLeft: '16px', minHeight: '100px', resize: 'none', paddingTop: '12px' }}
+                      />
+                    </div>
+                    <button 
+                      className={styles.submitBtn} 
+                      style={{ 
+                        marginTop: '10px',
+                        background: 'linear-gradient(135deg, #d4af37 0%, #c2a16d 100%)',
+                        color: '#1e1b4b',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: 1
+                      }}
+                      disabled={loading}
+                      onClick={async () => {
+                        if (!helpUsn.trim() || !helpProblem.trim()) return;
+                        setLoading(true);
+                        try {
+                          await submitSupportRequest(helpUsn.trim(), helpProblem.trim());
+                          setIsHelpSubmitted(true);
+                          setHelpUsn("");
+                          setHelpProblem("");
+                        } catch (err: any) {
+                          alert("Failed to send request: " + err.message);
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                    >
+                      {loading ? "Sending..." : "Submit Request"}
+                    </button>
+                    <button 
+                      className={styles.link} 
+                      style={{ marginTop: '10px', background: 'none', border: 'none', color: '#94a3b8', fontSize: 13 }}
+                      onClick={() => setShowForgotModal(false)}
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </>
               )}
