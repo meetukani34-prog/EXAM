@@ -67,12 +67,17 @@ async def get_all_questions(_: bool = Depends(verify_admin)):
 async def create_question(request: QuestionCreate, _: bool = Depends(verify_admin)):
     try:
         db = get_supabase()
-        data = request.model_dump()
-        result = db.table("questions").insert(data).execute()
+        # ── Dynamic Schema Discovery ──
+        probe = db.table("questions").select("*").limit(1).execute()
+        db_columns = list(probe.data[0].keys()) if (probe.data and len(probe.data) > 0) else [
+            "text", "options", "branch", "correct_answer", "marks", "order_index", "exam_name"
+        ]
+        full_data = request.model_dump()
+        data = {k: v for k, v in full_data.items() if k in db_columns}
 
+        result = db.table("questions").insert(data).execute()
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to insert question - no data returned")
-
         return result.data[0]
     except Exception as e:
         print(f"CRITICAL create_question: {e}")
@@ -82,12 +87,17 @@ async def create_question(request: QuestionCreate, _: bool = Depends(verify_admi
 async def update_question(question_id: str, request: QuestionUpdate, _: bool = Depends(verify_admin)):
     try:
         db = get_supabase()
-        update_data = {k: v for k, v in request.model_dump().items() if v is not None}
-        result = db.table("questions").update(update_data).eq("id", question_id).execute()
+        # ── Dynamic Schema Discovery ──
+        probe = db.table("questions").select("*").limit(1).execute()
+        db_columns = list(probe.data[0].keys()) if (probe.data and len(probe.data) > 0) else [
+            "text", "options", "branch", "correct_answer", "marks", "order_index", "exam_name"
+        ]
+        full_update_data = {k: v for k, v in request.model_dump().items() if v is not None}
+        update_data = {k: v for k, v in full_update_data.items() if k in db_columns}
 
+        result = db.table("questions").update(update_data).eq("id", question_id).execute()
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to update question - no data returned")
-
         return result.data[0]
     except Exception as e:
         print(f"CRITICAL update_question: {e}")

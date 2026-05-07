@@ -925,14 +925,20 @@ function QuestionsTab() {
   }
 
   const branchFiltered = selectedBranch === "All" ? questions : questions.filter((q) => q.branch === selectedBranch);
-  const filteredQuestions = selectedCategory === "all" ? branchFiltered : branchFiltered.filter(q => getCategory(q.exam_name || "") === selectedCategory);
+  
+  // New: prefer q.category, fallback to inference
+  const getQCategory = (q: AdminQuestion) => q.category || getCategory(q.exam_name || "");
+
+  const filteredQuestions = selectedCategory === "all" 
+    ? branchFiltered 
+    : branchFiltered.filter(q => getQCategory(q) === selectedCategory);
 
   // Category counts
   const catCounts = {
     all: branchFiltered.length,
-    aptitude: branchFiltered.filter(q => getCategory(q.exam_name || "") === "aptitude").length,
-    programming: branchFiltered.filter(q => getCategory(q.exam_name || "") === "programming").length,
-    other: branchFiltered.filter(q => getCategory(q.exam_name || "") === "other").length,
+    aptitude: branchFiltered.filter(q => getQCategory(q) === "aptitude").length,
+    programming: branchFiltered.filter(q => getQCategory(q) === "programming").length,
+    other: branchFiltered.filter(q => getQCategory(q) === "other").length,
   };
 
   // Group by exam_name and branch

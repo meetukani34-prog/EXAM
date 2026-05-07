@@ -700,6 +700,7 @@ async def commit_questions(
             "order_index": q.order_index if q.order_index > 0 else i,
             "exam_name": safe_exam_name,
             "image_url": q.image_url,
+            "category": getattr(q, "category", "other") or "other",
         }
         # Filter: ONLY keep fields that actually exist in the DB columns
         safe_row = {k: v for k, v in full_row.items() if k in db_columns}
