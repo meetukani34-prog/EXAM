@@ -20,6 +20,9 @@ export default function LoginPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isBranchOpen, setIsBranchOpen] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
+  const [helpUsn, setHelpUsn] = useState("");
+  const [helpProblem, setHelpProblem] = useState("");
+  const [isHelpSubmitted, setIsHelpSubmitted] = useState(false);
 
   useEffect(() => {
     router.prefetch("/dashboard");
@@ -249,19 +252,74 @@ export default function LoginPage() {
               className={styles.modal}
               onClick={(e) => e.stopPropagation()}
             >
-              <svg className={styles.modalIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-              </svg>
-              <h2 className={styles.modalTitle}>Password Recovery</h2>
-              <p className={styles.modalText}>
-                Please contact the **Admin or Faculty** to reset your password or recover your account details.
-              </p>
-              <button 
-                className={styles.modalCloseBtn}
-                onClick={() => setShowForgotModal(false)}
-              >
-                Understood
-              </button>
+              {isHelpSubmitted ? (
+                <>
+                  <svg className={styles.modalIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#10b981' }}>
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  <h2 className={styles.modalTitle}>Request Sent</h2>
+                  <p className={styles.modalText}>
+                    Your help request has been submitted. Please wait for a faculty member or administrator to reach out to you.
+                  </p>
+                  <button 
+                    className={styles.modalCloseBtn}
+                    onClick={() => {
+                      setShowForgotModal(false);
+                      setIsHelpSubmitted(false);
+                    }}
+                  >
+                    Close
+                  </button>
+                </>
+              ) : (
+                <>
+                  <svg className={styles.modalIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                  </svg>
+                  <h2 className={styles.modalTitle}>Campus Support</h2>
+                  <p className={styles.modalText} style={{ marginBottom: '20px' }}>
+                    Describe your issue and an administrator will assist you shortly.
+                  </p>
+                  
+                  <div className={styles.form} style={{ gap: '12px' }}>
+                    <div className={styles.inputWrap}>
+                      <input
+                        type="text"
+                        className={styles.inputField}
+                        placeholder="USN No / Email ID"
+                        value={helpUsn}
+                        onChange={(e) => setHelpUsn(e.target.value)}
+                        style={{ paddingLeft: '16px' }}
+                      />
+                    </div>
+                    <div className={styles.inputWrap}>
+                      <textarea
+                        className={styles.inputField}
+                        placeholder="Describe your problem..."
+                        value={helpProblem}
+                        onChange={(e) => setHelpProblem(e.target.value)}
+                        style={{ paddingLeft: '16px', minHeight: '100px', resize: 'none', paddingTop: '12px' }}
+                      />
+                    </div>
+                    <button 
+                      className={styles.submitBtn} 
+                      style={{ marginTop: '10px' }}
+                      onClick={() => {
+                        if (helpUsn && helpProblem) setIsHelpSubmitted(true);
+                      }}
+                    >
+                      Submit Request
+                    </button>
+                    <button 
+                      className={styles.link} 
+                      style={{ marginTop: '5px', background: 'none', border: 'none' }}
+                      onClick={() => setShowForgotModal(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}
