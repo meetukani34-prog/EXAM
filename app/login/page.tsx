@@ -13,8 +13,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [branch, setBranch] = useState("CS");
-  
+  const [branch, setBranch] = useState("DS");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    
+
     if (!usn.trim() || !password.trim()) {
       setError("Credentials required to access the hub.");
       return;
@@ -78,13 +78,13 @@ export default function LoginPage() {
       <div className={styles.bgImage} />
       <div className={styles.overlay} />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         className={styles.card}
       >
         <svg className={styles.crest} viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.67-3.13 8.75-7 9.81-3.87-1.06-7-5.14-7-9.81V6.3l7-3.12z"/>
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.67-3.13 8.75-7 9.81-3.87-1.06-7-5.14-7-9.81V6.3l7-3.12z" />
         </svg>
 
         <div className={styles.titleMain}>Campus Nexus</div>
@@ -93,12 +93,12 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.inputWrap}>
             <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
             </svg>
             <input
               type="text"
               className={styles.inputField}
-              placeholder="Email ID / USN No"
+              placeholder={isRegistering ? "USN No" : "Email ID / USN No"}
               value={usn}
               onChange={(e) => setUsn(e.target.value)}
               disabled={loading}
@@ -109,7 +109,7 @@ export default function LoginPage() {
 
           <div className={styles.inputWrap}>
             <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
             <input
               type="password"
@@ -125,7 +125,7 @@ export default function LoginPage() {
 
           <AnimatePresence>
             {isRegistering && (
-              <motion.div 
+              <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -134,7 +134,7 @@ export default function LoginPage() {
               >
                 <div className={styles.inputWrap}>
                   <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                   </svg>
                   <input
                     type="text"
@@ -148,7 +148,7 @@ export default function LoginPage() {
                 </div>
                 <div className={styles.inputWrap}>
                   <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
                   </svg>
                   <input
                     type="email"
@@ -160,14 +160,14 @@ export default function LoginPage() {
                     spellCheck="false"
                   />
                 </div>
-                
+
                 {/* Custom Branch Selection */}
                 <div className={styles.selectWrapper}>
                   <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                   </svg>
-                  <div 
-                    className={styles.selectTrigger} 
+                  <div
+                    className={styles.selectTrigger}
                     onClick={() => setIsBranchOpen(!isBranchOpen)}
                   >
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -175,18 +175,18 @@ export default function LoginPage() {
                     </span>
                     <span style={{ fontSize: '10px', opacity: 0.5 }}>{isBranchOpen ? "▲" : "▼"}</span>
                   </div>
-                  
+
                   <AnimatePresence>
                     {isBranchOpen && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className={styles.selectOptions}
                       >
                         {BRANCHES.map(b => (
-                          <div 
-                            key={b.id} 
+                          <div
+                            key={b.id}
                             className={styles.selectOption}
                             onClick={() => {
                               setBranch(b.id);
@@ -207,7 +207,7 @@ export default function LoginPage() {
           {error && <div className={styles.error}>{error}</div>}
 
           <button type="submit" className={styles.submitBtn} disabled={loading}>
-            {loading ? "Verifying..." : "Secure Login"}
+            {loading ? "Verifying..." : isRegistering ? "Secure Sign In" : "Secure Login"}
           </button>
         </form>
 
