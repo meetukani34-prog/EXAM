@@ -167,9 +167,32 @@ export default function DashboardPage() {
       id: "home",
       label: "Home",
       icon: (
-        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      ),
+    },
+    {
+      id: "aptitude" as any,
+      label: "Aptitude Test",
+      icon: (
+        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+      ),
+    },
+    {
+      id: "programming" as any,
+      label: "Programming",
+      icon: (
+        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="16 18 22 12 16 6" />
+          <polyline points="8 6 2 12 8 18" />
         </svg>
       ),
     },
@@ -177,9 +200,30 @@ export default function DashboardPage() {
       id: "profile",
       label: "Profile",
       icon: (
-        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
+        </svg>
+      ),
+    },
+    {
+      id: "learning" as any,
+      label: "Learning Path",
+      icon: (
+        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+          <path d="M6 12v5c3 3 9 3 12 0v-5" />
+        </svg>
+      ),
+    },
+    {
+      id: "insights" as any,
+      label: "Skills Insights",
+      icon: (
+        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
         </svg>
       ),
     },
@@ -204,16 +248,28 @@ export default function DashboardPage() {
         <div className={styles.topNavRight}>
           {student && (
             <div className={styles.userInfo}>
-              <div className={styles.userName}>{student.name}</div>
-              <div className={styles.userRole}>Candidate</div>
+              <div style={{ textAlign: 'right' }}>
+                <div className={styles.userName}>{student.name}</div>
+                <div className={styles.userRole}>Candidate</div>
+              </div>
+              {student.avatarUrl ? (
+                <img src={student.avatarUrl} alt="" className={styles.userAvatarMini} />
+              ) : (
+                <div className={styles.userAvatarMini} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                  </svg>
+                </div>
+              )}
             </div>
           )}
+          <div className={styles.notificationBell} style={{ position: 'relative', cursor: 'pointer' }}>
+             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+             </svg>
+             <span style={{ position: 'absolute', top: -2, right: -2, background: '#ef4444', color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 4px', borderRadius: 10, border: '2px solid #fff' }}>3</span>
+          </div>
           <button className={styles.logoutBtn} onClick={handleLogout}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
             Logout
           </button>
         </div>
@@ -276,7 +332,15 @@ function HomeTab({
       <h1 className={styles.pageTitle}>Upcoming Exams</h1>
       <p className={styles.pageSubtitle}>View your scheduled assessments</p>
 
-      {exams.length === 0 ? (
+      {exams.length > 0 && (
+        <div className={styles.examsSection}>
+          {exams.map(exam => (
+            <ExamCard key={exam.id} exam={exam} onLaunch={onLaunch} />
+          ))}
+        </div>
+      )}
+
+      {exams.length === 0 && !loading && (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>📋</div>
           <div className={styles.emptyTitle}>No exams available</div>
@@ -284,11 +348,34 @@ function HomeTab({
             There are no scheduled exams for your branch right now. Check back later.
           </div>
         </div>
-      ) : (
-        exams.map(exam => (
-          <ExamCard key={exam.id} exam={exam} onLaunch={onLaunch} />
-        ))
       )}
+
+      <h2 className={styles.pageTitle} style={{ marginTop: 60, fontSize: 22 }}>Quick Insights</h2>
+      <div className={styles.insightsGrid}>
+        <div className={styles.insightCard}>
+          <div className={styles.insightLabel}>Completed Exams</div>
+          <div className={styles.insightValue}>8</div>
+          <svg className={styles.sparkline} viewBox="0 0 100 40">
+            <path d="M0 35 L10 32 L20 38 L30 25 L40 28 L50 15 L60 22 L70 5 L80 12 L90 8 L100 15" stroke="var(--portal-primary)" />
+          </svg>
+        </div>
+        <div className={styles.insightCard}>
+          <div className={styles.insightLabel}>Skill Score</div>
+          <div className={styles.insightValue}>85th Percentile</div>
+          <div style={{ height: 40, display: 'flex', alignItems: 'flex-end', gap: 4 }}>
+             <div style={{ flex: 1, height: '40%', background: 'rgba(79,70,229,0.1)', borderRadius: 2 }} />
+             <div style={{ flex: 1, height: '60%', background: 'rgba(79,70,229,0.2)', borderRadius: 2 }} />
+             <div style={{ flex: 1, height: '45%', background: 'rgba(79,70,229,0.1)', borderRadius: 2 }} />
+             <div style={{ flex: 1, height: '85%', background: 'var(--portal-primary)', borderRadius: 2 }} />
+             <div style={{ flex: 1, height: '70%', background: 'rgba(79,70,229,0.3)', borderRadius: 2 }} />
+          </div>
+        </div>
+        <div className={styles.insightCard}>
+          <div className={styles.insightLabel}>Next Milestone</div>
+          <div className={styles.insightValue}>Programming II</div>
+          <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>In 4 days</div>
+        </div>
+      </div>
     </>
   );
 }
@@ -323,7 +410,7 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
 
       <div className={styles.examMeta}>
         <div className={styles.examMetaItem}>
-          <svg className={styles.examMetaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg className={styles.examMetaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
             <line x1="16" y1="2" x2="16" y2="6" />
             <line x1="8" y1="2" x2="8" y2="6" />
@@ -332,27 +419,34 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
           {scheduledDate}
         </div>
         <div className={styles.examMetaItem}>
-          <svg className={styles.examMetaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg className={styles.examMetaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
           {scheduledTime} • {exam.duration_minutes} min
         </div>
-        <div className={styles.examMetaItem}>
-          <svg className={styles.examMetaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-          </svg>
-          {exam.branch} • {exam.question_count ?? "—"} questions
-        </div>
       </div>
 
-      <button
-        className={`${styles.startExamBtn} ${!exam.is_active ? styles.startExamBtnDisabled : ""}`}
-        onClick={() => onLaunch(exam)}
-        disabled={!exam.is_active}
-      >
-        {exam.is_active ? "Start Exam" : "🔒 Locked"}
-      </button>
+      <div className={styles.progressContainer}>
+        <div 
+          className={styles.progressBar} 
+          style={{ width: exam.is_active ? '40%' : '0%' }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+         <button
+          className={styles.startExamBtn}
+          style={{ width: '120px' }}
+          onClick={() => onLaunch(exam)}
+          disabled={!exam.is_active}
+        >
+          {exam.is_active ? "Start Exam" : "Locked"}
+        </button>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>
+           Starts in 2D 14H
+        </div>
+      </div>
     </div>
   );
 }
