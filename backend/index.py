@@ -58,31 +58,23 @@ try:
     @app.get("/api/health")
     @app.get("/health")
     async def health_check():
-        return {"status": "ok", "version": "1.0.1-stable", "timestamp": datetime.now(timezone.utc).isoformat()}
+        return {"status": "ok", "version": "1.0.2-stable", "timestamp": datetime.now(timezone.utc).isoformat()}
 
-    @app.get("/api")
+    @app.get("/api/status")
     async def root_api():
-        return {"message": "ExamGuard API Active", "version": "1.0.1-stable"}
+        return {"message": "ExamGuard API Active", "version": "1.0.2-stable"}
 
     # ── Routers ───────────────────────────────────────────────────
     # We mount routers twice (with and without /api prefix) to ensure 
     # compatibility with different Vercel rewrite behaviors.
     
-    # 1. With /api prefix (for standard rewrites)
+    # 1. Standard /api prefixed routes
     app.include_router(auth.router,        prefix="/api")
     app.include_router(exam.router,        prefix="/api")
     app.include_router(violations.router,  prefix="/api")
     app.include_router(admin.router,       prefix="/api")
     app.include_router(ingest.router,      prefix="/api")
     app.include_router(leaderboard.router, prefix="/api")
-
-    # 2. Without /api prefix (fallback for relative path passing)
-    app.include_router(auth.router)
-    app.include_router(exam.router)
-    app.include_router(violations.router)
-    app.include_router(admin.router)
-    app.include_router(ingest.router)
-    app.include_router(leaderboard.router)
 
     # ── Cron Endpoint ──────────────────────────────────────────────
     @app.get("/api/cron/evict", tags=["cron"])
@@ -107,7 +99,6 @@ try:
             return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
 
     # ── Root ──────────────────────────────────────────────────────
-    @app.get("/api", tags=["root"])
     @app.get("/", tags=["root"])
     async def root():
         return {"message": "ExamGuard API — Online Exam System", "docs": "/api/docs"}
