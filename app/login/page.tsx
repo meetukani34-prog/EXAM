@@ -115,7 +115,7 @@ export default function LoginPage() {
               className={styles.inputField}
               placeholder={isRegistering ? "USN No" : "Email ID / USN No"}
               value={usn}
-              onChange={(e) => setUsn(e.target.value)}
+              onChange={(e) => setUsn(e.target.value.toUpperCase())}
               disabled={loading}
               spellCheck="false"
               required
@@ -288,7 +288,7 @@ export default function LoginPage() {
                         className={styles.inputField}
                         placeholder="USN No / Email ID"
                         value={helpUsn}
-                        onChange={(e) => setHelpUsn(e.target.value)}
+                        onChange={(e) => setHelpUsn(e.target.value.toUpperCase())}
                         style={{ paddingLeft: '16px' }}
                       />
                     </div>
