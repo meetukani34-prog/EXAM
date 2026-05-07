@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { fetchQuestions, submitExam, fetchPublicExamConfig, type Question, type SubmitResponse } from "@/lib/api";
+import { fetchQuestions, submitExam, fetchPublicExamConfig, heartbeat, saveAnswer, type Question, type SubmitResponse } from "@/lib/api";
 import { useExamState, clearExamStorage } from "@/hooks/useExamState";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -137,6 +137,14 @@ export default function ExamPage() {
     const id = setInterval(checkConfig, 15_000);
     return () => clearInterval(id);
   }, [examTitle]);
+
+  // ── Heartbeat (Block Lockdown) ────────────────────────────
+  useEffect(() => {
+    const pulse = () => heartbeat().catch(() => {});
+    pulse(); // Immediate check
+    const id = setInterval(pulse, 30_000); // Check every 30s
+    return () => clearInterval(id);
+  }, []);
 
   // ── Handle answer select (with save indicator) ────────────
   const handleSelect = useCallback(
@@ -525,7 +533,10 @@ export default function ExamPage() {
                       boxShadow: "0 4px 14px rgba(13,148,136,0.3)",
                       transition: "all 0.3s ease",
                     }}
-                    onClick={() => setActiveQuestionIndex((prev) => Math.min(questions.length - 1, prev + 1))}
+                    onClick={async () => {
+                      await flush(); // Instant save when moving forward
+                      setActiveQuestionIndex((prev) => Math.min(questions.length - 1, prev + 1));
+                    }}
                   >
                     Save &amp; Next
                   </button>

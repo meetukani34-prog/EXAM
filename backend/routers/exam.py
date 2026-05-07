@@ -11,6 +11,11 @@ from core.security import get_current_student
 from db.supabase_client import get_supabase
 
 router = APIRouter(prefix="/exam", tags=["exam"])
+@router.post("/heartbeat")
+async def heartbeat(current: dict = Depends(get_current_student)):
+    """Simple authenticated ping to check if student is blocked/authorized."""
+    return {"status": "ok"}
+
 
 
 def _check_exam_active(title: str):

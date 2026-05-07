@@ -141,6 +141,11 @@ export async function startExam(title: string): Promise<{ started_at: string }> 
   });
 }
 
+export async function heartbeat(): Promise<void> {
+  await apiFetch("/exam/heartbeat", { method: "POST" });
+}
+
+
 // ── Violations ────────────────────────────────────────────────
 export interface ViolationResponse {
   warning_count: number;

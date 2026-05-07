@@ -92,8 +92,8 @@ async def get_current_student(
         res = db.table("students").select("is_blocked").eq("id", student_id).execute()
         if res.data and res.data[0].get("is_blocked"):
              raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Your account has been blocked by the administrator.",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Your account has been blocked by the administrator. You cannot attend the exam.",
             )
     except HTTPException:
         raise
