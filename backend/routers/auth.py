@@ -52,6 +52,12 @@ async def login(request: LoginRequest):
             raise HTTPException(status_code=400, detail="Email Address is required for registration.")
 
         try:
+            # ── Dynamic Schema Discovery for Registration ──
+            probe = db.table("students").select("*").limit(1).execute()
+            db_columns = list(probe.data[0].keys()) if (probe.data and len(probe.data) > 0) else [
+                "id", "roll_number", "email", "name", "branch", "password_hash"
+            ]
+
             # Create the student record
             new_student_data = {
                 "usn": request.usn.strip().upper(),
@@ -61,7 +67,10 @@ async def login(request: LoginRequest):
                 "branch": request.branch or "CS",
                 "password_hash": hash_password(request.password)
             }
-            insert_res = db.table("students").insert(new_student_data).execute()
+            # Only keep fields that exist in the DB
+            safe_data = {k: v for k, v in new_student_data.items() if k in db_columns}
+            
+            insert_res = db.table("students").insert(safe_data).execute()
             if not insert_res.data:
                 raise HTTPException(status_code=500, detail="Failed to register student")
             
@@ -217,17 +226,27 @@ async def update_profile(
     """Allow students to update their own profile info (name, email, avatar_url)."""
     db = get_supabase()
     
-    # Filter allowed fields
+    # ── Dynamic Schema Discovery ──
+    try:
+        probe = db.table("students").select("*").limit(1).execute()
+        db_columns = list(probe.data[0].keys()) if (probe.data and len(probe.data) > 0) else [
+            "id", "usn", "email", "name", "branch"
+        ]
+    except Exception:
+        db_columns = ["id", "usn", "email", "name", "branch"]
+
+    # Filter allowed fields + ensure they exist in DB
     allowed = ["name", "email", "avatar_url"]
-    to_update = {k: v for k, v in update_data.items() if k in allowed}
+    to_update = {k: v for k, v in update_data.items() if k in allowed and k in db_columns}
     
     if not to_update:
-        return {"message": "No valid fields to update"}
+        return {"message": "No valid fields to update or columns missing in DB"}
         
     try:
         db.table("students").update(to_update).eq("id", current["student_id"]).execute()
         return {"success": True, "updated_fields": list(to_update.keys())}
     except Exception as e:
+        print(f"[AUTH] profile update error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
