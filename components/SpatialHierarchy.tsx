@@ -87,12 +87,26 @@ const MOCK_HIERARCHY: SpatialNode[] = [
 // ── Components ─────────────────────────────────────────────────
 
 export default function SpatialHierarchy({ onLaunchExam }: { onLaunchExam: (exam: any) => void }) {
-  const [currentPath, setCurrentPath] = useState<SpatialNode[]>([]);
+  const [hierarchy, setHierarchy] = useState<SpatialNode[]>(MOCK_HIERARCHY);
+  const [currentPathIds, setCurrentPathIds] = useState<string[]>([]);
   
+  const currentPathNodes = useMemo(() => {
+    let nodes: SpatialNode[] = [];
+    let currentLevel = hierarchy;
+    for (const id of currentPathIds) {
+        const node = currentLevel.find(n => n.id === id);
+        if (node) {
+            nodes.push(node);
+            currentLevel = node.children || [];
+        }
+    }
+    return nodes;
+  }, [hierarchy, currentPathIds]);
+
   // Navigate into a folder
   const handleEnterNode = (node: SpatialNode) => {
     if (node.type === "folder") {
-      setCurrentPath((prev) => [...prev, node]);
+      setCurrentPathIds((prev) => [...prev, node.id]);
     } else {
       onLaunchExam(node);
     }
@@ -101,28 +115,80 @@ export default function SpatialHierarchy({ onLaunchExam }: { onLaunchExam: (exam
   // Navigate back to a specific level
   const handleNavigateTo = (index: number) => {
     if (index === -1) {
-      setCurrentPath([]);
+      setCurrentPathIds([]);
     } else {
-      setCurrentPath((prev) => prev.slice(0, index + 1));
+      setCurrentPathIds((prev) => prev.slice(0, index + 1));
     }
   };
 
   // Current view nodes
   const currentNodes = useMemo(() => {
-    if (currentPath.length === 0) return MOCK_HIERARCHY;
-    return currentPath[currentPath.length - 1].children || [];
-  }, [currentPath]);
+    if (currentPathNodes.length === 0) return hierarchy;
+    return currentPathNodes[currentPathNodes.length - 1].children || [];
+  }, [hierarchy, currentPathNodes]);
+
+  const handleAddFolder = () => {
+    const folderName = prompt("Enter folder name:") || "New Folder";
+    const newFolder: SpatialNode = {
+      id: `f-${Date.now()}`,
+      name: folderName,
+      type: "folder",
+      depth: currentPathIds.length,
+      children: [],
+    };
+
+    if (currentPathIds.length === 0) {
+      setHierarchy([...hierarchy, newFolder]);
+    } else {
+      const updateHierarchy = (nodes: SpatialNode[], pathIndex: number): SpatialNode[] => {
+        if (pathIndex === currentPathIds.length) return nodes;
+        return nodes.map(node => {
+          if (node.id === currentPathIds[pathIndex]) {
+            if (pathIndex === currentPathIds.length - 1) {
+              return { ...node, children: [...(node.children || []), newFolder] };
+            }
+            return { ...node, children: updateHierarchy(node.children || [], pathIndex + 1) };
+          }
+          return node;
+        });
+      };
+      setHierarchy(updateHierarchy(hierarchy, 0));
+    }
+  };
 
   return (
     <div style={{ position: "relative", minHeight: "60vh", width: "100%" }}>
-      {/* 1. Luminous Path-Trace (Breadcrumbs) */}
-      <LuminousBreadcrumbs path={currentPath} onNavigate={handleNavigateTo} />
+      {/* 1. Luminous Path-Trace (Breadcrumbs) & Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingRight: "20px", zIndex: 20, position: "relative" }}>
+        <LuminousBreadcrumbs path={currentPathNodes} onNavigate={handleNavigateTo} />
+        
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleAddFolder}
+          style={{
+            padding: "10px 20px",
+            background: "linear-gradient(135deg, rgba(99,102,241,0.2), rgba(6,182,212,0.2))",
+            border: "1px solid rgba(99,102,241,0.4)",
+            borderRadius: "12px",
+            color: "#fff",
+            cursor: "pointer",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            backdropFilter: "blur(10px)"
+          }}
+        >
+          <span>+</span> New Folder
+        </motion.button>
+      </div>
 
       {/* 2. Spatial Node Container */}
       <div style={{ padding: "40px 0" }}>
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentPath.length > 0 ? currentPath[currentPath.length - 1].id : "root"}
+            key={currentPathIds.length > 0 ? currentPathIds[currentPathIds.length - 1] : "root"}
             initial="initial"
             animate="animate"
             exit="exit"
@@ -139,7 +205,7 @@ export default function SpatialHierarchy({ onLaunchExam }: { onLaunchExam: (exam
                 key={node.id}
                 node={node}
                 onClick={() => handleEnterNode(node)}
-                depth={currentPath.length}
+                depth={currentPathIds.length}
               />
             ))}
           </motion.div>
