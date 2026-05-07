@@ -285,62 +285,44 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  <svg className={styles.modalIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                  <svg className={styles.crest} viewBox="0 0 24 24" fill="currentColor" style={{ width: 40, height: 40, marginBottom: 12 }}>
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.67-3.13 8.75-7 9.81-3.87-1.06-7-5.14-7-9.81V6.3l7-3.12z" />
                   </svg>
-                  <h2 className={styles.modalTitle}>Campus Support</h2>
-                  <p className={styles.modalText} style={{ marginBottom: '20px' }}>
-                    Describe your issue and an administrator will assist you shortly.
+                  <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 2, color: '#94a3b8', marginBottom: 4 }}>
+                    Campus Nexus:
+                  </div>
+                  <h2 className={styles.modalTitle} style={{ fontSize: 32, marginBottom: 4 }}>Recovery</h2>
+                  <p style={{ fontSize: 13, color: '#64748b', marginBottom: 24, fontWeight: 500 }}>
+                    Secure Academic Intelligence Framework
+                  </p>
+
+                  <p className={styles.modalText} style={{ fontSize: 16, lineHeight: 1.6, color: '#cbd5e1', marginBottom: 32 }}>
+                    Please contact the <strong style={{ color: '#fff' }}>Admin or Faculty</strong> to reset your password or recover your account details.
                   </p>
                   
-                  <div className={styles.form} style={{ gap: '12px' }}>
-                    <div className={styles.inputWrap}>
-                      <input
-                        type="text"
-                        className={styles.inputField}
-                        placeholder="USN No / Email ID"
-                        value={helpUsn}
-                        onChange={(e) => setHelpUsn(e.target.value)} // Keep mixed case for help modal as it allows Email
-                        style={{ paddingLeft: '16px' }}
-                      />
+                  <button 
+                    className={styles.submitBtn} 
+                    style={{ 
+                      textTransform: 'uppercase', 
+                      letterSpacing: 2,
+                      background: 'linear-gradient(135deg, #d4af37 0%, #c2a16d 100%)',
+                      color: '#1e1b4b',
+                      fontWeight: 800
+                    }}
+                    onClick={() => setShowForgotModal(false)}
+                  >
+                    Understood
+                  </button>
+
+                  <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 24, fontSize: 11, fontWeight: 700, color: '#64748b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
+                      Secure Node
                     </div>
-                    <div className={styles.inputWrap}>
-                      <textarea
-                        className={styles.inputField}
-                        placeholder="Describe your problem..."
-                        value={helpProblem}
-                        onChange={(e) => setHelpProblem(e.target.value)}
-                        style={{ paddingLeft: '16px', minHeight: '100px', resize: 'none', paddingTop: '12px' }}
-                      />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
+                      Multi-Factor
                     </div>
-                    <button 
-                      className={styles.submitBtn} 
-                      style={{ marginTop: '10px' }}
-                      disabled={loading}
-                      onClick={async () => {
-                        if (!helpUsn.trim() || !helpProblem.trim()) return;
-                        setLoading(true);
-                        try {
-                          await submitSupportRequest(helpUsn.trim(), helpProblem.trim());
-                          setIsHelpSubmitted(true);
-                          setHelpUsn("");
-                          setHelpProblem("");
-                        } catch (err: any) {
-                          alert("Failed to send request: " + err.message);
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                    >
-                      {loading ? "Sending..." : "Submit Request"}
-                    </button>
-                    <button 
-                      className={styles.link} 
-                      style={{ marginTop: '5px', background: 'none', border: 'none' }}
-                      onClick={() => setShowForgotModal(false)}
-                    >
-                      Back to Login
-                    </button>
                   </div>
                 </>
               )}
