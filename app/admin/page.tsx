@@ -1271,6 +1271,27 @@ function QuestionsTab() {
                   {ALL_BRANCH_DATA.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </div>
+              <div className={adminStyles.formGroup}>
+                <label>Category</label>
+                <select
+                  className={adminStyles.input}
+                  value={
+                    (() => {
+                      const n = (formData.exam_name || '').toLowerCase();
+                      if (n.includes('aptitude') || n.includes('quant') || n.includes('reasoning') || n.includes('logical') || n.includes('verbal') || n.includes('english') || n.includes('numerical')) return 'aptitude';
+                      if (n.includes('program') || n.includes('code') || n.includes('coding') || n.includes('dsa') || n.includes('algorithm') || n.includes('python') || n.includes('java')) return 'programming';
+                      return 'other';
+                    })()
+                  }
+                  disabled
+                  title="Category is auto-detected from the Exam Identity name"
+                  style={{ opacity: 0.7 }}
+                >
+                  <option value="aptitude">🧠 Aptitude</option>
+                  <option value="programming">💻 Programming</option>
+                  <option value="other">📂 Other</option>
+                </select>
+              </div>
             </div>
 
             <div className={adminStyles.formGroup} style={{ marginTop: 16 }}>

@@ -159,6 +159,7 @@ export default function IngestPage() {
   const [dragging, setDragging] = useState(false);
   const [replaceExisting, setReplaceExisting] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState("CS");
+  const [selectedCategory, setSelectedCategory] = useState("other");
   const [examName, setExamName] = useState("");
   const [maxQuestions, setMaxQuestions] = useState<number | "">("");
   const [showGatekeeperAlert, setShowGatekeeperAlert] = useState(false);
@@ -352,6 +353,20 @@ export default function IngestPage() {
             )}
           </div>
 
+          {/* Category Selector */}
+          <div className={styles.orbContainer} style={{ marginTop: 12 }}>
+            <label className={styles.orbLabel}>Category</label>
+            <select
+              className={`${styles.orbInput} ${styles.orbActive}`}
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="aptitude">🧠 Aptitude</option>
+              <option value="programming">💻 Programming</option>
+              <option value="other">📂 Other</option>
+            </select>
+          </div>
+
           {/* Question Count Orb */}
           <div className={styles.orbContainer} style={{ marginTop: 12 }}>
             <label className={styles.orbLabel}>Question Count (Optional)</label>
@@ -516,6 +531,9 @@ export default function IngestPage() {
                     Q{i + 1}
                     <span className="badge badge-neutral">{q.marks} mark{q.marks > 1 ? "s" : ""}</span>
                     <span className={styles.branchTag}>{selectedBranch}</span>
+                    <span className={styles.branchTag} style={{ background: selectedCategory === 'aptitude' ? 'rgba(139,92,246,0.1)' : selectedCategory === 'programming' ? 'rgba(59,130,246,0.1)' : 'rgba(107,114,128,0.1)', color: selectedCategory === 'aptitude' ? '#7c3aed' : selectedCategory === 'programming' ? '#2563eb' : '#6b7280' }}>
+                      {selectedCategory === 'aptitude' ? '🧠 Aptitude' : selectedCategory === 'programming' ? '💻 Programming' : '📂 Other'}
+                    </span>
                     {aiPowered && <ConfidenceOrb confidence={conf} />}
                   </div>
 
