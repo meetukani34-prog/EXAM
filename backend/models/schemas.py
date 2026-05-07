@@ -7,18 +7,18 @@ class LoginRequest(BaseModel):
     password: str
     name: Optional[str] = None
     email: Optional[str] = None
-    branch: Optional[str] = "CS"
+    branch: Optional[str] = None
 
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     student_id: str
     student_name: str
-    usn: str
+    usn: Optional[str] = None
     email: Optional[str] = None
-    branch: str
+    branch: str = "CS"
     exam_start_time: Optional[str] = None
-    exam_duration_minutes: Optional[int] = 20
+    exam_duration_minutes: int = 20
     exam_title: Optional[str] = "Initial Assessment"
     total_questions: int = 0
     avatar_url: Optional[str] = None
@@ -31,69 +31,125 @@ class ProfileUpdate(BaseModel):
     email: Optional[EmailStr] = None
     avatar_url: Optional[str] = None
 
-# ── Exam Session ──────────────────────────────────────────────
-class Option(BaseModel):
-    id: str
-    text: str
-
-class Question(BaseModel):
+# ── Questions ─────────────────────────────────────────────────
+class QuestionOut(BaseModel):
     id: str
     text: str
     options: List[str]
+    branch: str = "CS"
+    order_index: int
+    marks: int
+    exam_name: str = "Initial Assessment"
     image_url: Optional[str] = None
 
-class ExamSession(BaseModel):
-    questions: List[Question]
-    time_left: int
-    exam_title: str
-
-class SubmitAnswer(BaseModel):
-    question_id: str
-    selected_option: str  # "A", "B", "C", "D"
-
-class SubmissionResponse(BaseModel):
-    score: int
+class QuestionsResponse(BaseModel):
+    questions: List[QuestionOut]
     total: int
-    percentage: float
-    passed: bool
 
-# ── Monitoring & Status ──────────────────────────────────────
-class StudentStatus(BaseModel):
+# ── Answers ───────────────────────────────────────────────────
+class SaveAnswerRequest(BaseModel):
+    question_id: str
+    selected_option: str   # "A", "B", "C", or "D"
+
+class SaveAnswerResponse(BaseModel):
+    saved: bool
+    question_id: str
+
+# ── Submit ────────────────────────────────────────────────────
+class SubmitExamRequest(BaseModel):
+    answers: Dict[str, str]   # { "question_id": "A", ... }
+
+class SubmitExamResponse(BaseModel):
+    submitted: bool
+    score: int
+    total_marks: int
+    percentage: float
+    submitted_at: str
+
+class StartExamResponse(BaseModel):
+    started_at: str
+
+# ── Violations ────────────────────────────────────────────────
+class ReportViolationRequest(BaseModel):
+    type: str    # tab_switch | window_blur | fullscreen_exit | etc.
+    metadata: Optional[Dict[str, Any]] = {}
+
+class ReportViolationResponse(BaseModel):
+    warning_count: int
+    auto_submitted: bool
+    message: str
+
+# ── Admin Management ──────────────────────────────────────────
+class AdminQuestionOut(BaseModel):
     id: str
+    text: str
+    options: List[str]
+    branch: str = "CS"
+    correct_answer: str
+    marks: int
+    order_index: int
+    exam_name: str = "Initial Assessment"
+    image_url: Optional[str] = None
+
+class AdminQuestionsResponse(BaseModel):
+    questions: List[AdminQuestionOut]
+    total: int
+
+class QuestionCreate(BaseModel):
+    text: str
+    options: List[str]
+    branch: str
+    correct_answer: str
+    marks: int = 1
+    order_index: int
+    exam_name: str = "Initial Assessment"
+    image_url: Optional[str] = None
+
+class QuestionUpdate(BaseModel):
+    text: Optional[str] = None
+    options: Optional[List[str]] = None
+    branch: Optional[str] = None
+    correct_answer: Optional[str] = None
+    marks: Optional[int] = None
+    order_index: Optional[int] = None
+    exam_name: Optional[str] = None
+    image_url: Optional[str] = None
+
+class StudentCreate(BaseModel):
     usn: str
     name: str
+    email: Optional[str] = None
     branch: str
-    status: str  # "active", "submitted", "idle"
-    score: Optional[int] = None
-    violations: int = 0
+    password: str
+
+class StudentUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    branch: Optional[str] = None
+    password: Optional[str] = None
+    is_active_session: Optional[bool] = None
+
+class StudentStatus(BaseModel):
+    student_id: str
+    usn: str
+    name: str
+    email: Optional[str] = None
+    branch: str = "CS"
+    status: str
+    warnings: int
+    last_active: Optional[str]
+    submitted_at: Optional[str]
+    started_at: Optional[str] = None
     is_blocked: bool = False
-    last_active: str
     avatar_url: Optional[str] = None
 
-class ViolationReport(BaseModel):
-    type: str  # "tab_switch", "fullscreen_exit", "copy_paste"
-    details: Optional[str] = None
-
-# ── Admin Dashboard ───────────────────────────────────────────
-class AdminStats(BaseModel):
-    total_students: int
-    active_now: int
-    submitted: int
-    avg_score: float
-
-class BranchStats(BaseModel):
-    branch: str
-    count: int
-    avg_score: float
-
+# ── Exam Config ───────────────────────────────────────────────
 class ExamConfig(BaseModel):
     is_active: bool = True
-    scheduled_start: Optional[str] = None   # ISO timestamp or None
-    scheduled_end: Optional[str] = None     # ISO timestamp for auto-evaporation
+    scheduled_start: Optional[str] = None
+    scheduled_end: Optional[str] = None
     duration_minutes: int = 60
     exam_title: Optional[str] = "ExamGuard Assessment"
-    
-    # New configuration fields
     marks_per_question: int = 4
     negative_marks: float = -1.0
     shuffle_questions: bool = False
@@ -104,15 +160,12 @@ class ExamConfig(BaseModel):
     total_marks: int = 120
     exam_description: Optional[str] = None
 
-
 class ExamConfigUpdate(BaseModel):
     is_active: Optional[bool] = None
     scheduled_start: Optional[str] = None
     scheduled_end: Optional[str] = None
     duration_minutes: Optional[int] = None
-    exam_title: Optional[int] = None
-    
-    # New configuration fields
+    exam_title: Optional[str] = None
     marks_per_question: Optional[int] = None
     negative_marks: Optional[float] = None
     shuffle_questions: Optional[bool] = None
@@ -122,7 +175,6 @@ class ExamConfigUpdate(BaseModel):
     total_questions: Optional[int] = None
     total_marks: Optional[int] = None
     exam_description: Optional[str] = None
-
 
 # ── Leaderboard ───────────────────────────────────────────────
 class LeaderboardEntry(BaseModel):
@@ -134,53 +186,46 @@ class LeaderboardEntry(BaseModel):
     score: int
     total_marks: int
     percentage: float
-    time_taken_seconds: Optional[int]   # None if not submitted
+    time_taken_seconds: Optional[int]
     submitted_at: Optional[str]
-
 
 class LeaderboardResponse(BaseModel):
     entries: List[LeaderboardEntry]
     total_submitted: int
     updated_at: str
 
-
 # ── File Ingestion ────────────────────────────────────────────
 class ParsedQuestion(BaseModel):
     text: str
-    options: List[str]          # exactly 4
-    correct_answer: str         # "A" | "B" | "C" | "D"
+    options: List[str]
+    correct_answer: str
     marks: int = 1
     branch: str = "CS"
     order_index: int = 0
     exam_name: str = "Initial Assessment"
     image_url: Optional[str] = None
-    # AI Spectral Parser metadata (not persisted to DB)
-    confidence: float = 1.0       # 0.0—1.0 — AI certainty about this extraction
-    needs_review: bool = False    # True if AI flagged ambiguity
-    review_reason: Optional[str] = None  # Human-readable reason
-
+    confidence: float = 1.0
+    needs_review: bool = False
+    review_reason: Optional[str] = None
 
 class IngestPreviewResponse(BaseModel):
     questions: List[ParsedQuestion]
     total: int
     source_file: str
     parse_warnings: List[str]
-    ai_powered: bool = False           # True if Gemini AI was used
-    ai_confidence_avg: float = 1.0     # Average confidence across all questions
-    needs_review_count: int = 0        # Number of questions needing admin review
-    finesse_check: Optional[str] = None  # AI self-verification message
-
+    ai_powered: bool = False
+    ai_confidence_avg: float = 1.0
+    needs_review_count: int = 0
+    finesse_check: Optional[str] = None
 
 class BulkImportRequest(BaseModel):
     questions: List[ParsedQuestion]
     replace_existing: bool = False
-    exam_name: str  # Mandatory for Crystalline Isolation Node anchoring
+    exam_name: str
     max_questions: Optional[int] = None
-
 
 class FolderRenameRequest(BaseModel):
     new_name: str
-
 
 class FolderEditBranchRequest(BaseModel):
     new_branches: List[str]
