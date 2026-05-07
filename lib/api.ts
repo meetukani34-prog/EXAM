@@ -398,9 +398,21 @@ export async function updateExamConfig(data: Partial<ExamConfig>): Promise<ExamC
 
 /** Public endpoint — no admin secret needed. Returns all active configurations. */
 export async function fetchPublicExamConfig(): Promise<ExamConfig[]> {
-  const res = await fetch(`${API_BASE}/admin/exam/config/public`);
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch(`${API_BASE}/admin/exam/config/public`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) return [];
+    return res.json();
+  } catch (err) {
+    console.error("fetchPublicExamConfig error:", err);
+    return [];
+  }
 }
 
 /**

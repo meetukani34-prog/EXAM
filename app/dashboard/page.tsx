@@ -122,7 +122,11 @@ export default function DashboardPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "questions" }, () => loadExams())
       .subscribe();
 
+    // Safety timeout: Ensure loading is disabled after 8 seconds no matter what
+    const timer = setTimeout(() => setLoading(false), 8000);
+
     return () => {
+      clearTimeout(timer);
       supabase.removeChannel(channel);
       supabase.removeChannel(qChannel);
     };
