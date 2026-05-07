@@ -818,6 +818,7 @@ function QuestionsTab() {
     image_url: ""
   });
   const [folderBranchModal, setFolderBranchModal] = useState<{ name: string, branches: string[] } | null>(null);
+  const [formCategory, setFormCategory] = useState<"aptitude" | "programming" | "other">("other");
 
 
   const load = useCallback(async () => {
@@ -1275,17 +1276,8 @@ function QuestionsTab() {
                 <label>Category</label>
                 <select
                   className={adminStyles.input}
-                  value={
-                    (() => {
-                      const n = (formData.exam_name || '').toLowerCase();
-                      if (n.includes('aptitude') || n.includes('quant') || n.includes('reasoning') || n.includes('logical') || n.includes('verbal') || n.includes('english') || n.includes('numerical')) return 'aptitude';
-                      if (n.includes('program') || n.includes('code') || n.includes('coding') || n.includes('dsa') || n.includes('algorithm') || n.includes('python') || n.includes('java')) return 'programming';
-                      return 'other';
-                    })()
-                  }
-                  disabled
-                  title="Category is auto-detected from the Exam Identity name"
-                  style={{ opacity: 0.7 }}
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value as any)}
                 >
                   <option value="aptitude">🧠 Aptitude</option>
                   <option value="programming">💻 Programming</option>
