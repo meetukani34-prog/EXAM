@@ -236,32 +236,37 @@ export default function DashboardPage() {
       <nav className={styles.topNav}>
         <div className={styles.topNavLeft}>
           <div className={styles.logoMark}>
-            <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-              <path d="M8 12h16M8 16h10M8 20h12" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+            <span className={styles.logoTitle}>FOCUS<span>R</span></span>
           </div>
-          <div className={styles.logoText}>
-            <span className={styles.logoTitle}>ExamGuard</span>
-            <span className={styles.logoSub}>Candidate Portal</span>
+          <div className={styles.separator} />
+          <svg className={styles.medalIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55.47.98.97 1.21l1.03.46c.5.23 1 .23 1.5 0l1.03-.46c.5-.23.97-.66.97-1.21v-2.34" /><circle cx="12" cy="10" r="7" />
+          </svg>
+          <div className={styles.logoSub}>
+            <span className={styles.logoSubMain}>FocusR Assessment</span>
+            <span className={styles.logoSubPortal}>Candidate Portal</span>
           </div>
         </div>
 
         <div className={styles.topNavRight}>
           {student && (
             <div className={styles.userInfo}>
-              <div style={{ textAlign: 'right' }}>
-                <div className={styles.userName}>{student.name}</div>
-                <div className={styles.userRole}>Candidate</div>
-              </div>
               {student.avatarUrl ? (
                 <img src={student.avatarUrl} alt="" className={styles.userAvatarMini} />
               ) : (
-                <div className={styles.userAvatarMini} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
+                <div className={styles.userAvatarMini} style={{ background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                   </svg>
                 </div>
               )}
+              <div className={styles.userNameContainer}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div className={styles.userName}>{student.usn || student.name.split(' ')[0].toLowerCase() + '67'}</div>
+                  <svg className={styles.dropdownArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div className={styles.userRole}>Candidate</div>
+              </div>
             </div>
           )}
           <div className={styles.notificationBell} style={{ position: 'relative', cursor: 'pointer' }} onClick={() => setShowNotifications(!showNotifications)}>
@@ -428,11 +433,14 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
     ? new Date(exam.scheduled_start).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
     : "Now";
 
+  const pattern = exam.exam_name.toLowerCase().includes('programming') ? '/pattern_code.png' : '/pattern_neural.png';
+
   return (
     <div className={styles.examCard}>
+      <div className={styles.cardPattern} style={{ backgroundImage: `url('${pattern}')` }} />
       <div className={styles.examCardHeader}>
         <h3 className={styles.examTitle}>{exam.exam_name}</h3>
-        <span className={`${styles.statusBadge} ${status.className}`}>
+        <span className={`${styles.statusBadge}`}>
           {status.label}
         </span>
       </div>

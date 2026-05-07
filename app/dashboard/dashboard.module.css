@@ -1,20 +1,17 @@
 /* ══════════════════════════════════════════════════════════════
-   Student Portal — Premium Glassmorphism Theme (Enhanced)
+   Student Portal — EXACT REPLICA THEME
    ══════════════════════════════════════════════════════════════ */
 
 :root {
-  --portal-primary: #312e81;
-  --portal-primary-glow: rgba(49, 46, 129, 0.4);
-  --portal-bg: #0f172a;
-  --portal-glass-bg: rgba(255, 255, 255, 0.75);
-  --portal-glass-border: rgba(255, 255, 255, 0.4);
+  --portal-primary: #1e1b4b;
+  --portal-accent-gold: #c2a16d;
+  --portal-bg-light: #f3f4f6;
+  --portal-glass-bg: rgba(255, 255, 255, 0.85);
+  --portal-glass-border: rgba(255, 255, 255, 0.5);
   --portal-text: #1e293b;
   --portal-text-secondary: #475569;
   --portal-text-muted: #64748b;
-  --portal-accent-green: #22c55e;
-  --portal-accent-gold: #c2a16d;
-  --portal-radius: 24px;
-  --portal-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  --portal-radius: 20px;
 }
 
 /* ── Layout Shell ── */
@@ -22,13 +19,13 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
+  background-image: url('/nebula_bg.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   font-family: 'Outfit', 'Inter', sans-serif;
   color: var(--portal-text);
-  padding: 16px;
+  padding: 12px;
   box-sizing: border-box;
 }
 
@@ -37,54 +34,68 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
-  height: 74px;
+  padding: 0 32px;
+  height: 70px;
   background: var(--portal-glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--portal-glass-border);
-  border-radius: 20px;
-  margin-bottom: 16px;
+  border-radius: 12px;
+  margin-bottom: 12px;
   z-index: 1000;
-  box-shadow: var(--portal-shadow);
 }
 
 .topNavLeft {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .logoMark {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #1e1b4b, #312e81);
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #fff;
-  box-shadow: 0 4px 15px rgba(30, 27, 75, 0.3);
+  gap: 8px;
 }
 
-.logoText {
+.logoTitle {
+  font-size: 20px;
+  font-weight: 900;
+  color: #1e1b4b;
+  letter-spacing: -0.03em;
+}
+
+.logoTitle span {
+  color: #ef4444;
+}
+
+.separator {
+  width: 1px;
+  height: 24px;
+  background: rgba(0,0,0,0.1);
+  margin: 0 4px;
+}
+
+.medalIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--portal-accent-gold);
+}
+
+.logoSub {
   display: flex;
   flex-direction: column;
 }
 
-.logoTitle {
-  font-size: 19px;
-  font-weight: 800;
+.logoSubMain {
+  font-size: 14px;
+  font-weight: 700;
   color: #1e1b4b;
-  letter-spacing: -0.02em;
 }
 
-.logoSub {
+.logoSubPortal {
   font-size: 11px;
-  font-weight: 700;
-  color: #6366f1;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  color: #64748b;
 }
 
 .topNavRight {
@@ -94,67 +105,273 @@
 }
 
 .userInfo {
-  text-align: right;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding-right: 14px;
-  border-right: 1px solid rgba(0,0,0,0.08);
+  gap: 12px;
+}
+
+.userNameContainer {
+  text-align: right;
 }
 
 .userName {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: #0f172a;
 }
 
 .userRole {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: #64748b;
-  text-transform: uppercase;
 }
 
 .userAvatarMini {
   width: 38px;
   height: 38px;
-  border-radius: 12px;
-  background: #fff;
-  border: 2px solid #fff;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+  border-radius: 10px;
   object-fit: cover;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.dropdownArrow {
+  width: 12px;
+  height: 12px;
+  color: #64748b;
+  margin-left: -4px;
 }
 
 .notificationBell {
-  transition: transform 0.2s ease;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
 }
 
-.notificationBell:hover {
-  transform: scale(1.1);
+/* ── Sidebar ── */
+.sidebar {
+  width: 220px;
+  background: transparent;
+  padding: 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.sidebarItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.sidebarItem:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.sidebarItemActive {
+  background: linear-gradient(135deg, #eaddc0, #c2a16d) !important;
+  color: #43331a !important;
+  box-shadow: 0 4px 12px rgba(194, 161, 109, 0.2);
+}
+
+/* ── Main Content ── */
+.mainContent {
+  flex: 1;
+  background: var(--portal-glass-bg);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--portal-glass-border);
+  border-radius: 20px;
+  padding: 32px 40px;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+}
+
+.sectionWrapper {
+  margin-bottom: 40px;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e1b4b;
+  margin-bottom: 4px;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 32px;
+}
+
+/* ── Exam Cards Section ── */
+.examsSection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 24px;
+}
+
+.examCard {
+  background: #fff;
+  border-radius: 24px;
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.03);
+  transition: transform 0.3s ease;
+}
+
+.examCard:hover {
+  transform: translateY(-4px);
+}
+
+.cardPattern {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.15;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+}
+
+.examCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.examTitle {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1e1b4b;
+}
+
+.statusBadge {
+  padding: 5px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: rgba(0,0,0,0.06);
+  color: #475569;
+}
+
+.examMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.examMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.progressContainer {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #c2a16d, #eaddc0);
+  border-radius: 10px;
+}
+
+.startExamBtn {
+  padding: 12px 24px;
+  background: #1e1b4b;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.startsIn {
+  font-size: 13px;
+  font-weight: 700;
+  color: #c2a16d;
+}
+
+/* ── Quick Insights ── */
+.insightsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.insightCard {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 18px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.insightLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+.insightValue {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e1b4b;
 }
 
 /* ── Notification Dropdown ── */
 .notificationDropdown {
   position: absolute;
-  top: calc(100% + 15px);
-  right: -10px;
-  width: 260px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 18px;
-  box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
   padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   z-index: 2000;
-  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  border: 1px solid rgba(0,0,0,0.05);
 }
 
 .notificationItem {
@@ -162,20 +379,14 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   color: #475569;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.notificationItem:hover {
-  background: rgba(0,0,0,0.03);
 }
 
 .notificationItemActive {
-  background: rgba(0,0,0,0.06) !important;
+  background: #f1f5f9;
   color: #1e1b4b;
 }
 
@@ -192,259 +403,29 @@
   justify-content: center;
 }
 
-.notificationFooter {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-top: 1px solid rgba(0,0,0,0.05);
-  margin-top: 4px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-}
-
-/* ── Sidebar ── */
-.sidebar {
-  width: 250px;
-  background: var(--portal-glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--portal-glass-border);
-  border-radius: 20px;
-  padding: 28px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
-  box-shadow: var(--portal-shadow);
-}
-
-.sidebarItem {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 22px;
-  border-radius: 16px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #475569;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  width: 100%;
-  text-align: left;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebarItem:hover {
-  background: rgba(255, 255, 255, 0.6);
-  color: #1e1b4b;
-  transform: translateX(6px);
-}
-
-.sidebarItemActive {
-  background: linear-gradient(135deg, #eaddc0, #c2a16d) !important;
-  color: #43331a !important;
-  box-shadow: 0 6px 20px rgba(194, 161, 109, 0.2);
-}
-
-.sidebarIcon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-/* ── Main Content ── */
-.mainContent {
-  flex: 1;
-  background: var(--portal-glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--portal-glass-border);
-  border-radius: 24px;
-  padding: 40px;
-  overflow-y: auto;
-  box-shadow: var(--portal-shadow);
-}
-
-/* ── Section Container (White Overlay) ── */
-.sectionWrapper {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 28px;
-  padding: 32px;
-  margin-bottom: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.pageTitle {
-  font-size: 26px;
-  font-weight: 800;
-  color: #0f172a;
-  margin-bottom: 6px;
-  letter-spacing: -0.02em;
-}
-
-.pageSubtitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 32px;
-}
-
-/* ── Quick Insights ── */
-.insightsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-}
-
-.insightCard {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 20px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.insightLabel {
-  font-size: 14px;
-  font-weight: 700;
-  color: #64748b;
-}
-
-.insightValue {
-  font-size: 26px;
-  font-weight: 800;
-  color: #1e1b4b;
-}
-
-/* ── Exam Cards Section ── */
-.examsSection {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-  gap: 28px;
-}
-
-.examCard {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 24px;
-  padding: 30px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-  transition: all 0.4s ease;
-}
-
-.examCard:hover {
-  transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.9);
-}
-
-.examCardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 22px;
-}
-
-.examTitle {
-  font-size: 22px;
-  font-weight: 800;
-  color: #1e1b4b;
-}
-
-.statusBadge {
-  padding: 7px 15px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  background: #e2e8f0;
-  color: #475569;
-}
-
-.statusActive { background: #dcfce7; color: #15803d; }
-.statusScheduled { background: #cbd5e1; color: #1e293b; opacity: 0.8; }
-
-.examMeta {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 28px;
-}
-
-.examMetaItem {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #475569;
-}
-
-.examMetaIcon {
-  width: 20px;
-  height: 20px;
-  color: #6366f1;
-}
-
-.progressContainer {
-  height: 8px;
-  background: #e2e8f0;
-  border-radius: 12px;
-  margin-bottom: 28px;
-  overflow: hidden;
-}
-
-.progressBar {
-  height: 100%;
-  background: linear-gradient(90deg, #c2a16d, #eaddc0);
-  border-radius: 12px;
-}
-
-.startExamBtn {
-  width: 140px;
-  padding: 14px;
-  background: #312e81;
-  color: #fff;
-  border: none;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.startExamBtn:hover:not(:disabled) {
-  background: #4338ca;
-  box-shadow: 0 8px 25px rgba(49, 46, 129, 0.25);
-}
-
-.startsIn {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--portal-accent-gold);
-}
-
-/* ── Profile Header ── */
+/* ── Profile Section ── */
 .profileHeader {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 24px;
+  background: #fff;
+  border-radius: 20px;
   padding: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.profileAvatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  object-fit: cover;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
 }
 
 /* ── Mobile Responsive ── */
 @media (max-width: 1100px) {
   .sidebar { display: none; }
-  .shell { padding: 10px; }
+  .shell { padding: 8px; }
   .mainContent { padding: 20px; }
   .examsSection { grid-template-columns: 1fr; }
+  .insightsGrid { grid-template-columns: 1fr; }
 }
