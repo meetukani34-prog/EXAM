@@ -727,6 +727,37 @@ function ProfileTab({ student }: { student: StudentInfo }) {
               Edit Profile
             </h2>
 
+            <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f1f5f9', overflow: 'hidden', border: '2px solid #e2e8f0' }}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <CldUploadWidget 
+                uploadPreset="ml_default"
+                onSuccess={(result: any) => {
+                  if (result.info && typeof result.info !== 'string') {
+                    setAvatarUrl(result.info.secure_url);
+                  }
+                }}
+              >
+                {({ open }) => (
+                  <button 
+                    onClick={() => open()}
+                    style={{ background: 'none', border: 'none', color: '#4f46e5', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Change Photo
+                  </button>
+                )}
+              </CldUploadWidget>
+            </div>
+
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>
                 Full Name
