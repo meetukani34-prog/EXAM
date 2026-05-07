@@ -264,7 +264,8 @@ async def delete_student(student_id: str, _: bool = Depends(verify_admin)):
 @router.delete("/students-all")
 async def delete_all_students(_: bool = Depends(verify_admin)):
     db = get_supabase()
-    db.table("students").delete().neq("id", "dummy").execute()
+    # Use 'usn' for the dummy filter instead of 'id' because 'id' is a UUID and parsing "dummy" fails
+    db.table("students").delete().neq("usn", "dummy_delete_all").execute()
     return {"deleted_all": True}
 
 @router.post("/students/{student_id}/reset")
