@@ -37,11 +37,9 @@ import styles from "./admin.module.css";
 import adminStyles from "./admin-management.module.css";
 import Skeleton from "@/components/Skeleton";
 
-// ── Lazy-loaded new feature tabs ──────────────────────────────
-import dynamic from "next/dynamic";
-const LeaderboardPage = dynamic(() => import("./leaderboard/page"), { ssr: false });
-const IngestPage      = dynamic(() => import("./ingest/page"),      { ssr: false });
-const OrbitalControl  = dynamic(() => import("./control/page"),     { ssr: false });
+import LeaderboardPage from "./leaderboard/page";
+import IngestPage from "./ingest/page";
+import OrbitalControl from "./control/page";
 
 // ── Types ─────────────────────────────────────────────────────
 // Use AdminStudent from lib/api
