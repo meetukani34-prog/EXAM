@@ -4,6 +4,7 @@ import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { loginStudent } from "@/lib/api";
+import { BRANCHES } from "@/lib/constants";
 import styles from "./login.module.css";
 
 export default function LoginPage() {
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [branch, setBranch] = useState("CS");
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -156,6 +158,28 @@ export default function LoginPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required={isRegistering}
                   />
+                </div>
+                
+                {/* Branch Selection */}
+                <div className={styles.inputWrap}>
+                  <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  <select
+                    className={styles.inputField}
+                    value={branch}
+                    onChange={(e) => setBranch(e.target.value)}
+                    style={{ appearance: 'none', cursor: 'pointer' }}
+                  >
+                    {BRANCHES.map(b => (
+                      <option key={b.id} value={b.id} style={{ background: '#1a1a1e', color: '#fff' }}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', opacity: 0.5, fontSize: '10px' }}>
+                    ▼
+                  </div>
                 </div>
               </motion.div>
             )}
