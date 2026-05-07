@@ -14,11 +14,12 @@ export default function LoginPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [branch, setBranch] = useState("DS");
-
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [isBranchOpen, setIsBranchOpen] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   useEffect(() => {
     router.prefetch("/dashboard");
@@ -26,7 +27,7 @@ export default function LoginPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-
+    
     if (!usn.trim() || !password.trim()) {
       setError("Credentials required to access the hub.");
       return;
@@ -78,7 +79,7 @@ export default function LoginPage() {
       <div className={styles.bgImage} />
       <div className={styles.overlay} />
 
-      <motion.div
+      <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         className={styles.card}
@@ -125,7 +126,7 @@ export default function LoginPage() {
 
           <AnimatePresence>
             {isRegistering && (
-              <motion.div
+              <motion.div 
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -160,14 +161,13 @@ export default function LoginPage() {
                     spellCheck="false"
                   />
                 </div>
-
-                {/* Custom Branch Selection */}
+                
                 <div className={styles.selectWrapper}>
                   <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                   </svg>
-                  <div
-                    className={styles.selectTrigger}
+                  <div 
+                    className={styles.selectTrigger} 
                     onClick={() => setIsBranchOpen(!isBranchOpen)}
                   >
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -175,18 +175,18 @@ export default function LoginPage() {
                     </span>
                     <span style={{ fontSize: '10px', opacity: 0.5 }}>{isBranchOpen ? "▲" : "▼"}</span>
                   </div>
-
+                  
                   <AnimatePresence>
                     {isBranchOpen && (
-                      <motion.div
+                      <motion.div 
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className={styles.selectOptions}
                       >
                         {BRANCHES.map(b => (
-                          <div
-                            key={b.id}
+                          <div 
+                            key={b.id} 
                             className={styles.selectOption}
                             onClick={() => {
                               setBranch(b.id);
@@ -212,7 +212,7 @@ export default function LoginPage() {
         </form>
 
         <div className={styles.linksRow}>
-          <div className={styles.link} onClick={() => setIsRegistering(!isRegistering)}>
+          <div className={styles.link} onClick={() => setShowForgotModal(true)}>
             {isRegistering ? "Back to Login" : "Forgot Password?"}
           </div>
           <div className={styles.link} onClick={() => setIsRegistering(!isRegistering)}>
@@ -220,6 +220,41 @@ export default function LoginPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* Forgot Password Modal */}
+      <AnimatePresence>
+        {showForgotModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className={styles.modalOverlay}
+            onClick={() => setShowForgotModal(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={styles.modal}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg className={styles.modalIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              <h2 className={styles.modalTitle}>Password Recovery</h2>
+              <p className={styles.modalText}>
+                Please contact the **Admin or Faculty** to reset your password or recover your account details.
+              </p>
+              <button 
+                className={styles.modalCloseBtn}
+                onClick={() => setShowForgotModal(false)}
+              >
+                Understood
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className={styles.pulseBar}>
         <div className={styles.pulseBadge}>Campus Pulse</div>
