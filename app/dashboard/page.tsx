@@ -76,37 +76,50 @@ export default function DashboardPage() {
       const nodes: ExamNode[] = [];
       const seen = new Set<string>();
 
-      if (qData && configs.length > 0) {
-        for (const config of configs) {
-          const relevantQuestions = qData.filter(q => q.exam_name === config.exam_title);
-          const branchCounts: Record<string, { count: number, category: string }> = {};
-          
-          relevantQuestions.forEach(q => {
-            const br = q.branch || "CS";
-            const cat = q.category || "other";
-            if (!branchCounts[br]) {
-              branchCounts[br] = { count: 0, category: cat };
-            }
-            branchCounts[br].count += 1;
-          });
+      // ── Inference Fallback ──
+      function inferCategory(examName: string): string {
+        const n = (examName || "").toLowerCase();
+        if (n.includes("aptitude") || n.includes("quant") || n.includes("reasoning") || n.includes("logical") || n.includes("verbal") || n.includes("english") || n.includes("comprehension") || n.includes("maths") || n.includes("numerical")) return "aptitude";
+        if (n.includes("program") || n.includes("code") || n.includes("coding") || n.includes("dsa") || n.includes("algorithm") || n.includes("data structure") || n.includes("python") || n.includes("java") || n.includes("c++") || n.includes("javascript")) return "programming";
+        return "other";
+      }
 
-          Object.entries(branchCounts).forEach(([branch, info]) => {
-            const nodeId = `${config.exam_title}-${branch}`;
-            if (!seen.has(nodeId)) {
-              nodes.push({
-                id: nodeId,
-                exam_name: config.exam_title,
-                branch,
-                is_active: config.is_active,
-                duration_minutes: config.duration_minutes,
-                scheduled_start: config.scheduled_start,
-                question_count: info.count,
-                category: info.category,
-              });
-              seen.add(nodeId);
-            }
+      if (qData) {
+        // 1. Get all unique (exam_name, branch) pairs from questions
+        const uniqueExams = new Map<string, { exam_name: string, branch: string, count: number, category: string }>();
+        
+        qData.forEach(q => {
+          const br = q.branch || "CS";
+          const ex = q.exam_name || "General Assessment";
+          const key = `${ex}|${br}`;
+          
+          if (!uniqueExams.has(key)) {
+            uniqueExams.set(key, { 
+              exam_name: ex, 
+              branch: br, 
+              count: 0, 
+              category: q.category || inferCategory(ex) 
+            });
+          }
+          uniqueExams.get(key)!.count++;
+        });
+
+        // 2. Build nodes and merge with configs
+        uniqueExams.forEach((info, key) => {
+          // Find matching config if any
+          const config = configs.find(c => c.exam_title === info.exam_name);
+          
+          nodes.push({
+            id: key,
+            exam_name: info.exam_name,
+            branch: info.branch,
+            is_active: config ? config.is_active : true, // Default to active if discovered
+            duration_minutes: config ? config.duration_minutes : 20, // Default 20
+            scheduled_start: config ? config.scheduled_start : null,
+            question_count: info.count,
+            category: info.category,
           });
-        }
+        });
       }
 
       setAllExams(nodes);
