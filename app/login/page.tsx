@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isBranchOpen, setIsBranchOpen] = useState(false);
 
   useEffect(() => {
     router.prefetch("/dashboard");
@@ -43,7 +44,7 @@ export default function LoginPage() {
       const data = await loginStudent(usn.trim(), password, {
         name: name.trim() || undefined,
         email: email.trim() || undefined,
-        branch: "CS"
+        branch: branch
       });
 
       sessionStorage.setItem("exam_token", data.access_token);
@@ -70,6 +71,8 @@ export default function LoginPage() {
     }
   }
 
+  const selectedBranchName = BRANCHES.find(b => b.id === branch)?.name || "Select Branch";
+
   return (
     <div className={styles.container}>
       <div className={styles.bgImage} />
@@ -80,7 +83,6 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         className={styles.card}
       >
-        {/* Shield Crest Graphic (SVG) */}
         <svg className={styles.crest} viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.67-3.13 8.75-7 9.81-3.87-1.06-7-5.14-7-9.81V6.3l7-3.12z"/>
         </svg>
@@ -89,7 +91,6 @@ export default function LoginPage() {
         <h1 className={styles.titleSub}>Student Hub</h1>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          {/* USN / Username */}
           <div className={styles.inputWrap}>
             <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
@@ -106,7 +107,6 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Password */}
           <div className={styles.inputWrap}>
             <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -123,7 +123,6 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Registration Mode Expansion */}
           <AnimatePresence>
             {isRegistering && (
               <motion.div 
@@ -131,7 +130,7 @@ export default function LoginPage() {
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 className={styles.form}
-                style={{ overflow: 'hidden' }}
+                style={{ overflow: 'visible' }}
               >
                 <div className={styles.inputWrap}>
                   <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -144,6 +143,7 @@ export default function LoginPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required={isRegistering}
+                    spellCheck="false"
                   />
                 </div>
                 <div className={styles.inputWrap}>
@@ -157,29 +157,48 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required={isRegistering}
+                    spellCheck="false"
                   />
                 </div>
                 
-                {/* Branch Selection */}
-                <div className={styles.inputWrap}>
+                {/* Custom Branch Selection */}
+                <div className={styles.selectWrapper}>
                   <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                   </svg>
-                  <select
-                    className={styles.inputField}
-                    value={branch}
-                    onChange={(e) => setBranch(e.target.value)}
-                    style={{ appearance: 'none', cursor: 'pointer' }}
+                  <div 
+                    className={styles.selectTrigger} 
+                    onClick={() => setIsBranchOpen(!isBranchOpen)}
                   >
-                    {BRANCHES.map(b => (
-                      <option key={b.id} value={b.id} style={{ background: '#1a1a1e', color: '#fff' }}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', opacity: 0.5, fontSize: '10px' }}>
-                    ▼
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {selectedBranchName}
+                    </span>
+                    <span style={{ fontSize: '10px', opacity: 0.5 }}>{isBranchOpen ? "▲" : "▼"}</span>
                   </div>
+                  
+                  <AnimatePresence>
+                    {isBranchOpen && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className={styles.selectOptions}
+                      >
+                        {BRANCHES.map(b => (
+                          <div 
+                            key={b.id} 
+                            className={styles.selectOption}
+                            onClick={() => {
+                              setBranch(b.id);
+                              setIsBranchOpen(false);
+                            }}
+                          >
+                            {b.name}
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             )}
@@ -202,7 +221,6 @@ export default function LoginPage() {
         </div>
       </motion.div>
 
-      {/* Campus Pulse Ticker */}
       <div className={styles.pulseBar}>
         <div className={styles.pulseBadge}>Campus Pulse</div>
         <div className={styles.pulseContent}>
@@ -214,7 +232,6 @@ export default function LoginPage() {
           <span>•</span>
           <span>Upcoming Tech Symposium: Register Today!</span>
           <span>•</span>
-          {/* Repeat for seamless scrolling */}
           <span>Registration Deadline: Sept 15</span>
           <span>•</span>
           <span>New Research Grant Winners Announced!</span>
