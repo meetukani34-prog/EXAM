@@ -9,7 +9,7 @@ from models.schemas import (
     QuestionCreate, QuestionUpdate,
     StudentStatus, StudentCreate, StudentUpdate,
     ExamConfig, ExamConfigUpdate, FolderRenameRequest,
-    FolderEditBranchRequest
+    FolderEditBranchRequest, SupportRequestResponse
 )
 from datetime import datetime, timezone
 import io
@@ -748,3 +748,23 @@ async def export_results(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+# ── Support Requests Management ───────────────────────────────
+
+@router.get("/support-requests", response_model=list[SupportRequestResponse])
+async def get_support_requests(_: bool = Depends(verify_admin)):
+    """Retrieve all student help tickets."""
+    db = get_supabase()
+    result = db.table("support_requests").select("*").order("created_at", desc=True).execute()
+    return result.data or []
+
+@router.patch("/support-requests/{request_id}/status")
+async def update_support_status(request_id: str, request: dict, _: bool = Depends(verify_admin)):
+    """Update status of a help ticket (open, resolved, closed)."""
+    db = get_supabase()
+    status_val = request.get("status")
+    if not status_val:
+        raise HTTPException(status_code=400, detail="Status is required")
+        
+    db.table("support_requests").update({"status": status_val}).eq("id", request_id).execute()
+    return {"updated": True, "id": request_id, "new_status": status_val}

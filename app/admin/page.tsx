@@ -28,6 +28,9 @@ import {
   BranchExamSummary,
   forceSubmitAdminStudent,
   cleanupStaleSessions,
+  fetchSupportRequests,
+  updateSupportRequestStatus,
+  SupportRequest,
 } from "@/lib/api";
 import { BRANCHES as BRANCH_LIST, BRANCH_IDS } from "@/lib/constants";
 import styles from "./admin.module.css";
@@ -68,7 +71,7 @@ function isStale(lastActive: string | null): boolean {
 
 const BRANCHES = BRANCH_IDS;
 const ALL_BRANCH_DATA = BRANCH_LIST;
-type Tab = "monitor" | "questions" | "students" | "leaderboard" | "ingest" | "control";
+type Tab = "monitor" | "questions" | "students" | "leaderboard" | "ingest" | "control" | "support";
 const ADMIN_AUTH_KEY = "examguard_admin_auth";
 
 function getStoredAuth(): boolean {
@@ -420,6 +423,7 @@ export default function AdminPage() {
 
   const TAB_CONFIG: { id: Tab; label: string; icon: string }[] = [
     { id: "monitor",     label: "Monitor",     icon: "📡" },
+    { id: "support",     label: "SOS",         icon: "🆘" },
     { id: "leaderboard", label: "Leaderboard", icon: "⚡" },
     { id: "questions",   label: "Questions",   icon: "📋" },
     { id: "students",    label: "Students",    icon: "👥" },
@@ -660,6 +664,7 @@ export default function AdminPage() {
       {activeTab === "control"     && <OrbitalControl />}
       {activeTab === "questions"   && <QuestionsTab />}
       {activeTab === "students"    && <StudentsTab students={students} load={fetchStudents} />}
+      {activeTab === "support"     && <SupportTab />}
     </div>
   );
 }
@@ -1523,6 +1528,103 @@ function StudentsTab({ students, load }: { students: AdminStudent[], load: () =>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Support Tab ───────────────────────────────────────────────
+function SupportTab() {
+  const [requests, setRequests] = useState<SupportRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadRequests = useCallback(async () => {
+    try {
+      const data = await fetchSupportRequests();
+      setRequests(data);
+    } catch (err) {
+      console.error("Failed to fetch support requests:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRequests();
+    const interval = setInterval(loadRequests, 10000);
+    return () => clearInterval(interval);
+  }, [loadRequests]);
+
+  const handleStatusUpdate = async (id: string, status: string) => {
+    try {
+      await updateSupportRequestStatus(id, status);
+      loadRequests();
+    } catch (err) {
+      alert("Failed to update status");
+    }
+  };
+
+  if (loading) return <div style={{ padding: 24 }}><Skeleton height={200} /></div>;
+
+  return (
+    <div style={{ padding: "24px" }}>
+      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h2 style={{ fontSize: 24, fontWeight: 800 }}>SOS Command Center</h2>
+        <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+          {requests.filter(r => r.status === "open").length} Open Tickets
+        </div>
+      </div>
+
+      <div className={styles.tableWrapper}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>USN / Email</th>
+              <th>Issue Description</th>
+              <th>Status</th>
+              <th>Date Submitted</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requests.length === 0 ? (
+              <tr><td colSpan={5} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>No support requests found.</td></tr>
+            ) : requests.map((r) => (
+              <tr key={r.id}>
+                <td className="mono" style={{ fontSize: 13, fontWeight: 700 }}>{r.usn}</td>
+                <td style={{ maxWidth: 400, fontSize: 14 }}>{r.problem}</td>
+                <td>
+                  <span className={`badge ${r.status === 'open' ? 'badge-warning' : r.status === 'resolved' ? 'badge-success' : 'badge-neutral'}`}>
+                    {r.status.toUpperCase()}
+                  </span>
+                </td>
+                <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{new Date(r.created_at).toLocaleString()}</td>
+                <td>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {r.status !== 'resolved' && (
+                      <button 
+                        className="btn btn-primary" 
+                        style={{ fontSize: 11, padding: "4px 10px" }}
+                        onClick={() => handleStatusUpdate(r.id, "resolved")}
+                      >
+                        Resolve
+                      </button>
+                    )}
+                    {r.status !== 'closed' && (
+                      <button 
+                        className="btn btn-outline" 
+                        style={{ fontSize: 11, padding: "4px 10px" }}
+                        onClick={() => handleStatusUpdate(r.id, "closed")}
+                      >
+                        Close
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

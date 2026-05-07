@@ -92,6 +92,13 @@ export async function updateProfile(data: { name?: string; email?: string; avata
   });
 }
 
+export async function submitSupportRequest(usn: string, problem: string): Promise<void> {
+  await apiFetch("/auth/support", {
+    method: "POST",
+    body: JSON.stringify({ usn, problem }),
+  });
+}
+
 // ── Questions ─────────────────────────────────────────────────
 export interface Question {
   id: string;
@@ -489,5 +496,25 @@ export async function exportResults(quizName?: string): Promise<Blob> {
     throw new Error(err.detail || "Export failed");
   }
   return res.blob();
+}
+
+// ── Support Requests ──────────────────────────────────────────
+export interface SupportRequest {
+  id: string;
+  usn: string;
+  problem: string;
+  status: "open" | "resolved" | "closed";
+  created_at: string;
+}
+
+export async function fetchSupportRequests(): Promise<SupportRequest[]> {
+  return adminFetch<SupportRequest[]>("/admin/support-requests");
+}
+
+export async function updateSupportRequestStatus(id: string, status: string): Promise<void> {
+  await adminFetch(`/admin/support-requests/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
 }
 

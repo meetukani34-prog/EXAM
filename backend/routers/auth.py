@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Dict, Any
 from datetime import datetime, timezone, timedelta
 
-from models.schemas import LoginRequest, LoginResponse
+from models.schemas import LoginRequest, LoginResponse, SupportRequestCreate
 from core.security import verify_password, hash_password, create_access_token, get_current_student
 from core.config import get_settings
 from db.supabase_client import get_supabase
@@ -239,3 +239,19 @@ async def logout(current: dict = Depends(get_current_student)):
         {"is_active_session": False, "current_token": None}
     ).eq("id", current["student_id"]).execute()
     return {"logged_out": True}
+    
+@router.post("/support", tags=["public"])
+async def submit_support_request(request: SupportRequestCreate):
+    """Public endpoint for students to submit help requests."""
+    db = get_supabase()
+    try:
+        data = {
+            "usn": request.usn.strip().upper(),
+            "problem": request.problem.strip()
+        }
+        res = db.table("support_requests").insert(data).execute()
+        if not res.data:
+            raise HTTPException(status_code=500, detail="Failed to save request")
+        return {"success": True, "message": "Support request submitted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

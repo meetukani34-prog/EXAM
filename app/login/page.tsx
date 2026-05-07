@@ -3,7 +3,7 @@
 import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { loginStudent } from "@/lib/api";
+import { loginStudent, submitSupportRequest } from "@/lib/api";
 import { BRANCHES } from "@/lib/constants";
 import styles from "./login.module.css";
 
@@ -304,11 +304,23 @@ export default function LoginPage() {
                     <button 
                       className={styles.submitBtn} 
                       style={{ marginTop: '10px' }}
-                      onClick={() => {
-                        if (helpUsn && helpProblem) setIsHelpSubmitted(true);
+                      disabled={loading}
+                      onClick={async () => {
+                        if (!helpUsn.trim() || !helpProblem.trim()) return;
+                        setLoading(true);
+                        try {
+                          await submitSupportRequest(helpUsn.trim(), helpProblem.trim());
+                          setIsHelpSubmitted(true);
+                          setHelpUsn("");
+                          setHelpProblem("");
+                        } catch (err: any) {
+                          alert("Failed to send request: " + err.message);
+                        } finally {
+                          setLoading(false);
+                        }
                       }}
                     >
-                      Submit Request
+                      {loading ? "Sending..." : "Submit Request"}
                     </button>
                     <button 
                       className={styles.link} 
