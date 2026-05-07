@@ -56,6 +56,7 @@ export default function LoginPage() {
         "exam_student",
         JSON.stringify({
           id: data.student_id,
+          usn: usn.trim().toUpperCase(),
           name: data.student_name,
           email: email.trim(),
           branch: branch,

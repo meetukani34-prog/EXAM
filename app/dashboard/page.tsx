@@ -19,6 +19,7 @@ interface ExamNode {
 
 interface StudentInfo {
   id: string;
+  usn?: string;
   name: string;
   branch: string;
   email?: string;
@@ -538,8 +539,8 @@ function ProfileTab({ student }: { student: StudentInfo }) {
                 <circle cx="17" cy="13" r="2.5" />
               </svg>
             }
-            label="Student ID"
-            value={student.id.slice(0, 12)}
+            label="USN"
+            value={student.usn || student.id.slice(0, 12)}
           />
         </div>
       </div>
