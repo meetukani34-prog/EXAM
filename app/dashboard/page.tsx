@@ -354,6 +354,27 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
 // PROFILE TAB
 // ══════════════════════════════════════════════════════════════
 function ProfileTab({ student }: { student: StudentInfo }) {
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(student.name);
+  const [editEmail, setEditEmail] = useState(student.email || "");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = () => {
+    setSaving(true);
+    // Update sessionStorage with new values
+    const raw = sessionStorage.getItem("exam_student");
+    if (raw) {
+      const data = JSON.parse(raw);
+      data.name = editName.trim();
+      data.email = editEmail.trim();
+      sessionStorage.setItem("exam_student", JSON.stringify(data));
+      // Update the student object via page reload
+      window.location.reload();
+    }
+    setSaving(false);
+    setEditing(false);
+  };
+
   return (
     <>
       <h1 className={styles.pageTitle}>Profile</h1>
@@ -379,7 +400,102 @@ function ProfileTab({ student }: { student: StudentInfo }) {
             </div>
           </div>
         </div>
+
+        <button className={styles.editProfileBtn} onClick={() => setEditing(true)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+          Edit Profile
+        </button>
       </div>
+
+      {/* Edit Modal */}
+      {editing && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.3)",
+          backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{
+            background: "#fff",
+            borderRadius: 16,
+            padding: 32,
+            width: "90%",
+            maxWidth: 440,
+            boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+            animation: "fadeIn 0.2s ease",
+          }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 24, color: "#1e293b" }}>
+              Edit Profile
+            </h2>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>
+                Full Name
+              </label>
+              <input
+                type="text"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                style={{
+                  width: "100%", padding: "10px 14px",
+                  border: "1px solid #e2e8f0", borderRadius: 8,
+                  fontSize: 14, color: "#1e293b", outline: "none",
+                  transition: "border 0.2s",
+                }}
+                onFocus={e => e.target.style.borderColor = "#4f46e5"}
+                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+              />
+            </div>
+
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={editEmail}
+                onChange={e => setEditEmail(e.target.value)}
+                style={{
+                  width: "100%", padding: "10px 14px",
+                  border: "1px solid #e2e8f0", borderRadius: 8,
+                  fontSize: 14, color: "#1e293b", outline: "none",
+                  transition: "border 0.2s",
+                }}
+                onFocus={e => e.target.style.borderColor = "#4f46e5"}
+                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setEditing(false)}
+                style={{
+                  padding: "10px 20px", border: "1px solid #e2e8f0",
+                  borderRadius: 8, background: "#fff", color: "#64748b",
+                  fontSize: 14, fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                style={{
+                  padding: "10px 24px", border: "none",
+                  borderRadius: 8, background: "#4f46e5", color: "#fff",
+                  fontSize: 14, fontWeight: 600, cursor: "pointer",
+                  boxShadow: "0 2px 6px rgba(79,70,229,0.25)",
+                }}
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Personal Information */}
       <div className={styles.profileInfoCard}>
