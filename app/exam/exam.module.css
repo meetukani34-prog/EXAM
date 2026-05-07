@@ -437,8 +437,11 @@
 /* ── Mobile Optimizations ── */
 @media (max-width: 768px) {
   .wrapper {
-    animation: none; /* Disable expensive bg animation on mobile */
+    animation: none;
     background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
+    overflow-y: auto; /* Allow scrolling the whole page on mobile */
+    height: auto;
+    min-height: 100vh;
   }
   
   .header, .sideCard, .confirmModal, .successCapsule {
@@ -447,30 +450,43 @@
     background: rgba(255, 255, 255, 0.95);
   }
 
-  .successCapsule {
-    padding: 40px 20px;
-    border-radius: 40px;
-    background: #05070a;
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-
-  .thankYouTitle {
-    font-size: 40px;
-  }
-  
   .main {
     grid-template-columns: 1fr;
-    padding: 12px;
-    gap: 12px;
+    padding: 10px;
+    gap: 16px;
+    height: auto;
+    overflow: visible;
   }
   
+  .questionList {
+    overflow: visible;
+    height: auto;
+    flex: none;
+  }
+
   .sidebar {
-    order: -1; /* Show progress at top on mobile */
+    order: 2; /* Put progress grid at the bottom */
     height: auto;
   }
   
   .navGrid {
-    grid-template-columns: repeat(10, 1fr);
+    grid-template-columns: repeat(9, 1fr); /* 9 columns as per mockup */
+    gap: 8px;
+  }
+
+  .progressFooter {
+    order: 1; /* Progress bar stays between questions and grid */
+    padding: 16px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .submitBtn {
+    width: 100%; /* Full width button for mobile ergonomics */
+  }
+
+  .sideCard {
+    padding: 16px;
   }
 }
 
