@@ -229,7 +229,16 @@ export default function LoginPage() {
         </form>
 
         <div className={styles.linksRow}>
-          <div className={styles.link} onClick={() => setShowForgotModal(true)}>
+          <div 
+            className={styles.link} 
+            onClick={() => {
+              if (isRegistering) {
+                setIsRegistering(false);
+              } else {
+                setShowForgotModal(true);
+              }
+            }}
+          >
             {isRegistering ? "Back to Login" : "Forgot Password?"}
           </div>
           <div className={styles.link} onClick={() => setIsRegistering(!isRegistering)}>
@@ -330,7 +339,7 @@ export default function LoginPage() {
                       style={{ marginTop: '5px', background: 'none', border: 'none' }}
                       onClick={() => setShowForgotModal(false)}
                     >
-                      Cancel
+                      Back to Login
                     </button>
                   </div>
                 </>
