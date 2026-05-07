@@ -37,6 +37,7 @@ export default function DashboardPage() {
   const [allExams, setAllExams] = useState<ExamNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("home");
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Load student from session
   useEffect(() => {
@@ -263,11 +264,32 @@ export default function DashboardPage() {
               )}
             </div>
           )}
-          <div className={styles.notificationBell} style={{ position: 'relative', cursor: 'pointer' }}>
+          <div className={styles.notificationBell} style={{ position: 'relative', cursor: 'pointer' }} onClick={() => setShowNotifications(!showNotifications)}>
              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
              </svg>
              <span style={{ position: 'absolute', top: -2, right: -2, background: '#ef4444', color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 4px', borderRadius: 10, border: '2px solid #fff' }}>3</span>
+             
+             {showNotifications && (
+               <div className={styles.notificationDropdown}>
+                 <div className={styles.notificationItem}>
+                   <div className={styles.notificationBadge}>3</div>
+                   <span>Aptitude results ready</span>
+                 </div>
+                 <div className={`${styles.notificationItem} ${styles.notificationItemActive}`}>
+                   <div className={styles.notificationBadge}>3</div>
+                   <span>Aptitude results ready</span>
+                 </div>
+                 <div className={styles.notificationItem}>
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+                   <span>Aptitude results ready</span>
+                 </div>
+                 <div className={styles.notificationFooter}>
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                   <span>Options</span>
+                 </div>
+               </div>
+             )}
           </div>
           <button className={styles.logoutBtn} onClick={handleLogout}>
             Logout
@@ -329,6 +351,7 @@ function HomeTab({
 
   return (
     <>
+      <div className={styles.sectionWrapper}>
       <h1 className={styles.pageTitle}>Upcoming Exams</h1>
       <p className={styles.pageSubtitle}>View your scheduled assessments</p>
 
@@ -349,33 +372,39 @@ function HomeTab({
           </div>
         </div>
       )}
+    </div>
 
-      <h2 className={styles.pageTitle} style={{ marginTop: 60, fontSize: 22 }}>Quick Insights</h2>
+    <div className={styles.sectionWrapper}>
+      <h2 className={styles.pageTitle} style={{ fontSize: 22 }}>Quick Insights</h2>
       <div className={styles.insightsGrid}>
         <div className={styles.insightCard}>
           <div className={styles.insightLabel}>Completed Exams</div>
           <div className={styles.insightValue}>8</div>
-          <svg className={styles.sparkline} viewBox="0 0 100 40">
-            <path d="M0 35 L10 32 L20 38 L30 25 L40 28 L50 15 L60 22 L70 5 L80 12 L90 8 L100 15" stroke="var(--portal-primary)" />
+          <svg className={styles.sparkline} viewBox="0 0 100 40" style={{ height: 40, width: '100%', stroke: '#c2a16d', strokeWidth: 2, fill: 'none' }}>
+            <path d="M0 35 L10 32 L20 38 L30 25 L40 28 L50 15 L60 22 L70 5 L80 12 L90 8 L100 15" />
           </svg>
         </div>
         <div className={styles.insightCard}>
           <div className={styles.insightLabel}>Skill Score</div>
           <div className={styles.insightValue}>85th Percentile</div>
           <div style={{ height: 40, display: 'flex', alignItems: 'flex-end', gap: 4 }}>
-             <div style={{ flex: 1, height: '40%', background: 'rgba(79,70,229,0.1)', borderRadius: 2 }} />
-             <div style={{ flex: 1, height: '60%', background: 'rgba(79,70,229,0.2)', borderRadius: 2 }} />
-             <div style={{ flex: 1, height: '45%', background: 'rgba(79,70,229,0.1)', borderRadius: 2 }} />
-             <div style={{ flex: 1, height: '85%', background: 'var(--portal-primary)', borderRadius: 2 }} />
-             <div style={{ flex: 1, height: '70%', background: 'rgba(79,70,229,0.3)', borderRadius: 2 }} />
+             <div style={{ flex: 1, height: '40%', background: 'rgba(0,0,0,0.05)', borderRadius: 2 }} />
+             <div style={{ flex: 1, height: '60%', background: 'rgba(0,0,0,0.1)', borderRadius: 2 }} />
+             <div style={{ flex: 1, height: '45%', background: 'rgba(0,0,0,0.05)', borderRadius: 2 }} />
+             <div style={{ flex: 1, height: '85%', background: '#c2a16d', borderRadius: 2 }} />
+             <div style={{ flex: 1, height: '70%', background: 'rgba(0,0,0,0.15)', borderRadius: 2 }} />
           </div>
         </div>
-        <div className={styles.insightCard}>
-          <div className={styles.insightLabel}>Next Milestone</div>
-          <div className={styles.insightValue}>Programming II</div>
-          <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>In 4 days</div>
+        <div className={styles.insightCard} style={{ display: 'flex', justifyContent: 'center' }}>
+           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#64748b' }}>Profile Strength</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: '#1e1b4b' }}>Advanced</div>
+              </div>
+           </div>
         </div>
       </div>
+    </div>
     </>
   );
 }
@@ -434,16 +463,15 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
         />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
          <button
           className={styles.startExamBtn}
-          style={{ width: '120px' }}
           onClick={() => onLaunch(exam)}
           disabled={!exam.is_active}
         >
           {exam.is_active ? "Start Exam" : "Locked"}
         </button>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>
+        <div className={styles.startsIn}>
            Starts in 2D 14H
         </div>
       </div>
