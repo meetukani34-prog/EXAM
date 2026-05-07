@@ -10,14 +10,11 @@ export default function LoginPage() {
   const router = useRouter();
   const [usn, setUsn] = useState("");
   const [password, setPassword] = useState("");
-  // Hidden/Defaulted for the clean look, but needed for backend auto-reg
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [branch, setBranch] = useState("CS");
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [role, setRole] = useState("Candidate");
   const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
@@ -28,12 +25,12 @@ export default function LoginPage() {
     e.preventDefault();
     
     if (!usn.trim() || !password.trim()) {
-      setError("Please enter your ID and password.");
+      setError("Credentials required to access the hub.");
       return;
     }
 
     if (isRegistering && (!name.trim() || !email.trim())) {
-      setError("Please fill in your name and email for registration.");
+      setError("Incomplete registration profile.");
       return;
     }
 
@@ -41,12 +38,10 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // If not registering, we send empty name/email. 
-      // The backend uses them ONLY if the student doesn't exist.
       const data = await loginStudent(usn.trim(), password, {
         name: name.trim() || undefined,
         email: email.trim() || undefined,
-        branch: branch
+        branch: "CS"
       });
 
       sessionStorage.setItem("exam_token", data.access_token);
@@ -68,7 +63,7 @@ export default function LoginPage() {
 
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Login failed.");
+      setError(err.message || "Authentication failed.");
       setLoading(false);
     }
   }
@@ -79,28 +74,28 @@ export default function LoginPage() {
       <div className={styles.overlay} />
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
         className={styles.card}
       >
-        {/* Logo */}
-        <div className={styles.logoContainer}>
-          <div className={styles.logoText}>FOCUS<span>R</span></div>
-        </div>
+        {/* Shield Crest Graphic (SVG) */}
+        <svg className={styles.crest} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.67-3.13 8.75-7 9.81-3.87-1.06-7-5.14-7-9.81V6.3l7-3.12z"/>
+        </svg>
 
-        <h1 className={styles.welcomeText}>Welcome back</h1>
-        <p className={styles.signinText}>Sign in to continue</p>
+        <div className={styles.titleMain}>Campus Nexus</div>
+        <h1 className={styles.titleSub}>Student Hub</h1>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          {/* USN / Email */}
+          {/* USN / Username */}
           <div className={styles.inputWrap}>
-            <svg className={styles.inputIcon} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+            <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
             </svg>
             <input
               type="text"
               className={styles.inputField}
-              placeholder="Email address / USN"
+              placeholder="Username / USN"
               value={usn}
               onChange={(e) => setUsn(e.target.value)}
               disabled={loading}
@@ -110,7 +105,7 @@ export default function LoginPage() {
 
           {/* Password */}
           <div className={styles.inputWrap}>
-            <svg className={styles.inputIcon} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
             <input
@@ -124,18 +119,19 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Registration Fields (Animated) */}
+          {/* Registration Mode Expansion */}
           <AnimatePresence>
             {isRegistering && (
               <motion.div 
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '16px' }}
+                className={styles.form}
+                style={{ overflow: 'hidden' }}
               >
                 <div className={styles.inputWrap}>
-                  <svg className={styles.inputIcon} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                   </svg>
                   <input
                     type="text"
@@ -147,13 +143,13 @@ export default function LoginPage() {
                   />
                 </div>
                 <div className={styles.inputWrap}>
-                  <svg className={styles.inputIcon} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 8h4M7 12h6M7 16h5"/>
+                  <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
                   </svg>
                   <input
                     type="email"
                     className={styles.inputField}
-                    placeholder="Primary Email"
+                    placeholder="Email Address"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required={isRegistering}
@@ -163,24 +159,41 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '8px' }}>
-            <button 
-              type="button" 
-              className={styles.forgotPass} 
-              style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
-              onClick={() => setIsRegistering(!isRegistering)}
-            >
-              {isRegistering ? "Back to Login" : "First time? Register here"}
-            </button>
-          </div>
-
           {error && <div className={styles.error}>{error}</div>}
 
           <button type="submit" className={styles.submitBtn} disabled={loading}>
-            {loading ? "Processing..." : isRegistering ? "Sign Up" : "Sign In"}
+            {loading ? "Verifying..." : "Secure Login"}
           </button>
         </form>
+
+        <div className={styles.linksRow}>
+          <div className={styles.link} onClick={() => setIsRegistering(!isRegistering)}>
+            {isRegistering ? "Back to Login" : "Forgot Password?"}
+          </div>
+          <div className={styles.link} onClick={() => setIsRegistering(!isRegistering)}>
+            {isRegistering ? "" : "Request Access"}
+          </div>
+        </div>
       </motion.div>
+
+      {/* Campus Pulse Ticker */}
+      <div className={styles.pulseBar}>
+        <div className={styles.pulseBadge}>Campus Pulse</div>
+        <div className={styles.pulseContent}>
+          <span>Registration Deadline: Sept 15</span>
+          <span>•</span>
+          <span>New Research Grant Winners Announced!</span>
+          <span>•</span>
+          <span>Campus Safety Alert: Standard Procedures in Place.</span>
+          <span>•</span>
+          <span>Upcoming Tech Symposium: Register Today!</span>
+          <span>•</span>
+          {/* Repeat for seamless scrolling */}
+          <span>Registration Deadline: Sept 15</span>
+          <span>•</span>
+          <span>New Research Grant Winners Announced!</span>
+        </div>
+      </div>
     </div>
   );
 }
