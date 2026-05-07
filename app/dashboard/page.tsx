@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { fetchPublicExamConfig, type ExamConfig } from "@/lib/api";
-import { BRANCHES } from "@/lib/constants";
-import SpatialHierarchy from "@/components/SpatialHierarchy";
+import styles from "./dashboard.module.css";
 
 // ── Types ──────────────────────────────────────────────────────
 interface ExamNode {
@@ -23,46 +21,32 @@ interface StudentInfo {
   id: string;
   name: string;
   branch: string;
+  email?: string;
   examStartTime: string | null;
   examDurationMinutes: number;
 }
 
-// ── Branch color map ───────────────────────────────────────────
-const BRANCH_COLORS: Record<string, { primary: string; glow: string; accent: string }> = {
-  CS: { primary: "#06b6d4", glow: "rgba(6,182,212,0.25)", accent: "#22d3ee" },
-  CSE: { primary: "#6366f1", glow: "rgba(99,102,241,0.25)", accent: "#818cf8" },
-  AI: { primary: "#8b5cf6", glow: "rgba(139,92,246,0.25)", accent: "#a78bfa" },
-  DS: { primary: "#10b981", glow: "rgba(16,185,129,0.25)", accent: "#34d399" },
-  ISC: { primary: "#f59e0b", glow: "rgba(245,158,11,0.25)", accent: "#fbbf24" },
-  ECE: { primary: "#ef4444", glow: "rgba(239,68,68,0.25)", accent: "#f87171" },
-  "BCA-1st": { primary: "#ec4899", glow: "rgba(236,72,153,0.25)", accent: "#f472b6" },
-  "BCA-2nd": { primary: "#14b8a6", glow: "rgba(20,184,166,0.25)", accent: "#2dd4bf" },
-};
-
-const DEFAULT_COLOR = { primary: "#6366f1", glow: "rgba(99,102,241,0.25)", accent: "#818cf8" };
-
+type TabId = "home" | "profile";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [student, setStudent] = useState<StudentInfo | null>(null);
-  const [selectedBranch, setSelectedBranch] = useState<string>("ALL");
   const [allExams, setAllExams] = useState<ExamNode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [warpTarget, setWarpTarget] = useState<ExamNode | null>(null);
-  const [warpActive, setWarpActive] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Real-time exam config listener via Supabase
+  const [activeTab, setActiveTab] = useState<TabId>("home");
 
   // Load student from session
   useEffect(() => {
     const isPreview = window.location.search.includes("preview=true");
     if (isPreview) {
-      const mock: StudentInfo = { id: "PREVIEW", name: "Admin Preview", branch: "ALL", examStartTime: null, examDurationMinutes: 60 };
+      const mock: StudentInfo = {
+        id: "PREVIEW", name: "Admin Preview", branch: "CS",
+        email: "admin@examguard.com",
+        examStartTime: null, examDurationMinutes: 60,
+      };
       sessionStorage.setItem("exam_student", JSON.stringify(mock));
       sessionStorage.setItem("exam_preview", "true");
       setStudent(mock);
-      setSelectedBranch("ALL");
       return;
     }
 
@@ -74,17 +58,12 @@ export default function DashboardPage() {
     }
     const info: StudentInfo = JSON.parse(raw);
     setStudent(info);
-    setSelectedBranch(info.branch || "ALL");
   }, [router]);
 
-  // ── Real-time exam config listener via Supabase ────────────
+  // ── Load exams ────────────────────────────────────────────
   const loadExams = useCallback(async () => {
     try {
-      // Fetch all public configs
       const configs = await fetchPublicExamConfig();
-      const activeConfigs = configs.filter(c => c.is_active);
-
-      // Get question distribution
       const { data: qData } = await supabase
         .from("questions")
         .select("branch, exam_name");
@@ -92,19 +71,15 @@ export default function DashboardPage() {
       const nodes: ExamNode[] = [];
       const seen = new Set<string>();
 
-      if (qData && activeConfigs.length > 0) {
-        for (const config of activeConfigs) {
-          // Find branches that have questions for this specific exam_title
+      if (qData && configs.length > 0) {
+        for (const config of configs) {
           const relevantQuestions = qData.filter(q => q.exam_name === config.exam_title);
-
-          // Group by branch for this exam
           const branchCounts: Record<string, number> = {};
           relevantQuestions.forEach(q => {
             const br = q.branch || "CS";
             branchCounts[br] = (branchCounts[br] || 0) + 1;
           });
 
-          // Create a node for each branch/exam combo
           Object.entries(branchCounts).forEach(([branch, count]) => {
             const nodeId = `${config.exam_title}-${branch}`;
             if (!seen.has(nodeId)) {
@@ -134,27 +109,14 @@ export default function DashboardPage() {
   useEffect(() => {
     loadExams();
 
-    // ── Supabase Realtime: exam_config changes ──
     const channel = supabase
       .channel("exam_config_realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "exam_config" },
-        () => {
-          // Weightlessly re-sync exam state
-          loadExams();
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "exam_config" }, () => loadExams())
       .subscribe();
 
-    // Also watch questions table for branch changes
     const qChannel = supabase
       .channel("questions_realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "questions" },
-        () => loadExams()
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "questions" }, () => loadExams())
       .subscribe();
 
     return () => {
@@ -163,19 +125,15 @@ export default function DashboardPage() {
     };
   }, [loadExams]);
 
-  // ── Branch-Resonance filtered exams ──────────────────────
-  const filteredExams = selectedBranch === "ALL"
+  // ── Filter exams for student branch ─────────────────────
+  const studentExams = student?.branch === "ALL"
     ? allExams
-    : allExams.filter(e => e.branch === selectedBranch);
+    : allExams.filter(e => e.branch === student?.branch);
 
-  const activeExams = filteredExams.filter(e => e.is_active);
-  const inactiveExams = filteredExams.filter(e => !e.is_active);
-
-  // ── Warp Transition: Launch into exam ─────────────────────
-  const handleLaunchExam = useCallback(async (exam: ExamNode) => {
+  // ── Launch exam ─────────────────────────────────────────
+  const handleLaunchExam = useCallback((exam: ExamNode) => {
     if (!exam.is_active) return;
 
-    // If preview, update the mock student to match the branch of the clicked node
     if (sessionStorage.getItem("exam_preview") === "true") {
       const infoStr = sessionStorage.getItem("exam_student");
       if (infoStr) {
@@ -185,600 +143,302 @@ export default function DashboardPage() {
       }
     }
 
-    setWarpTarget(exam);
-    setWarpActive(true);
-
-    // Weightlessly persist exam metadata for the session horizon
     sessionStorage.setItem("exam_selected_title", exam.exam_name);
-
-    await new Promise(r => setTimeout(r, 1200));
     router.push("/exam");
   }, [router]);
 
-  // ── Logout ────────────────────────────────────────────────
+  // ── Logout ──────────────────────────────────────────────
   const handleLogout = () => {
     sessionStorage.removeItem("exam_token");
     sessionStorage.removeItem("exam_student");
     router.replace("/login");
   };
 
-  const branchColors = student ? (BRANCH_COLORS[student.branch] || DEFAULT_COLOR) : DEFAULT_COLOR;
+  // ── Tab data ──────────────────────────────────────────────
+  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
+    {
+      id: "home",
+      label: "Home",
+      icon: (
+        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      ),
+    },
+    {
+      id: "profile",
+      label: "Profile",
+      icon: (
+        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      ),
+    },
+  ];
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #06080f 0%, #0d1117 50%, #080c18 100%)",
-        position: "relative",
-        overflow: "hidden",
-        fontFamily: "Inter, -apple-system, sans-serif",
-        color: "#e2e8f0",
-      }}
-    >
-      {/* ── Aurora Orbs (CSS Animated) ── */}
-      {[
-        { top: "5%", left: "10%", color: "rgba(99,102,241,0.12)", size: 500, duration: "25s", delay: "0s" },
-        { top: "50%", right: "5%", color: "rgba(6,182,212,0.1)", size: 400, duration: "30s", delay: "-5s" },
-        { bottom: "10%", left: "35%", color: "rgba(139,92,246,0.08)", size: 350, duration: "22s", delay: "-10s" },
-      ].map((orb, i) => (
-        <div
-          key={i}
-          style={{
-            position: "fixed",
-            top: orb.top,
-            left: orb.left,
-            right: orb.right,
-            bottom: orb.bottom,
-            width: orb.size,
-            height: orb.size,
-            background: `radial-gradient(circle, ${orb.color} 0%, transparent 70%)`,
-            borderRadius: "50%",
-            pointerEvents: "none",
-            animation: `dashboardOrbFloat ${orb.duration} infinite ease-in-out ${orb.delay}`,
-            willChange: "transform",
-          }}
-        />
-      ))}
-
-      {/* Grid overlay */}
-      <div style={{
-        position: "fixed", inset: 0,
-        backgroundImage: `
-          linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px)
-        `,
-        backgroundSize: "50px 50px",
-        pointerEvents: "none",
-      }} />
-
-      {/* ── WARP TRANSITION OVERLAY ── */}
-      <AnimatePresence>
-        {warpActive && warpTarget && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            style={{
-              position: "fixed", inset: 0, zIndex: 9999,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: "rgba(6,8,15,0.3)",
-              backdropFilter: "blur(4px)",
-            }}
-          >
-            {/* Radial warp rings */}
-            {[0, 1, 2, 3].map(i => (
-              <motion.div
-                key={i}
-                initial={{ scale: 0, opacity: 0.8 }}
-                animate={{ scale: [0, 3 + i * 1.5], opacity: [0.8, 0] }}
-                transition={{ duration: 1, delay: i * 0.15, ease: "easeOut" }}
-                style={{
-                  position: "absolute",
-                  width: 200,
-                  height: 200,
-                  borderRadius: "50%",
-                  border: `${2 - i * 0.3}px solid rgba(6,182,212,${0.6 - i * 0.12})`,
-                  boxShadow: `0 0 30px rgba(6,182,212,${0.4 - i * 0.08})`,
-                }}
-              />
-            ))}
-
-            {/* Crystalline Pane expanding */}
-            <motion.div
-              initial={{ scale: 0.1, opacity: 0, borderRadius: "50%" }}
-              animate={{ scale: 20, opacity: [0, 1, 0], borderRadius: "0%" }}
-              transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-              style={{
-                position: "absolute",
-                width: 120,
-                height: 120,
-                background: "linear-gradient(135deg, rgba(6,182,212,0.3), rgba(99,102,241,0.4))",
-                backdropFilter: "blur(20px)",
-                border: "1px solid rgba(6,182,212,0.5)",
-              }}
-            />
-
-            {/* Central text */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1, 1, 1.5] }}
-              transition={{ duration: 1.1, times: [0, 0.3, 0.7, 1] }}
-              style={{
-                zIndex: 1, textAlign: "center",
-                position: "relative",
-              }}
-            >
-              <div style={{ fontSize: 36, marginBottom: 8 }}>⚡</div>
-              <div style={{
-                fontSize: 18, fontWeight: 800, letterSpacing: "-0.02em",
-                background: "linear-gradient(135deg, #06b6d4, #6366f1)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}>
-                Entering Exam Space
-              </div>
-              <div style={{ fontSize: 13, color: "rgba(148,163,184,0.7)", marginTop: 6 }}>
-                {warpTarget.exam_name}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── HEADER ── */}
-      <motion.header
-        initial={{ y: -60, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
-        style={{
-          position: "sticky", top: 0, zIndex: 100,
-          background: "rgba(6,8,15,0.8)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
-          padding: "16px 32px",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: "linear-gradient(135deg, #6366f1, #06b6d4)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 0 16px rgba(6,182,212,0.3)",
-          }}>
-            <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+    <div className={styles.shell}>
+      {/* ── Top Navigation ── */}
+      <nav className={styles.topNav}>
+        <div className={styles.topNavLeft}>
+          <div className={styles.logoMark}>
+            <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
               <path d="M8 12h16M8 16h10M8 20h12" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           </div>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.02em" }}>ExamGuard</div>
-            <div style={{ fontSize: 11, color: "rgba(148,163,184,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Student Node
-            </div>
+          <div className={styles.logoText}>
+            <span className={styles.logoTitle}>ExamGuard</span>
+            <span className={styles.logoSub}>Candidate Portal</span>
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div className={styles.topNavRight}>
           {student && (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "8px 16px",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 999,
-            }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: "50%",
-                background: `linear-gradient(135deg, ${branchColors.primary}, ${branchColors.accent})`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 12, fontWeight: 700, color: "#fff",
-                boxShadow: `0 0 12px ${branchColors.glow}`,
-              }}>
-                {(student.name || "S").charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{student.name || student.id.slice(0, 8)}</div>
-                <div style={{ fontSize: 11, color: branchColors.primary }}>{student.branch}</div>
-              </div>
+            <div className={styles.userInfo}>
+              <div className={styles.userName}>{student.name}</div>
+              <div className={styles.userRole}>Candidate</div>
             </div>
           )}
-          <motion.button
-            onClick={handleLogout}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            style={{
-              padding: "8px 16px",
-              background: "rgba(239,68,68,0.1)",
-              border: "1px solid rgba(239,68,68,0.2)",
-              borderRadius: 999,
-              color: "#f87171",
-              fontSize: 12, fontWeight: 600,
-              cursor: "pointer",
-              letterSpacing: "0.05em",
-            }}
-          >
-            Disconnect
-          </motion.button>
+          <button className={styles.logoutBtn} onClick={handleLogout}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Logout
+          </button>
         </div>
-      </motion.header>
+      </nav>
 
-      {/* ── MAIN CONTENT ── */}
-      <main style={{ padding: "40px 32px", maxWidth: 1200, margin: "0 auto" }}>
-
-        {/* ── Hero Section ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
-          style={{ marginBottom: 48, textAlign: "center" }}
-        >
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 150 }}
-            style={{
-              display: "inline-block",
-              padding: "6px 18px",
-              borderRadius: 999,
-              background: "rgba(6,182,212,0.1)",
-              border: "1px solid rgba(6,182,212,0.25)",
-              fontSize: 12, fontWeight: 600,
-              color: "#06b6d4",
-              letterSpacing: "0.1em", textTransform: "uppercase",
-              marginBottom: 20,
-            }}
-          >
-            <motion.span
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-              style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#06b6d4", marginRight: 8, verticalAlign: "middle" }}
-            />
-            Exam Discovery Portal
-          </motion.div>
-
-          <h1 style={{
-            fontSize: "clamp(32px, 5vw, 56px)",
-            fontWeight: 900,
-            letterSpacing: "-0.04em",
-            background: "linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            lineHeight: 1.1,
-            marginBottom: 12,
-          }}>
-            Welcome back,{" "}
-            <span style={{
-              background: `linear-gradient(135deg, ${branchColors.primary}, ${branchColors.accent})`,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}>
-              {student?.name?.split(" ")[0] || "Student"}
-            </span>
-          </h1>
-          <p style={{ fontSize: 16, color: "rgba(148,163,184,0.65)", maxWidth: 480, margin: "0 auto" }}>
-            Select your branch to discover active exam nodes. Active exams will crystallize for launch.
-          </p>
-        </motion.div>
-
-        {/* ── Branch Resonance Filter ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          style={{ marginBottom: 40 }}
-        >
-          <div style={{
-            fontSize: 11, fontWeight: 600, color: "rgba(148,163,184,0.5)",
-            letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16,
-            textAlign: "center",
-          }}>
-            ⊕ Branch Resonance Filter
-          </div>
-          <div style={{
-            display: "flex", flexWrap: "wrap", gap: 10,
-            justifyContent: "center",
-          }}>
-            {/* ALL button */}
-            <motion.button
-              onClick={() => setSelectedBranch("ALL")}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.96 }}
-              style={{
-                padding: "10px 22px",
-                borderRadius: 999,
-                background: selectedBranch === "ALL" ? "linear-gradient(135deg, #6366f1, #06b6d4)" : "rgba(255,255,255,0.04)",
-                border: selectedBranch === "ALL" ? "1px solid rgba(6,182,212,0.4)" : "1px solid rgba(255,255,255,0.08)",
-                color: selectedBranch === "ALL" ? "#fff" : "rgba(148,163,184,0.7)",
-                fontSize: 13, fontWeight: 600,
-                cursor: "pointer",
-                boxShadow: selectedBranch === "ALL" ? "0 0 20px rgba(6,182,212,0.25)" : "none",
-                transition: "all 0.25s ease",
-              }}
+      {/* ── Body ── */}
+      <div className={styles.bodyLayout}>
+        {/* ── Sidebar ── */}
+        <aside className={styles.sidebar}>
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              className={`${styles.sidebarItem} ${activeTab === tab.id ? styles.sidebarItemActive : ""}`}
+              onClick={() => setActiveTab(tab.id)}
             >
-              All Branches
-            </motion.button>
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </aside>
 
-            {BRANCHES.map(b => {
-              const colors = BRANCH_COLORS[b.id] || DEFAULT_COLOR;
-              const isSelected = selectedBranch === b.id;
-              return (
-                <motion.button
-                  key={b.id}
-                  onClick={() => setSelectedBranch(b.id)}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.96 }}
-                  style={{
-                    padding: "10px 20px",
-                    borderRadius: 999,
-                    background: isSelected ? `${colors.primary}25` : "rgba(255,255,255,0.03)",
-                    border: isSelected ? `1px solid ${colors.primary}60` : "1px solid rgba(255,255,255,0.07)",
-                    color: isSelected ? colors.accent : "rgba(148,163,184,0.6)",
-                    fontSize: 13, fontWeight: 600,
-                    cursor: "pointer",
-                    boxShadow: isSelected ? `0 0 16px ${colors.glow}` : "none",
-                    transition: "all 0.25s ease",
-                    display: "flex", alignItems: "center", gap: 6,
-                  }}
-                >
-                  {isSelected && (
-                    <motion.span
-                      animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
-                      transition={{ repeat: Infinity, duration: 1.8 }}
-                      style={{
-                        width: 6, height: 6, borderRadius: "50%",
-                        background: colors.primary,
-                        boxShadow: `0 0 6px ${colors.primary}`,
-                        display: "inline-block",
-                      }}
-                    />
-                  )}
-                  {b.id}
-                </motion.button>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* ── Spatial Hierarchy Node ── */}
-        {loading ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: 80 }}>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-              style={{
-                width: 40, height: 40,
-                border: "2px solid rgba(6,182,212,0.2)",
-                borderTopColor: "#06b6d4",
-                borderRadius: "50%",
-              }}
+        {/* ── Main Content ── */}
+        <main className={styles.mainContent}>
+          {activeTab === "home" && (
+            <HomeTab
+              exams={studentExams}
+              loading={loading}
+              onLaunch={handleLaunchExam}
             />
-          </div>
-        ) : (
-          <SpatialHierarchy 
-            onLaunchExam={(node) => {
-              // Map SpatialNode back to ExamNode for the launch handler
-              if (node.type === "exam") {
-                const examNode: ExamNode = {
-                  id: node.id,
-                  exam_name: node.name,
-                  branch: node.examData.branch,
-                  is_active: node.examData.isActive,
-                  duration_minutes: node.examData.duration,
-                  scheduled_start: null,
-                  question_count: node.examData.questions
-                };
-                handleLaunchExam(examNode);
-              }
-            }} 
-          />
-        )}
-      </main>
+          )}
+          {activeTab === "profile" && student && (
+            <ProfileTab student={student} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
 
-// ── Luminous Active Exam Node ──────────────────────────────────
-function LuminousExamNode({
-  exam, index, onLaunch,
+// ══════════════════════════════════════════════════════════════
+// HOME TAB
+// ══════════════════════════════════════════════════════════════
+function HomeTab({
+  exams, loading, onLaunch,
 }: {
-  exam: ExamNode;
-  index: number;
+  exams: ExamNode[];
+  loading: boolean;
   onLaunch: (exam: ExamNode) => void;
 }) {
-  const colors = BRANCH_COLORS[exam.branch] || DEFAULT_COLOR;
+  if (loading) {
+    return (
+      <div className={styles.loading}>
+        <div className={styles.spinner} />
+      </div>
+    );
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8, filter: "blur(8px)" }}
-      transition={{ duration: 0.5, delay: index * 0.1, ease: [0.34, 1.56, 0.64, 1] }}
-      whileHover={{ y: -8, transition: { duration: 0.25, ease: "easeOut" } }}
-      style={{ position: "relative" }}
-    >
-      <div
-        style={{
-          backgroundColor: "rgba(255,255,255,0.04)",
-          border: `1px solid ${colors.primary}30`,
-          borderRadius: 24,
-          padding: "28px 28px",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          position: "relative",
-          overflow: "hidden",
-          cursor: "pointer",
-          animation: "luminousPulse 3s infinite ease-in-out",
-          ["--node-glow" as any]: colors.glow,
-        }}
-        onClick={() => onLaunch(exam)}
-      >
-        {/* Atmospheric depth gradient */}
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-          background: `radial-gradient(ellipse at top left, ${colors.glow} 0%, transparent 60%)`,
-          pointerEvents: "none",
-          borderRadius: "inherit",
-        }} />
+    <>
+      <h1 className={styles.pageTitle}>Upcoming Exams</h1>
+      <p className={styles.pageSubtitle}>View your scheduled assessments</p>
 
-        {/* Top corner accent */}
-        <div style={{
-          position: "absolute", top: 0, right: 0,
-          width: 80, height: 80,
-          background: `radial-gradient(circle at top right, ${colors.glow}, transparent)`,
-          borderRadius: "0 24px 0 0",
-        }} />
-
-        {/* LIVE pulse indicator */}
-        <div style={{
-          position: "absolute", top: 20, right: 20,
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "4px 12px",
-          borderRadius: 999,
-          background: "rgba(6,182,212,0.1)",
-          border: "1px solid rgba(6,182,212,0.25)",
-        }}>
-          <motion.div
-            animate={{ scale: [1, 1.5, 1], opacity: [0.7, 1, 0.7] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-            style={{
-              width: 6, height: 6, borderRadius: "50%",
-              background: "#06b6d4",
-              boxShadow: "0 0 8px #06b6d4",
-            }}
-          />
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#06b6d4", letterSpacing: "0.1em" }}>LIVE</span>
+      {exams.length === 0 ? (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyIcon}>📋</div>
+          <div className={styles.emptyTitle}>No exams available</div>
+          <div className={styles.emptyText}>
+            There are no scheduled exams for your branch right now. Check back later.
+          </div>
         </div>
-
-        {/* Branch badge */}
-        <div style={{ marginBottom: 16, position: "relative", zIndex: 1 }}>
-          <span style={{
-            display: "inline-block",
-            padding: "4px 12px",
-            borderRadius: 999,
-            background: `${colors.primary}20`,
-            border: `1px solid ${colors.primary}50`,
-            fontSize: 11, fontWeight: 700,
-            color: colors.accent,
-            letterSpacing: "0.08em", textTransform: "uppercase",
-          }}>
-            {exam.branch}
-          </span>
-        </div>
-
-        {/* Exam name */}
-        <h3 style={{
-          fontSize: 20, fontWeight: 800,
-          letterSpacing: "-0.03em",
-          color: "#e2e8f0",
-          marginBottom: 6,
-          position: "relative", zIndex: 1,
-          lineHeight: 1.2,
-        }}>
-          {exam.exam_name}
-        </h3>
-
-        {/* Metadata strip */}
-        <div style={{
-          display: "flex", gap: 16, marginTop: 14, marginBottom: 20,
-          position: "relative", zIndex: 1,
-        }}>
-          {[
-            { icon: "⏱", label: `${exam.duration_minutes} min` },
-            { icon: "📋", label: `${exam.question_count ?? "—"} questions` },
-            { icon: "🎯", label: exam.branch },
-          ].map(({ icon, label }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "rgba(148,163,184,0.6)" }}>
-              <span>{icon}</span>
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Launch button */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.96 }}
-          onClick={e => { e.stopPropagation(); onLaunch(exam); }}
-          style={{
-            width: "100%",
-            padding: "13px 20px",
-            background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})`,
-            border: "none",
-            borderRadius: 14,
-            color: "#fff",
-            fontSize: 14, fontWeight: 700,
-            cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            boxShadow: `0 4px 20px ${colors.glow}`,
-            position: "relative", zIndex: 1,
-          }}
-        >
-          <span>Enter Exam Node</span>
-          <motion.span
-            animate={{ x: [0, 4, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-          >→</motion.span>
-        </motion.button>
-      </div>
-    </motion.div>
+      ) : (
+        exams.map(exam => (
+          <ExamCard key={exam.id} exam={exam} onLaunch={onLaunch} />
+        ))
+      )}
+    </>
   );
 }
 
-// ── Dormant (Inactive) Exam Node ─────────────────────────────
-function DormantExamNode({ exam, index }: { exam: ExamNode; index: number }) {
-  const colors = BRANCH_COLORS[exam.branch] || DEFAULT_COLOR;
+// ── Exam Card ──────────────────────────────────────────────
+function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) => void }) {
+  const getStatus = () => {
+    if (!exam.is_active) return { label: "Inactive", className: styles.statusInactive };
+    if (exam.scheduled_start) {
+      const start = new Date(exam.scheduled_start);
+      if (start > new Date()) return { label: "Scheduled", className: styles.statusScheduled };
+    }
+    return { label: "Active", className: styles.statusActive };
+  };
+
+  const status = getStatus();
+  const scheduledDate = exam.scheduled_start
+    ? new Date(exam.scheduled_start).toLocaleDateString("en-CA")
+    : new Date().toLocaleDateString("en-CA");
+  const scheduledTime = exam.scheduled_start
+    ? new Date(exam.scheduled_start).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
+    : "Now";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.08 }}
-      style={{
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.05)",
-        borderRadius: 24,
-        padding: "28px 28px",
-        opacity: 0.5,
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <div style={{ marginBottom: 12 }}>
-        <span style={{
-          display: "inline-block",
-          padding: "4px 10px",
-          borderRadius: 999,
-          background: "rgba(100,116,139,0.1)",
-          border: "1px solid rgba(100,116,139,0.2)",
-          fontSize: 11, fontWeight: 700,
-          color: "rgba(100,116,139,0.6)",
-          letterSpacing: "0.08em", textTransform: "uppercase",
-        }}>
-          {exam.branch}
+    <div className={styles.examCard}>
+      <div className={styles.examCardHeader}>
+        <h3 className={styles.examTitle}>{exam.exam_name}</h3>
+        <span className={`${styles.statusBadge} ${status.className}`}>
+          {status.label}
         </span>
       </div>
-      <h3 style={{ fontSize: 18, fontWeight: 700, color: "rgba(148,163,184,0.5)", marginBottom: 6 }}>
-        {exam.exam_name}
-      </h3>
-      <div style={{ fontSize: 12, color: "rgba(100,116,139,0.5)", marginBottom: 16 }}>
-        ⏱ {exam.duration_minutes} min · {exam.question_count ?? "—"} questions
+
+      <div className={styles.examMeta}>
+        <div className={styles.examMetaItem}>
+          <svg className={styles.examMetaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          {scheduledDate}
+        </div>
+        <div className={styles.examMetaItem}>
+          <svg className={styles.examMetaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          {scheduledTime} • {exam.duration_minutes} min
+        </div>
+        <div className={styles.examMetaItem}>
+          <svg className={styles.examMetaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+          {exam.branch} • {exam.question_count ?? "—"} questions
+        </div>
       </div>
-      <div style={{
-        padding: "11px 20px",
-        background: "rgba(239,68,68,0.06)",
-        border: "1px solid rgba(239,68,68,0.12)",
-        borderRadius: 12,
-        color: "rgba(248,113,113,0.5)",
-        fontSize: 13, fontWeight: 600,
-        textAlign: "center",
-      }}>
-        🔒 Deactivated by Admin
+
+      <button
+        className={`${styles.startExamBtn} ${!exam.is_active ? styles.startExamBtnDisabled : ""}`}
+        onClick={() => onLaunch(exam)}
+        disabled={!exam.is_active}
+      >
+        {exam.is_active ? "Start Exam" : "🔒 Locked"}
+      </button>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROFILE TAB
+// ══════════════════════════════════════════════════════════════
+function ProfileTab({ student }: { student: StudentInfo }) {
+  return (
+    <>
+      <h1 className={styles.pageTitle}>Profile</h1>
+      <p className={styles.pageSubtitle}>View your candidate information</p>
+
+      {/* Profile Header */}
+      <div className={styles.profileHeader}>
+        <div className={styles.profileHeaderLeft}>
+          <div className={styles.profileAvatar}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+          <div>
+            <div className={styles.profileName}>{student.name}</div>
+            <div className={styles.profileEmail}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+              {student.email || "candidate@examguard.com"}
+            </div>
+          </div>
+        </div>
       </div>
-    </motion.div>
+
+      {/* Personal Information */}
+      <div className={styles.profileInfoCard}>
+        <h3 className={styles.profileInfoTitle}>Personal Information</h3>
+        <div className={styles.profileGrid}>
+          <ProfileField
+            icon={
+              <svg className={styles.profileFieldIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            }
+            label="Full Name"
+            value={student.name}
+          />
+          <ProfileField
+            icon={
+              <svg className={styles.profileFieldIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+            }
+            label="Email"
+            value={student.email || "candidate@examguard.com"}
+          />
+          <ProfileField
+            icon={
+              <svg className={styles.profileFieldIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+            }
+            label="Branch"
+            value={student.branch}
+          />
+          <ProfileField
+            icon={
+              <svg className={styles.profileFieldIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+                <path d="M7 8h4M7 12h6M7 16h5" />
+                <circle cx="17" cy="13" r="2.5" />
+              </svg>
+            }
+            label="Student ID"
+            value={student.id.slice(0, 12)}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ProfileField({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className={styles.profileField}>
+      {icon}
+      <div>
+        <div className={styles.profileFieldLabel}>{label}</div>
+        <div className={styles.profileFieldValue}>{value}</div>
+      </div>
+    </div>
   );
 }

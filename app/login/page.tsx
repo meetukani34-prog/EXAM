@@ -57,6 +57,8 @@ export default function LoginPage() {
         JSON.stringify({
           id: data.student_id,
           name: data.student_name,
+          email: email.trim(),
+          branch: branch,
           examStartTime: data.exam_start_time,
           examDurationMinutes: 20, // STRICT OVERRIDE
           examTitle: data.exam_title,
@@ -64,7 +66,7 @@ export default function LoginPage() {
         })
       );
 
-      router.push("/instructions");
+      router.push("/dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Login failed.";
       setError(msg);

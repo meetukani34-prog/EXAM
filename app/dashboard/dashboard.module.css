@@ -1,0 +1,529 @@
+/* ══════════════════════════════════════════════════════════════
+   Student Portal — Clean Light Theme (FocusR-Inspired)
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  --portal-primary: #4f46e5;
+  --portal-primary-light: #eef2ff;
+  --portal-primary-dark: #3730a3;
+  --portal-bg: #f8fafc;
+  --portal-card: #ffffff;
+  --portal-border: #e2e8f0;
+  --portal-text: #1e293b;
+  --portal-text-secondary: #64748b;
+  --portal-text-muted: #94a3b8;
+  --portal-accent-green: #22c55e;
+  --portal-accent-orange: #f59e0b;
+  --portal-accent-red: #ef4444;
+  --portal-radius: 12px;
+  --portal-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --portal-shadow-md: 0 4px 6px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.06);
+}
+
+/* ── Layout Shell ── */
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--portal-bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--portal-text);
+}
+
+/* ── Top Navigation Bar ── */
+.topNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 64px;
+  background: var(--portal-card);
+  border-bottom: 1px solid var(--portal-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topNavLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logoMark {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(79,70,229,0.25);
+}
+
+.logoText {
+  display: flex;
+  flex-direction: column;
+}
+
+.logoTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--portal-text);
+  line-height: 1.2;
+}
+
+.logoSub {
+  font-size: 12px;
+  color: var(--portal-text-muted);
+  line-height: 1.2;
+}
+
+.topNavRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.userInfo {
+  text-align: right;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--portal-text);
+}
+
+.userRole {
+  font-size: 12px;
+  color: var(--portal-text-muted);
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  color: var(--portal-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logoutBtn:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: var(--portal-accent-red);
+}
+
+/* ── Body Layout ── */
+.bodyLayout {
+  display: flex;
+  flex: 1;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 220px;
+  background: var(--portal-card);
+  border-right: 1px solid var(--portal-border);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.sidebarItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--portal-text-secondary);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.sidebarItem:hover {
+  background: var(--portal-primary-light);
+  color: var(--portal-primary);
+}
+
+.sidebarItemActive {
+  background: var(--portal-primary) !important;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(79,70,229,0.25);
+}
+
+.sidebarIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* ── Main Content ── */
+.mainContent {
+  flex: 1;
+  padding: 32px 40px;
+  overflow-y: auto;
+}
+
+/* ── Page Title ── */
+.pageTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--portal-text);
+  margin-bottom: 4px;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: var(--portal-text-muted);
+  margin-bottom: 32px;
+}
+
+/* ── Exam Card ── */
+.examCard {
+  background: var(--portal-card);
+  border: 1px solid var(--portal-border);
+  border-left: 4px solid var(--portal-primary);
+  border-radius: var(--portal-radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--portal-shadow);
+  transition: all 0.2s ease;
+}
+
+.examCard:hover {
+  box-shadow: var(--portal-shadow-md);
+  transform: translateY(-1px);
+}
+
+.examCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.examTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--portal-text);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.statusActive {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.statusScheduled {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.statusInactive {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.examMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.examMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--portal-text-secondary);
+}
+
+.examMetaIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--portal-text-muted);
+  flex-shrink: 0;
+}
+
+.startExamBtn {
+  padding: 10px 24px;
+  background: var(--portal-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(79,70,229,0.2);
+}
+
+.startExamBtn:hover {
+  background: var(--portal-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(79,70,229,0.3);
+}
+
+.startExamBtnDisabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.startExamBtnDisabled:hover {
+  background: #94a3b8;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Profile Section ── */
+.profileHeader {
+  background: var(--portal-card);
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  box-shadow: var(--portal-shadow);
+}
+
+.profileHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.profileAvatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #eef2ff;
+  border: 2px solid var(--portal-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--portal-primary);
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.profileName {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--portal-text);
+  margin-bottom: 4px;
+}
+
+.profileEmail {
+  font-size: 14px;
+  color: var(--portal-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editProfileBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: var(--portal-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editProfileBtn:hover {
+  background: var(--portal-primary-dark);
+}
+
+.profileInfoCard {
+  background: var(--portal-card);
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  padding: 32px;
+  box-shadow: var(--portal-shadow);
+}
+
+.profileInfoTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--portal-text);
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--portal-border);
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.profileField {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.profileFieldIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--portal-primary);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.profileFieldLabel {
+  font-size: 12px;
+  color: var(--portal-primary);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.profileFieldValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--portal-text);
+}
+
+/* ── Empty State ── */
+.emptyState {
+  text-align: center;
+  padding: 80px 40px;
+  color: var(--portal-text-muted);
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--portal-text-secondary);
+  margin-bottom: 8px;
+}
+
+.emptyText {
+  font-size: 14px;
+}
+
+/* ── Loading ── */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--portal-border);
+  border-top-color: var(--portal-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Mobile Responsive ── */
+@media (max-width: 768px) {
+  .topNav {
+    padding: 0 16px;
+    height: 56px;
+  }
+
+  .logoText {
+    display: none;
+  }
+
+  .userInfo {
+    display: none;
+  }
+
+  .bodyLayout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 12px 16px;
+    gap: 8px;
+    border-right: none;
+    border-bottom: 1px solid var(--portal-border);
+  }
+
+  .sidebarItem {
+    white-space: nowrap;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .mainContent {
+    padding: 20px 16px;
+  }
+
+  .profileHeader {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .profileHeaderLeft {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profileGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .examCardHeader {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
