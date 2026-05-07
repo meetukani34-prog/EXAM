@@ -144,7 +144,7 @@ export default function DashboardPage() {
     }
 
     sessionStorage.setItem("exam_selected_title", exam.exam_name);
-    router.push("/exam");
+    router.push("/instructions");
   }, [router]);
 
   // ── Logout ──────────────────────────────────────────────
