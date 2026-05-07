@@ -163,20 +163,7 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          {/* Role Grid */}
-          <div className={styles.roleGrid}>
-            {["Admin", "Hr", "Candidate", "Panelist"].map((r) => (
-              <div 
-                key={r}
-                className={`${styles.roleBtn} ${role === r ? styles.roleBtnActive : ""}`}
-                onClick={() => setRole(r)}
-              >
-                {r}
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
             <button 
               type="button" 
               className={styles.forgotPass} 
