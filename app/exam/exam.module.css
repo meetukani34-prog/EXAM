@@ -129,7 +129,7 @@
   flex-direction: column;
   gap: 16px;
   overflow-y: auto;
-  max-height: 100%;
+  flex: 1; /* Allow it to take available space while respecting footer */
   padding-right: 8px;
 }
 .questionList::-webkit-scrollbar { width: 4px; }
