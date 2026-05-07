@@ -95,7 +95,7 @@ export default function LoginPage() {
             <input
               type="text"
               className={styles.inputField}
-              placeholder="Username / USN"
+              placeholder="Email ID / USN No"
               value={usn}
               onChange={(e) => setUsn(e.target.value)}
               disabled={loading}
