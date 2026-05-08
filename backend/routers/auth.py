@@ -117,14 +117,10 @@ async def login(request: LoginRequest):
         )
         exam_status_data = exam_status_res.data[0] if exam_status_res.data and len(exam_status_res.data) > 0 else None
     except Exception as e:
-        # Gracefully handle if some other issue occurs, though limit(1) won't throw on empty
         exam_status_data = None
 
-    if exam_status_data and exam_status_data.get("status") == "submitted":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You have already submitted this exam.",
-        )
+    # NOTE: In multi-quiz mode, we allow login even if one exam is submitted 
+    # so they can access other quizzes or view their dashboard.
 
     # 5. Create JWT token
     student_id_val = student.get("usn") or student.get("roll_number") or ""
