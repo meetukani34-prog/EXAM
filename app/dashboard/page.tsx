@@ -143,8 +143,9 @@ export default function DashboardPage() {
     { id: "home", label: "Home", icon: <HomeIcon /> },
     { id: "aptitude", label: "Aptitude Test", icon: <AptitudeIcon /> },
     { id: "programming", label: "Programming", icon: <CodeIcon /> },
+    { id: "other", label: "Other Quiz", icon: <OtherIcon /> },
     { id: "profile", label: "Profile", icon: <ProfileIcon /> },
-    { id: "learning", label: "History", icon: <HistoryIcon /> },
+    { id: "learning", label: "Learning Path", icon: <HistoryIcon /> },
     { id: "insights", label: "Skills Insights", icon: <InsightsIcon /> },
   ];
 
@@ -283,8 +284,8 @@ export default function DashboardPage() {
 
           {activeTab !== "home" && activeTab !== "profile" && (
             <CategoryTab 
-               title={tabs.find(t => t.id === activeTab)?.label || ""}
-               subtitle="System ready for authorization"
+               title={activeTab === "other" ? "General Assessments" : tabs.find(t => t.id === activeTab)?.label || ""}
+               subtitle={activeTab === "other" ? "Diverse quizzes and surveys" : "System ready for authorization"}
                exams={studentExams.filter(e => e.category === activeTab)}
                onLaunch={handleLaunchExam}
             />
@@ -519,5 +520,6 @@ function HomeIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24
 function AptitudeIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>; }
 function CodeIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>; }
 function ProfileIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>; }
+function OtherIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>; }
 function HistoryIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 8v4l3 3" /><circle cx="12" cy="12" r="10" /></svg>; }
 function InsightsIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>; }
