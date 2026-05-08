@@ -73,42 +73,42 @@ def get_questions(
         branch = current.get("branch", "CS")
         
         # ── Strategy 1: Strict Branch + Strict Title Match ──
-        result = (
-            db.table("questions")
-            .select("id, text, options, branch, order_index, marks, exam_name")
-            .eq("branch", branch)
-            .eq("exam_name", title)
-            .order("order_index")
-            .limit(100)
-            .execute()
-        )
+        query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name")
+        if branch != "ALL":
+            query = query.eq("branch", branch)
+        
+        result = query.eq("exam_name", title).order("order_index").limit(100).execute()
 
         # ── Strategy 2: Strict Branch + Fuzzy Title Match ──
-        # (Handles cases where active exam title is 'IP NEXUS' but questions are 'IP NEXUS DS')
+        if not result.data:
+            query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name")
+            if branch != "ALL":
+                query = query.eq("branch", branch)
+            result = query.ilike("exam_name", f"%{title}%").order("order_index").limit(100).execute()
+            
+        # ── Strategy 3: Global Title Match (Cross-Branch Fallback) ──
         if not result.data:
             result = (
                 db.table("questions")
                 .select("id, text, options, branch, order_index, marks, exam_name")
-                .eq("branch", branch)
-                .ilike("exam_name", f"%{title}%")
+                .eq("exam_name", title)
                 .order("order_index")
                 .limit(100)
                 .execute()
             )
             
-        # ── Strategy 3: Strict Branch + Legacy Spectral Tag Fallback ──
+        # ── Strategy 4: Global Fuzzy Title Match ──
         if not result.data:
             result = (
                 db.table("questions")
                 .select("id, text, options, branch, order_index, marks, exam_name")
-                .eq("branch", branch)
-                .ilike("text", f"%⟦EXAM:{title}⟧%")
+                .ilike("exam_name", f"%{title}%")
                 .order("order_index")
                 .limit(100)
                 .execute()
             )
 
-        # ── Strategy 4: Final Branch-Only Fallback ──
+        # ── Strategy 5: Final Branch-Only Fallback ──
         # If an exam is active and there are questions for this branch, show them!
         if not result.data:
             result = (
@@ -250,25 +250,20 @@ def submit_exam(
     branch = current.get("branch", "CS")
 
     # Strategy 1: Strict Branch + Strict Title Match
-    questions_result = (
-        db.table("questions")
-        .select("id, correct_answer, marks")
-        .eq("branch", branch)
-        .eq("exam_name", exam_title)
-        .execute()
-    )
+    query = db.table("questions").select("id, correct_answer, marks")
+    if branch != "ALL":
+        query = query.eq("branch", branch)
+    
+    questions_result = query.eq("exam_name", exam_title).execute()
 
     # Strategy 2: Strict Branch + Fuzzy Title Match
     if not questions_result.data:
-        questions_result = (
-            db.table("questions")
-            .select("id, correct_answer, marks")
-            .eq("branch", branch)
-            .ilike("exam_name", f"%{exam_title}%")
-            .execute()
-        )
+        query = db.table("questions").select("id, correct_answer, marks")
+        if branch != "ALL":
+            query = query.eq("branch", branch)
+        questions_result = query.ilike("exam_name", f"%{exam_title}%").execute()
 
-    # Strategy 3: Title Only (Absolute Fallback)
+    # Strategy 3: Global Title Match (Cross-Branch Fallback)
     if not questions_result.data:
         questions_result = (
             db.table("questions")
