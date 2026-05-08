@@ -15,6 +15,7 @@ interface ExamNode {
   is_active: boolean;
   duration_minutes: number;
   scheduled_start: string | null;
+  scheduled_end: string | null;
   question_count?: number;
   category?: string;
   marks_per_question?: number;
@@ -107,6 +108,7 @@ export default function DashboardPage() {
             is_active: config ? config.is_active : true,
             duration_minutes: config ? config.duration_minutes : 20,
             scheduled_start: config ? config.scheduled_start : null,
+            scheduled_end: config ? config.scheduled_end : null,
             question_count: info.count,
             category: info.category,
             marks_per_question: config ? config.marks_per_question : 4,
@@ -210,30 +212,90 @@ export default function DashboardPage() {
         <main className={styles.mainContent}>
           {activeTab === "home" && (
             <>
-              <div className={styles.sectionWrapper}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Upcoming Exams</h2>
-                    <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>View your scheduled assessments</p>
-                  </div>
-                  <div style={{ opacity: 0.4 }}>
-                    <svg width="120" height="60" viewBox="0 0 120 60">
-                      <circle cx="20" cy="20" r="2" fill="#fff" />
-                      <circle cx="40" cy="40" r="2" fill="#fff" />
-                      <circle cx="60" cy="15" r="2" fill="#fff" />
-                      <circle cx="80" cy="45" r="2" fill="#fff" />
-                      <circle cx="100" cy="25" r="2" fill="#fff" />
-                      <path d="M20 20 L40 40 L60 15 L80 45 L100 25" stroke="rgba(255,255,255,0.2)" fill="none" />
-                    </svg>
-                  </div>
-                </div>
+              {(() => {
+                const now = Date.now();
+                const active = studentExams.filter(e => {
+                  if (!e.scheduled_start) return true;
+                  const start = new Date(e.scheduled_start).getTime();
+                  const end = e.scheduled_end ? new Date(e.scheduled_end).getTime() : null;
+                  return start <= now && (!end || end >= now);
+                });
+                const upcoming = studentExams.filter(e => {
+                  if (!e.scheduled_start) return false;
+                  const start = new Date(e.scheduled_start).getTime();
+                  return start > now;
+                });
+                const expired = studentExams.filter(e => {
+                  if (!e.scheduled_end) return false;
+                  const end = new Date(e.scheduled_end).getTime();
+                  return end < now;
+                });
 
-                <div className={styles.examsSection} style={{ marginTop: 24 }}>
-                  {studentExams.slice(0, 2).map(exam => (
-                    <ExamCard key={exam.id} exam={exam} onLaunch={handleLaunchExam} />
-                  ))}
-                </div>
-              </div>
+                return (
+                  <>
+                    {/* ── Active Exams ── */}
+                    <div className={styles.sectionWrapper}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Active Exams</h2>
+                          <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Live assessments available right now</p>
+                        </div>
+                        <div className={styles.livePulse} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(52, 211, 153, 0.1)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(52, 211, 153, 0.2)' }}>
+                           <div className={styles.pulseDot} />
+                           <span style={{ fontSize: 12, fontWeight: 700, color: '#34d399' }}>SYSTEM LIVE</span>
+                        </div>
+                      </div>
+                      <div className={styles.examsSection} style={{ marginTop: 24 }}>
+                        {active.length > 0 ? active.map(exam => (
+                          <ExamCard key={exam.id} exam={exam} onLaunch={handleLaunchExam} />
+                        )) : (
+                          <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, width: '100%' }}>
+                            No exams are currently live.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── Upcoming Exams ── */}
+                    <div className={styles.sectionWrapper} style={{ marginTop: 40 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Upcoming Exams</h2>
+                          <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Future scheduled assessments</p>
+                        </div>
+                      </div>
+                      <div className={styles.examsSection} style={{ marginTop: 24 }}>
+                        {upcoming.length > 0 ? upcoming.map(exam => (
+                          <ExamCard key={exam.id} exam={exam} onLaunch={handleLaunchExam} />
+                        )) : (
+                          <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, width: '100%' }}>
+                            No upcoming exams scheduled.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── Expired Exams ── */}
+                    <div className={styles.sectionWrapper} style={{ marginTop: 40 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Expired Exams</h2>
+                          <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Past assessments that have concluded</p>
+                        </div>
+                      </div>
+                      <div className={styles.examsSection} style={{ marginTop: 24, opacity: 0.6 }}>
+                        {expired.length > 0 ? expired.map(exam => (
+                          <ExamCard key={exam.id} exam={exam} onLaunch={handleLaunchExam} />
+                        )) : (
+                          <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, width: '100%' }}>
+                            No expired exams.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
 
               <div className={styles.insightsRow}>
                 <div className={styles.hologramPanel}>
