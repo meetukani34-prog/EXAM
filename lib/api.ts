@@ -405,6 +405,10 @@ export async function fetchExamConfig(title?: string): Promise<ExamConfig> {
   return adminFetch<ExamConfig>(path);
 }
 
+export async function fetchAllExamConfigs(): Promise<ExamConfig[]> {
+  return adminFetch<ExamConfig[]>("/admin/exam/config/all");
+}
+
 export async function updateExamConfig(data: Partial<ExamConfig>): Promise<ExamConfig> {
   return adminFetch<ExamConfig>("/admin/exam/config", {
     method: "POST",

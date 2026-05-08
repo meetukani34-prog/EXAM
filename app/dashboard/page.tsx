@@ -447,14 +447,17 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
 
   const hasReachedLimit = (exam.attempts_count || 0) >= (exam.max_attempts || 1) && exam.student_status === 'submitted';
 
+  const isInactive = !exam.is_active;
+  const isDisabled = isLocked || hasReachedLimit || isInactive;
+
   return (
-    <div className={styles.examCard} style={{ opacity: (isLocked || hasReachedLimit) ? 0.8 : 1 }}>
+    <div className={styles.examCard} style={{ opacity: isDisabled ? 0.8 : 1 }}>
       <img src={pattern} className={styles.cardPattern} alt="" />
       <div style={{ position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <h3 className={styles.examTitle}>{exam.exam_name}</h3>
-          <span className={styles.statusBadge}>
-            {isLocked ? "Scheduled" : (hasReachedLimit ? "Completed" : "Live")}
+          <span className={styles.statusBadge} style={{ background: isInactive ? 'rgba(239, 68, 68, 0.1)' : undefined, color: isInactive ? '#ef4444' : undefined }}>
+            {isInactive ? "Inactive" : (isLocked ? "Scheduled" : (hasReachedLimit ? "Completed" : "Live"))}
           </span>
         </div>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -472,24 +475,25 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
           </div>
         </div>
         <div className={styles.progressBar}>
-           <div className={styles.progressFill} style={{ width: hasReachedLimit ? '100%' : (isLocked ? '0%' : '100%'), background: hasReachedLimit ? '#34d399' : undefined }} />
+           <div className={styles.progressFill} style={{ width: hasReachedLimit ? '100%' : (isDisabled ? '0%' : '100%'), background: hasReachedLimit ? '#34d399' : (isInactive ? '#ef4444' : undefined) }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 }}>
           <button 
             className={styles.startExamBtn} 
-            onClick={() => !isLocked && !hasReachedLimit && onLaunch(exam)} 
+            onClick={() => !isDisabled && onLaunch(exam)} 
+            disabled={isDisabled}
             style={{ 
-              opacity: (isLocked || hasReachedLimit) ? 0.6 : 1, 
-              cursor: (isLocked || hasReachedLimit) ? 'not-allowed' : 'pointer',
-              background: hasReachedLimit ? 'rgba(52, 211, 153, 0.1)' : undefined,
-              color: hasReachedLimit ? '#34d399' : undefined,
-              border: hasReachedLimit ? '1px solid rgba(52, 211, 153, 0.2)' : undefined
+              opacity: isDisabled ? 0.6 : 1, 
+              cursor: isDisabled ? 'not-allowed' : 'pointer',
+              background: hasReachedLimit ? 'rgba(52, 211, 153, 0.1)' : (isInactive ? 'rgba(239, 68, 68, 0.1)' : undefined),
+              color: hasReachedLimit ? '#34d399' : (isInactive ? '#ef4444' : undefined),
+              border: hasReachedLimit ? '1px solid rgba(52, 211, 153, 0.2)' : (isInactive ? '1px solid rgba(239, 68, 68, 0.2)' : undefined)
             }}
           >
-            {isLocked ? "Locked" : (hasReachedLimit ? "Attempted" : "Start Exam")}
+            {isInactive ? "Closed" : (isLocked ? "Locked" : (hasReachedLimit ? "Attempted" : "Start Exam"))}
           </button>
-          <div style={{ fontSize: 13, fontWeight: 700, color: isLocked ? 'var(--nexus-gold)' : (hasReachedLimit ? '#34d399' : 'var(--nexus-cyan)') }}>
-            {hasReachedLimit ? "Verified" : (countdown || "Ready")}
+          <div style={{ fontSize: 13, fontWeight: 700, color: isInactive ? '#ef4444' : (isLocked ? 'var(--nexus-gold)' : (hasReachedLimit ? '#34d399' : 'var(--nexus-cyan)')) }}>
+            {isInactive ? "Inactive" : (hasReachedLimit ? "Verified" : (countdown || "Ready"))}
           </div>
         </div>
       </div>

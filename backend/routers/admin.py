@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Header, Depends, File, UploadFile, Query
 from fastapi.responses import StreamingResponse, JSONResponse
-from typing import Optional
+from typing import Optional, List
 from core.config import get_settings
 from db.supabase_client import get_supabase
 from core.security import hash_password
@@ -428,6 +428,35 @@ async def get_exam_config(title: Optional[str] = None, _: bool = Depends(verify_
         print(f"Error fetching config: {e}")
     
     return ExamConfig(exam_title=title) if title else ExamConfig()
+
+
+@router.get("/exam/config/all", response_model=List[ExamConfig])
+async def get_all_exam_configs(_: bool = Depends(verify_admin)):
+    """Fetch all exam configurations for management."""
+    db = get_supabase()
+    try:
+        res = db.table("exam_config").select("*").execute()
+        return [
+            ExamConfig(
+                is_active=row.get("is_active", True),
+                scheduled_start=row.get("scheduled_start"),
+                scheduled_end=row.get("scheduled_end"),
+                duration_minutes=row.get("duration_minutes", 60),
+                exam_title=row.get("exam_title", "ExamGuard Assessment"),
+                marks_per_question=row.get("marks_per_question", 4),
+                negative_marks=float(row.get("negative_marks") if row.get("negative_marks") is not None else -1.0),
+                shuffle_questions=row.get("shuffle_questions", False),
+                shuffle_options=row.get("shuffle_options", False),
+                max_attempts=row.get("max_attempts", 1),
+                show_answers_after=row.get("show_answers_after", True),
+                total_questions=row.get("total_questions", 30),
+                total_marks=row.get("total_marks", 120),
+                exam_description=row.get("exam_description"),
+            ) for row in res.data
+        ]
+    except Exception as e:
+        print(f"Error fetching all configs: {e}")
+        return []
 
 
 @router.post("/exam/config", response_model=ExamConfig)

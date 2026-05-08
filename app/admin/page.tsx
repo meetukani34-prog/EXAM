@@ -34,6 +34,7 @@ import {
   SupportRequest,
   ExamConfig,
   updateExamConfig,
+  fetchAllExamConfigs,
 } from "@/lib/api";
 import { BRANCHES as BRANCH_LIST, BRANCH_IDS } from "@/lib/constants";
 import styles from "./admin.module.css";
@@ -283,26 +284,36 @@ export default function AdminPage() {
         
         const [qs, configs] = await Promise.all([
           fetchAdminQuestions(),
-          fetchPublicExamConfig()
+          fetchAllExamConfigs()
         ]);
 
         const list: BranchExamSummary[] = [];
-        
-        // Discovery from questions
-        qs.forEach((q: any) => {
-          const br = q.branch || "CS";
-          const ex = q.exam_name || "ExamGuard Assessment";
-          if (!list.find(x => x.branch === br && x.exam_name === ex)) {
-            list.push({ branch: br, exam_name: ex, question_count: 1 });
+        const seen = new Set<string>();
+
+        // 1. Group questions by branch/exam
+        qs.forEach((q: AdminQuestion) => {
+          const key = `${q.branch}-${q.exam_name}`;
+          if (!seen.has(key)) {
+            const config = configs.find(c => c.exam_title === q.exam_name);
+            list.push({ 
+              branch: q.branch, 
+              exam_name: q.exam_name, 
+              question_count: qs.filter(x => x.branch === q.branch && x.exam_name === q.exam_name).length,
+              is_active: config ? config.is_active : true
+            } as any);
+            seen.add(key);
           }
         });
 
-        // Discovery from existing configs (ensure visibility of empty but ACTIVE folders)
+        // 2. Add configs that might not have questions yet
         configs.forEach((c: any) => {
-          if (!list.find(x => x.exam_name === c.exam_title)) {
-            if (c.is_active) {
-              list.push({ branch: "CS", exam_name: c.exam_title, question_count: 0 });
-            }
+          if (!list.find(x => x.exam_name === (c.exam_title || c.exam_name))) {
+            list.push({ 
+              branch: "CS", 
+              exam_name: c.exam_title || c.exam_name, 
+              question_count: 0,
+              is_active: c.is_active 
+            } as any);
           }
         });
 
@@ -568,6 +579,74 @@ export default function AdminPage() {
                 </div>
                 <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4, fontWeight: 500 }}>Completed Quizzes</div>
               </div>
+            </div>
+          </div>
+
+          {/* ── Live Quiz Channels (Global Status) ── */}
+          <div style={{ padding: "20px 24px 0" }}>
+            <div style={{ 
+              background: "var(--bg-card)", 
+              border: "1px solid var(--border)", 
+              borderRadius: 16, 
+              padding: "20px", 
+              display: "flex", 
+              flexWrap: "wrap", 
+              gap: 12,
+              boxShadow: "var(--shadow-card)"
+            }}>
+              <div style={{ width: "100%", marginBottom: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  🛰️ Network Channels
+                </span>
+                <span style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.6 }}>
+                  Manage activation in the "Control" tab
+                </span>
+              </div>
+              {Array.from(new Set(quizzes.map(q => q.exam_name))).map(name => {
+                const q = quizzes.find(x => x.exam_name === name);
+                const isActive = (q as any)?.is_active;
+                return (
+                  <div key={name} style={{ 
+                    background: "rgba(255,255,255,0.02)", 
+                    border: `1px solid ${isActive ? "rgba(52,211,153,0.15)" : "rgba(239,68,68,0.15)"}`, 
+                    borderRadius: 12, 
+                    padding: "10px 16px", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: 12,
+                    transition: "all 0.3s ease"
+                  }}>
+                    <div style={{ 
+                      width: 8, 
+                      height: 8, 
+                      borderRadius: "50%", 
+                      background: isActive ? "#34d399" : "#ef4444", 
+                      boxShadow: isActive ? "0 0 10px rgba(52,211,153,0.5)" : "none" 
+                    }} />
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: isActive ? "var(--text-primary)" : "var(--text-muted)" }}>
+                        {name}
+                      </span>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 2 }}>
+                        <span style={{ fontSize: 10, opacity: 0.6 }}>{q?.question_count || 0} Questions</span>
+                        <span style={{ 
+                          fontSize: 10, 
+                          color: isActive ? "#34d399" : "#ef4444", 
+                          fontWeight: 800,
+                          letterSpacing: "0.02em"
+                        }}>
+                          {isActive ? "LIVE" : "INACTIVE"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {quizzes.length === 0 && (
+                <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "10px 0" }}>
+                  No quizzes detected in the network.
+                </div>
+              )}
             </div>
           </div>
 
