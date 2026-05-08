@@ -61,16 +61,16 @@ export default function ExamPage() {
 
   // ── Load student + questions ──────────────────────────────
   useEffect(() => {
-    const isPreview = sessionStorage.getItem("exam_preview") === "true";
-    const raw = sessionStorage.getItem("exam_student");
-    const token = sessionStorage.getItem("exam_token");
+    const isPreview = localStorage.getItem("exam_preview") === "true";
+    const raw = localStorage.getItem("exam_student");
+    const token = localStorage.getItem("exam_token");
 
     if (!isPreview && (!raw || !token)) {
       router.replace("/login");
       return;
     }
 
-    const selectedDuration = sessionStorage.getItem("exam_selected_duration");
+    const selectedDuration = localStorage.getItem("exam_selected_duration");
     const info = raw ? JSON.parse(raw) : { 
       id: "PREVIEW", 
       name: "Admin Preview", 
@@ -86,7 +86,7 @@ export default function ExamPage() {
     
     setStudent(info);
 
-    const quizTitle = sessionStorage.getItem("exam_selected_title") || info.examTitle || "Online Assessment";
+    const quizTitle = localStorage.getItem("exam_selected_title") || info.examTitle || "Online Assessment";
     setExamTitle(quizTitle);
     
     // Pick random final theme on mount

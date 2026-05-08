@@ -20,15 +20,15 @@ export default function InstructionsPage() {
 
   useEffect(() => {
     // Check authentication
-    const token = sessionStorage.getItem("exam_token");
+    const token = localStorage.getItem("exam_token");
     if (!token) {
       router.replace("/login");
       return;
     }
 
-    const studentData = sessionStorage.getItem("exam_student");
-    const selectedTitle = sessionStorage.getItem("exam_selected_title");
-    const selectedDuration = sessionStorage.getItem("exam_selected_duration");
+    const studentData = localStorage.getItem("exam_student");
+    const selectedTitle = localStorage.getItem("exam_selected_title");
+    const selectedDuration = localStorage.getItem("exam_selected_duration");
     
     if (studentData) {
       try {

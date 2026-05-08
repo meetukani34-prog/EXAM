@@ -2,7 +2,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return sessionStorage.getItem("exam_token");
+  return localStorage.getItem("exam_token");
 }
 
 async function apiFetch<T>(

@@ -7,7 +7,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = sessionStorage.getItem("exam_token");
+    const token = localStorage.getItem("exam_token");
     if (token) {
       router.replace("/dashboard");
     } else {

@@ -52,8 +52,8 @@ export default function LoginPage() {
         branch: branch
       });
 
-      sessionStorage.setItem("exam_token", data.access_token);
-      sessionStorage.setItem(
+      localStorage.setItem("exam_token", data.access_token);
+      localStorage.setItem(
         "exam_student",
         JSON.stringify({
           id: data.student_id,

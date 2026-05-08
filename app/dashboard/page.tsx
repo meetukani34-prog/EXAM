@@ -59,14 +59,14 @@ export default function DashboardPage() {
         email: "admin@examguard.com",
         examStartTime: null, examDurationMinutes: 60,
       };
-      sessionStorage.setItem("exam_student", JSON.stringify(mock));
-      sessionStorage.setItem("exam_preview", "true");
+      localStorage.setItem("exam_student", JSON.stringify(mock));
+      localStorage.setItem("exam_preview", "true");
       setStudent(mock);
       return;
     }
 
-    const raw = sessionStorage.getItem("exam_student");
-    const token = sessionStorage.getItem("exam_token");
+    const raw = localStorage.getItem("exam_student");
+    const token = localStorage.getItem("exam_token");
     if (!raw || !token) {
       router.replace("/login");
       return;
@@ -164,8 +164,9 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem("exam_token");
-    sessionStorage.removeItem("exam_student");
+    localStorage.removeItem("exam_token");
+    localStorage.removeItem("exam_student");
+    localStorage.removeItem("exam_preview");
     router.replace("/login");
   };
 
@@ -544,11 +545,11 @@ function ProfileTab({ student }: { student: StudentInfo }) {
     setSaving(true);
     try {
       await updateProfile({ name: editName.trim(), email: editEmail.trim(), avatar_url: avatarUrl });
-      const raw = sessionStorage.getItem("exam_student");
+      const raw = localStorage.getItem("exam_student");
       if (raw) {
         const data = JSON.parse(raw);
         data.name = editName.trim(); data.email = editEmail.trim(); data.avatarUrl = avatarUrl;
-        sessionStorage.setItem("exam_student", JSON.stringify(data));
+        localStorage.setItem("exam_student", JSON.stringify(data));
         window.location.reload();
       }
     } catch (err) { alert("Failed to update profile."); } finally { setSaving(false); setEditing(false); }
