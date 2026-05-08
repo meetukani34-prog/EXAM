@@ -628,50 +628,95 @@
 
 /* ── Mobile Responsive ── */
 @media (max-width: 1024px) {
-  .shell { padding: 8px; }
+  .shell { padding: 6px; }
+
+  .topNav {
+    padding: 0 12px;
+    height: 60px;
+  }
+
+  .logoTitle { font-size: 18px; }
+  .separator, .medalIcon, .logoSub { display: none; }
+
+  .topNavRight { gap: 12px; }
+  .userNameContainer { display: none; }
+  .userAvatarMini { width: 32px; height: 32px; }
 
   .bodyLayout {
     flex-direction: column;
+    gap: 8px;
   }
 
   .sidebar {
     width: 100%;
     flex-direction: row;
     overflow-x: auto;
-    padding: 8px 0;
-    gap: 4px;
+    padding: 4px 0 12px;
+    gap: 8px;
+    scrollbar-width: none; /* Hide scrollbar Firefox */
+    -ms-overflow-style: none;  /* Hide scrollbar IE/Edge */
   }
+
+  .sidebar::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome/Safari */
 
   .sidebarItem {
     white-space: nowrap;
-    padding: 10px 14px;
+    padding: 8px 16px;
     font-size: 13px;
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
   }
 
   .mainContent {
-    padding: 20px;
+    padding: 16px;
+    border-radius: 16px;
   }
+
+  .pageTitle { font-size: 20px; }
+  .pageSubtitle { font-size: 12px; margin-bottom: 20px; }
 
   .examsSection {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
+
+  .examCard { padding: 16px; }
+  .examTitle { font-size: 17px; }
 
   .insightsGrid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .profileGrid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .profileHeader {
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
     text-align: center;
+    padding: 24px 16px;
   }
 
   .profileHeaderLeft {
     flex-direction: column;
     align-items: center;
+    gap: 12px;
   }
+
+  .editProfileBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .profileInfoCard { padding: 20px; }
+}
+
+@media (max-width: 480px) {
+  .topNav { padding: 0 8px; }
+  .logoTitle { font-size: 16px; }
+  .notificationBell { width: 32px; height: 32px; }
 }
