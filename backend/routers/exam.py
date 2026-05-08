@@ -276,12 +276,25 @@ def submit_exam(
             .execute()
         )
     
+    # ── Scoring Configuration ──
+    # Fetch global config to see if we have negative marks or a marks override
+    marks_override = None
+    neg_marks = 0.0
+    try:
+        config_res = db.table("exam_config").select("marks_per_question, negative_marks").eq("exam_title", exam_title).execute()
+        if config_res.data:
+            cfg = config_res.data[0]
+            marks_override = cfg.get("marks_per_question")
+            neg_marks = float(cfg.get("negative_marks") if cfg.get("negative_marks") is not None else 0.0)
+    except Exception:
+        pass
+
     correct_map = {
-        q["id"]: (q["correct_answer"], q["marks"])
+        q["id"]: (q["correct_answer"], q["marks"] if marks_override is None else marks_override)
         for q in (questions_result.data or [])
     }
 
-    score = 0
+    score = 0.0
     correct_count = 0
     wrong_count = 0
     total_marks = sum(m for _, m in correct_map.values())
@@ -293,7 +306,11 @@ def submit_exam(
                 score += marks
                 correct_count += 1
             else:
+                score += neg_marks  # Adding negative value (e.g. -1)
                 wrong_count += 1
+
+    # Clamp score to 0 if desired, or allow negative
+    # score = max(0, score) 
 
     submitted_at = datetime.now(timezone.utc).isoformat()
 
