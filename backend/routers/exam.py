@@ -99,7 +99,7 @@ def get_questions(
         branch = current.get("branch", "CS")
         
         # ── Strategy 1: Strict Branch + Strict Title Match ──
-        query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name")
+        query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url")
         if branch != "ALL":
             query = query.eq("branch", branch)
         
@@ -107,7 +107,7 @@ def get_questions(
 
         # ── Strategy 2: Strict Branch + Fuzzy Title Match ──
         if not result.data:
-            query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name")
+            query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url")
             if branch != "ALL":
                 query = query.eq("branch", branch)
             result = query.ilike("exam_name", f"%{title}%").order("order_index").limit(100).execute()
@@ -116,7 +116,7 @@ def get_questions(
         if not result.data:
             result = (
                 db.table("questions")
-                .select("id, text, options, branch, order_index, marks, exam_name")
+                .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url")
                 .eq("exam_name", title)
                 .order("order_index")
                 .limit(100)
@@ -127,7 +127,7 @@ def get_questions(
         if not result.data:
             result = (
                 db.table("questions")
-                .select("id, text, options, branch, order_index, marks, exam_name")
+                .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url")
                 .ilike("exam_name", f"%{title}%")
                 .order("order_index")
                 .limit(100)

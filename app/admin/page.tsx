@@ -897,7 +897,8 @@ function QuestionsTab() {
     order_index: 0, 
     marks: 1, 
     exam_name: "General Assessment",
-    image_url: ""
+    image_url: "",
+    audio_url: ""
   });
   const [folderBranchModal, setFolderBranchModal] = useState<{ name: string, branches: string[] } | null>(null);
   const [formCategory, setFormCategory] = useState<"aptitude" | "programming" | "other">("other");
@@ -929,7 +930,7 @@ function QuestionsTab() {
       if (editing) await updateAdminQuestion(editing.id, payload);
       else await createAdminQuestion(payload);
       setShowModal(false); setEditing(null);
-      setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "" });
+      setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "", audio_url: "" });
       setFormCategory("other");
       load();
     } catch { alert("Failed to save question"); }
@@ -1137,7 +1138,7 @@ function QuestionsTab() {
             {BRANCHES.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditing(null); setFormCategory("other"); setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "" }); setShowModal(true); }}>
+        <button className="btn btn-primary" onClick={() => { setEditing(null); setFormCategory("other"); setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "", audio_url: "" }); setShowModal(true); }}>
           + Add Question
         </button>
       </div>
@@ -1441,6 +1442,11 @@ function QuestionsTab() {
                                   <img src={q.image_url} alt="Thumbnail" className={adminStyles.cardThumbnail} />
                                 </div>
                               )}
+                              {q.audio_url && (
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0", color: "#8b5cf6", fontSize: 12, fontWeight: 600 }}>
+                                  <span>🎧 Audio Attached</span>
+                                </div>
+                              )}
                               <p className={adminStyles.cardText} style={{ fontSize: 14 }}>{q.text}</p>
                               <div className={adminStyles.cardFooter} style={{ display: "flex", gap: 10, marginTop: 12 }}>
                                 <span className="badge badge-neutral" style={{ fontSize: 10 }}>{q.branch}</span>
@@ -1553,44 +1559,88 @@ function QuestionsTab() {
               </div>
             </div>
 
-            <div className={adminStyles.formGroup} style={{ marginTop: 16 }}>
-              <label>Media Asset (Optional)</label>
-              {formData.image_url ? (
-                <div className={adminStyles.imagePreviewContainer}>
-                  <img src={formData.image_url} alt="Question" className={adminStyles.imagePreview} />
-                  <button 
-                    className={adminStyles.removeImageBtn}
-                    onClick={() => setFormData({ ...formData, image_url: "" })}
-                    title="Remove Image"
-                    type="button"
-                  >
-                    ×
-                  </button>
-                </div>
-              ) : (
-                <div className={adminStyles.uploadZone}>
-                  <input 
-                    type="file" 
-                    id="question-image-upload" 
-                    style={{ display: "none" }}
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      try {
-                        const url = await uploadQuestionImage(file);
-                        setFormData({ ...formData, image_url: url });
-                      } catch (err: any) {
-                        alert(`Upload failed: ${err.message}`);
-                      }
-                    }}
-                  />
-                  <label htmlFor="question-image-upload" style={{ cursor: "pointer", display: "block", padding: "12px", textAlign: "center" }}>
-                    <div style={{ fontSize: 24, marginBottom: 4 }}>🖼️</div>
-                    <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Click to upload image asset</div>
-                  </label>
-                </div>
-              )}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
+              <div className={adminStyles.formGroup}>
+                <label>Image Asset (Optional)</label>
+                {formData.image_url ? (
+                  <div className={adminStyles.imagePreviewContainer}>
+                    <img src={formData.image_url} alt="Question" className={adminStyles.imagePreview} />
+                    <button 
+                      className={adminStyles.removeImageBtn}
+                      onClick={() => setFormData({ ...formData, image_url: "" })}
+                      title="Remove Image"
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <div className={adminStyles.uploadZone}>
+                    <input 
+                      type="file" 
+                      id="question-image-upload" 
+                      style={{ display: "none" }}
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const url = await uploadQuestionImage(file);
+                          setFormData({ ...formData, image_url: url });
+                        } catch (err: any) {
+                          alert(`Upload failed: ${err.message}`);
+                        }
+                      }}
+                    />
+                    <label htmlFor="question-image-upload" style={{ cursor: "pointer", display: "block", padding: "12px", textAlign: "center" }}>
+                      <div style={{ fontSize: 24, marginBottom: 4 }}>🖼️</div>
+                      <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Upload Image</div>
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              <div className={adminStyles.formGroup}>
+                <label>Audio Asset (Optional)</label>
+                {formData.audio_url ? (
+                  <div className={adminStyles.imagePreviewContainer} style={{ background: "rgba(139, 92, 246, 0.05)", display: "flex", flexDirection: "column", gap: 8, padding: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>🎧 Audio Attached</div>
+                    <audio src={formData.audio_url} controls style={{ width: "100%", height: 32 }} />
+                    <button 
+                      className={adminStyles.removeImageBtn}
+                      onClick={() => setFormData({ ...formData, audio_url: "" })}
+                      title="Remove Audio"
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <div className={adminStyles.uploadZone}>
+                    <input 
+                      type="file" 
+                      id="question-audio-upload" 
+                      style={{ display: "none" }}
+                      accept="audio/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          // Using same upload logic for audio, Cloudinary handles it
+                          const url = await uploadQuestionImage(file); 
+                          setFormData({ ...formData, audio_url: url });
+                        } catch (err: any) {
+                          alert(`Upload failed: ${err.message}`);
+                        }
+                      }}
+                    />
+                    <label htmlFor="question-audio-upload" style={{ cursor: "pointer", display: "block", padding: "12px", textAlign: "center" }}>
+                      <div style={{ fontSize: 24, marginBottom: 4 }}>🎵</div>
+                      <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Upload Audio</div>
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
             <div className={adminStyles.modalActions}>
               <button className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button>

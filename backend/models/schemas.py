@@ -41,6 +41,7 @@ class QuestionOut(BaseModel):
     marks: int
     exam_name: str = "Initial Assessment"
     image_url: Optional[str] = None
+    audio_url: Optional[str] = None
 
 class QuestionsResponse(BaseModel):
     questions: List[QuestionOut]
@@ -93,6 +94,7 @@ class AdminQuestionOut(BaseModel):
     order_index: int
     exam_name: str = "Initial Assessment"
     image_url: Optional[str] = None
+    audio_url: Optional[str] = None
     category: Optional[str] = None
 
 class AdminQuestionsResponse(BaseModel):
@@ -108,6 +110,7 @@ class QuestionCreate(BaseModel):
     order_index: int
     exam_name: str = "Initial Assessment"
     image_url: Optional[str] = None
+    audio_url: Optional[str] = None
     category: Optional[str] = "other"
 
 class QuestionUpdate(BaseModel):
@@ -119,6 +122,7 @@ class QuestionUpdate(BaseModel):
     order_index: Optional[int] = None
     exam_name: Optional[str] = None
     image_url: Optional[str] = None
+    audio_url: Optional[str] = None
     category: Optional[str] = None
 
 class StudentCreate(BaseModel):
@@ -210,6 +214,7 @@ class ParsedQuestion(BaseModel):
     order_index: int = 0
     exam_name: str = "Initial Assessment"
     image_url: Optional[str] = None
+    audio_url: Optional[str] = None
     category: Optional[str] = "other"
     confidence: float = 1.0
     needs_review: bool = False

@@ -4,7 +4,14 @@ import styles from "./QuestionCard.module.css";
 import { ReactNode } from "react";
 
 interface QuestionCardProps {
-  question: { id: string; text: string; options: string[]; marks: number; image_url?: string | null };
+  question: { 
+    id: string; 
+    text: string; 
+    options: string[]; 
+    marks: number; 
+    image_url?: string | null;
+    audio_url?: string | null;
+  };
   questionNumber: number;
   totalQuestions: number;
   selectedAnswer: string | undefined;
@@ -42,6 +49,20 @@ export default function QuestionCard({
       {question.image_url && (
         <div className={styles.imageContainer}>
           <img src={question.image_url} alt="Question Diagram" className={styles.image} />
+        </div>
+      )}
+
+      {question.audio_url && (
+        <div className={styles.audioContainer}>
+           <div className={styles.audioLabel}>Audio Instruction:</div>
+           <audio 
+             src={question.audio_url} 
+             controls 
+             className={styles.audioPlayer}
+             controlsList="nodownload"
+           >
+             Your browser does not support the audio element.
+           </audio>
         </div>
       )}
 

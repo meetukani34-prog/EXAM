@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS questions (
   marks          INTEGER DEFAULT 1,
   order_index    INTEGER NOT NULL,
   image_url      TEXT,               -- Optional: URL to associated image
+  audio_url      TEXT,               -- Optional: URL to associated audio clip
   created_at     TIMESTAMPTZ DEFAULT NOW()
 );
 

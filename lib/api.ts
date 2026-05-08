@@ -115,6 +115,7 @@ export interface Question {
   order_index: number;
   marks: number;
   image_url: string | null;
+  audio_url: string | null;
 }
 
 export async function fetchQuestions(title: string): Promise<Question[]> {
@@ -197,7 +198,8 @@ export interface AdminQuestion {
   marks: number;
   exam_name: string;
   image_url: string | null;
-  category?: string;
+  audio_url?: string | null;
+  category?: "aptitude" | "programming" | "other";
 }
 
 export interface AdminStudent {
