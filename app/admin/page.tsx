@@ -1170,8 +1170,8 @@ function QuestionsTab() {
                         </div>
                       </div>
                       
-                      {/* Status & Master Toggle */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginRight: 12 }} onClick={e => e.stopPropagation()}>
+                      {/* Activation & Status Indicators */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 12 }} onClick={e => e.stopPropagation()}>
                         {(() => {
                            const conf = configs.find(c => c.exam_title === name);
                            const isManualActive = conf ? conf.is_active : true;
@@ -1184,65 +1184,76 @@ function QuestionsTab() {
                            let statusColor = "#34d399";
                            let statusIcon = "🟢";
 
-                           if (start > now) {
+                           if (!isManualActive) {
+                             statusLabel = "Inactive";
+                             statusColor = "#94a3b8";
+                             statusIcon = "🚫";
+                           } else if (now < start) {
                              statusLabel = "Upcoming";
                              statusColor = "#fbbf24";
                              statusIcon = "🟡";
-                           } else if (end < now) {
+                           } else if (now > end) {
                              statusLabel = "Expired";
-                             statusColor = "#94a3b8";
-                             statusIcon = "⚪";
-                           }
-
-                           if (!isManualActive) {
-                             statusLabel = "Disabled";
                              statusColor = "#f87171";
-                             statusIcon = "🔴";
+                             statusIcon = "⚪";
                            }
 
                            return (
                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                               {/* Status Badge */}
+                               {/* Real-time Status Badge */}
                                <div style={{ 
+                                 display: "flex", 
+                                 alignItems: "center", 
+                                 gap: 6,
                                  padding: "4px 12px", 
                                  borderRadius: "12px", 
-                                 background: `${statusColor}15`, 
-                                 border: `1px solid ${statusColor}40`,
+                                 background: `${statusColor}15`,
+                                 border: `1px solid ${statusColor}30`,
                                  color: statusColor,
                                  fontSize: "11px",
-                                 fontWeight: 800,
-                                 display: "flex",
-                                 alignItems: "center",
-                                 gap: 5,
-                                 whiteSpace: "nowrap"
+                                 fontWeight: 700,
+                                 textTransform: "uppercase",
+                                 letterSpacing: "0.02em"
                                }}>
-                                 {statusIcon} {statusLabel.toUpperCase()}
+                                 {statusIcon} {statusLabel}
                                </div>
 
-                               {/* Master Toggle */}
-                               <div 
-                                 onClick={() => toggleActivation(name, isManualActive)}
-                                 style={{
-                                   width: 36,
-                                   height: 18,
-                                   borderRadius: 10,
-                                   background: isManualActive ? "#34d399" : "#cbd5e1",
-                                   position: "relative",
-                                   cursor: "pointer",
-                                   transition: "all 0.3s"
-                                 }}
-                               >
-                                 <div style={{
-                                   width: 14,
-                                   height: 14,
-                                   borderRadius: "50%",
-                                   background: "#fff",
-                                   position: "absolute",
-                                   top: 2,
-                                   left: isManualActive ? 20 : 2,
-                                   transition: "all 0.3s",
-                                   boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
-                                 }} />
+                               {/* Manual Toggle Switch */}
+                               <div style={{ 
+                                 display: "flex", 
+                                 background: "rgba(0,0,0,0.04)", 
+                                 padding: "2px", 
+                                 borderRadius: "20px", 
+                                 border: "1px solid rgba(0,0,0,0.06)" 
+                               }}>
+                                 <button 
+                                   onClick={() => !isManualActive && toggleActivation(name, false)}
+                                   style={{
+                                     fontSize: "9px",
+                                     fontWeight: 800,
+                                     padding: "3px 8px",
+                                     borderRadius: "16px",
+                                     border: "none",
+                                     cursor: "pointer",
+                                     transition: "all 0.2s",
+                                     background: isManualActive ? "#10b981" : "transparent",
+                                     color: isManualActive ? "#fff" : "#64748b",
+                                   }}
+                                 >ON</button>
+                                 <button 
+                                   onClick={() => isManualActive && toggleActivation(name, true)}
+                                   style={{
+                                     fontSize: "9px",
+                                     fontWeight: 800,
+                                     padding: "3px 8px",
+                                     borderRadius: "16px",
+                                     border: "none",
+                                     cursor: "pointer",
+                                     transition: "all 0.2s",
+                                     background: !isManualActive ? "#f43f5e" : "transparent",
+                                     color: !isManualActive ? "#fff" : "#64748b",
+                                   }}
+                                 >OFF</button>
                                </div>
                              </div>
                            );
