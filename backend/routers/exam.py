@@ -326,10 +326,25 @@ def submit_exam(
             {"student_id": student_id, "answers": answers, "score": score, "total_marks": total_marks, "submitted_at": submitted_at}
         ).execute()
 
-    # 5. Mark submitted
-    db.table("exam_status").update(
-        {"status": "submitted", "submitted_at": submitted_at}
-    ).eq("student_id", student_id).execute()
+    # 5. Mark submitted and ensure attempt is counted
+    try:
+        # Check current count to avoid double-increment if already handled in start-exam
+        curr_res = db.table("exam_status").select("attempts_count").eq("student_id", student_id).single().execute()
+        curr_count = (curr_res.data or {}).get("attempts_count", 0)
+        
+        # If it's 0, it means it wasn't incremented at start (maybe due to old schema at that moment)
+        final_count = curr_count if curr_count > 0 else 1
+        
+        db.table("exam_status").update({
+            "status": "submitted", 
+            "submitted_at": submitted_at,
+            "attempts_count": final_count
+        }).eq("student_id", student_id).execute()
+    except Exception:
+        # Fallback for old schema
+        db.table("exam_status").update(
+            {"status": "submitted", "submitted_at": submitted_at}
+        ).eq("student_id", student_id).execute()
 
     # 6. Clear active session
     db.table("students").update(
@@ -401,14 +416,16 @@ async def start_exam(
         "last_active": new_start,
         "warnings": 0,
     }
-    # ONLY INCLUDE attempts_count IF WE SUCCESSFULLY FETCHED IT OR IF WE WANT TO TRY INCREMENTING
-    # Actually, try to increment, if it fails, just ignore
+    
+    # Atomic-style increment: try to increment, if fails (column missing), just update status
     try:
-        update_payload["attempts_count"] = attempts_count + 1
-        db.table("exam_status").update(update_payload).eq("student_id", student_id).execute()
-    except Exception:
-        # Fallback: update without attempts_count
-        if "attempts_count" in update_payload: del update_payload["attempts_count"]
+        # We use a raw-ish update to ensure attempts_count + 1 happens
+        db.table("exam_status").update({
+            **update_payload,
+            "attempts_count": (attempts_count or 0) + 1
+        }).eq("student_id", student_id).execute()
+    except Exception as e:
+        print(f"[EXAM] Atomic increment failed: {e}")
         db.table("exam_status").update(update_payload).eq("student_id", student_id).execute()
 
     return StartExamResponse(started_at=new_start, status="active")
