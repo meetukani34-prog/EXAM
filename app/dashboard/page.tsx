@@ -689,12 +689,12 @@ function InsightsTab({ exams }: { exams: ExamNode[] }) {
        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}>
           {/* Performance Radar Chart */}
           <div className={styles.hologramPanel} style={{ padding: 32 }}>
-             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 24 }}>Competency Map</h3>
+             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 24, color: '#fff' }}>Competency Map</h3>
              <div style={{ height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {completed.length >= 3 ? <RadarChart data={completed} /> : (
-                  <div style={{ textAlign: 'center', opacity: 0.4 }}>
-                    <InsightsIcon />
-                    <div style={{ marginTop: 12 }}>Need at least 3 completed exams for Radar mapping.</div>
+                  <div style={{ textAlign: 'center', opacity: 0.6, color: '#fff' }}>
+                    <div style={{ color: 'var(--nexus-cyan)' }}><InsightsIcon /></div>
+                    <div style={{ marginTop: 12, fontSize: 14 }}>Need at least 3 completed exams for Radar mapping.</div>
                   </div>
                 )}
              </div>
@@ -702,22 +702,22 @@ function InsightsTab({ exams }: { exams: ExamNode[] }) {
           
           {/* Detailed Stats */}
           <div className={styles.hologramPanel} style={{ padding: 32 }}>
-             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 24 }}>Detailed Breakdown</h3>
+             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 24, color: '#fff' }}>Detailed Breakdown</h3>
              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {completed.map(e => (
                    <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
                       <div>
-                         <div style={{ fontSize: 14, fontWeight: 700 }}>{e.exam_name}</div>
-                         <div style={{ fontSize: 11, opacity: 0.5 }}>{e.branch} Assessment</div>
+                         <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{e.exam_name}</div>
+                         <div style={{ fontSize: 11, opacity: 0.7, color: 'rgba(255,255,255,0.8)' }}>{e.branch} Assessment</div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
                          <div style={{ fontSize: 16, fontWeight: 800, color: '#34d399' }}>{Math.round((e.last_score || 0) / (e.last_total || 1) * 100)}%</div>
-                         <div style={{ fontSize: 10, opacity: 0.5 }}>{e.last_score} / {e.last_total}</div>
+                         <div style={{ fontSize: 10, opacity: 0.7, color: 'rgba(255,255,255,0.8)' }}>{e.last_score} / {e.last_total}</div>
                       </div>
                    </div>
                 ))}
                 {completed.length === 0 && (
-                   <div style={{ padding: 40, textAlign: 'center', opacity: 0.4 }}>No data available. Complete an exam to see insights.</div>
+                   <div style={{ padding: 40, textAlign: 'center', opacity: 0.5, color: '#fff' }}>No data available. Complete an exam to see insights.</div>
                 )}
              </div>
           </div>
