@@ -63,6 +63,8 @@ class SubmitExamResponse(BaseModel):
     submitted: bool
     score: float
     total_marks: int
+    correct_count: int
+    wrong_count: int
     percentage: float
     submitted_at: str
 

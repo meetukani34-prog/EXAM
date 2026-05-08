@@ -323,23 +323,23 @@ export default function ExamPage() {
             {showResultDetails && submitResult && (
               <div className={styles.resultCard}>
                 <div className={styles.resultDetail}>
-                  <div className={styles.detailValue} style={{ color: "#34d399" }}>{submitResult.correct_count}</div>
-                  <div className={styles.detailLabel}>Correct</div>
+                  <div className={styles.detailValue} style={{ color: "#4ade80" }}>{submitResult.correct_count ?? 0}</div>
+                  <div className={styles.detailLabel} style={{ opacity: 0.9 }}>Correct</div>
                 </div>
                 <div className={styles.resultDetail}>
-                  <div className={styles.detailValue} style={{ color: "#f87171" }}>{submitResult.wrong_count}</div>
-                  <div className={styles.detailLabel}>Wrong</div>
+                  <div className={styles.detailValue} style={{ color: "#f87171" }}>{submitResult.wrong_count ?? 0}</div>
+                  <div className={styles.detailLabel} style={{ opacity: 0.9 }}>Wrong</div>
                 </div>
                 <div className={styles.resultDetail}>
-                  <div className={styles.detailValue} style={{ color: "#94a3b8" }}>
-                    {questions.length - (submitResult.correct_count + submitResult.wrong_count)}
+                  <div className={styles.detailValue} style={{ color: "#cbd5e1" }}>
+                    {Math.max(0, (questions.length || 0) - ((submitResult.correct_count || 0) + (submitResult.wrong_count || 0)))}
                   </div>
-                  <div className={styles.detailLabel}>Skipped</div>
+                  <div className={styles.detailLabel} style={{ opacity: 0.9 }}>Skipped</div>
                 </div>
                 
-                <div style={{ gridColumn: "1 / -1", marginTop: 12, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                   <div style={{ fontSize: 13, opacity: 0.6 }}>Total Score</div>
-                   <div style={{ fontSize: 24, fontWeight: 800, color: "var(--accent-light)" }}>
+                <div style={{ gridColumn: "1 / -1", marginTop: 12, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.2)", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                   <div style={{ fontSize: 13, opacity: 0.8, color: "#fff" }}>Total Score</div>
+                   <div style={{ fontSize: 28, fontWeight: 800, color: "var(--accent-light)", textShadow: "0 0 20px rgba(94,234,212,0.4)" }}>
                      {submitResult.score}/{submitResult.total_marks}
                    </div>
                 </div>
