@@ -509,9 +509,14 @@ async def get_exam_config_public():
     """Public exam config endpoint (no auth) — returns all configurations."""
     db = get_supabase()
     try:
-        result = db.table("exam_config").select("is_active, scheduled_start, scheduled_end, duration_minutes, exam_title, marks_per_question, negative_marks").execute()
+        # Include all relevant fields for the student dashboard
+        result = db.table("exam_config").select(
+            "is_active, scheduled_start, scheduled_end, duration_minutes, exam_title, "
+            "marks_per_question, negative_marks, max_attempts, show_answers_after"
+        ).execute()
         return result.data or []
-    except Exception:
+    except Exception as e:
+        print(f"[ADMIN] Public config fetch failed: {e}")
         return []
 
 
