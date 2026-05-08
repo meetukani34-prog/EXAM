@@ -157,6 +157,10 @@ export async function submitExam(
   });
 }
 
+export async function getExamStatus(): Promise<{ status: string; attempts_count: number }> {
+  return apiFetch<{ status: string; attempts_count: number }>("/exam/status");
+}
+
 export async function startExam(title: string): Promise<{ started_at: string }> {
   return apiFetch<{ started_at: string }>(`/exam/start-exam?title=${encodeURIComponent(title)}`, {
     method: "POST",

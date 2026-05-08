@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { fetchPublicExamConfig, type ExamConfig, updateProfile } from "@/lib/api";
+import { fetchPublicExamConfig, type ExamConfig, updateProfile, getExamStatus } from "@/lib/api";
 import { CldUploadWidget } from 'next-cloudinary';
 import styles from "./dashboard.module.css";
 
@@ -94,12 +94,11 @@ export default function DashboardPage() {
         // Fetch current student's exam status/attempts (if student is logged in)
         let sData = null;
         if (student && student.id !== "PREVIEW") {
-          const { data } = await supabase
-            .from("exam_status")
-            .select("status, attempts_count")
-            .eq("student_id", student.id)
-            .maybeSingle(); // Use maybeSingle to avoid errors if not found
-          sData = data;
+          try {
+            sData = await getExamStatus();
+          } catch(err) {
+            console.error("Failed to fetch exam status:", err);
+          }
         }
 
         const uniqueExams = new Map<string, { exam_name: string, branch: string, count: number, category: string }>();

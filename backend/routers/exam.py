@@ -11,6 +11,17 @@ from core.security import get_current_student
 from db.supabase_client import get_supabase
 
 router = APIRouter(prefix="/exam", tags=["exam"])
+@router.get("/status")
+async def get_exam_status(current: dict = Depends(get_current_student)):
+    """Fetch current student's exam status and attempt count."""
+    db = get_supabase()
+    student_id = current["student_id"]
+    try:
+        res = db.table("exam_status").select("status, attempts_count").eq("student_id", student_id).single().execute()
+        return res.data or {"status": "not_started", "attempts_count": 0}
+    except Exception:
+        return {"status": "not_started", "attempts_count": 0}
+
 @router.post("/heartbeat")
 async def heartbeat(current: dict = Depends(get_current_student)):
     """Simple authenticated ping to check if student is blocked/authorized."""
