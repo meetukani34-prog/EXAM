@@ -179,13 +179,10 @@ export interface ViolationResponse {
   message: string;
 }
 
-export async function reportViolation(
-  type: string,
-  metadata: Record<string, unknown> = {}
-): Promise<ViolationResponse> {
-  return apiFetch<ViolationResponse>("/exam/report-violation", {
+export async function reportViolation(type: string, examName: string, metadata: any = {}): Promise<any> {
+  return apiFetch<any>("/exam/report-violation", {
     method: "POST",
-    body: JSON.stringify({ type, metadata }),
+    body: JSON.stringify({ type, exam_name: examName, metadata }),
   });
 }
 

@@ -74,6 +74,7 @@ class StartExamResponse(BaseModel):
 # ── Violations ────────────────────────────────────────────────
 class ReportViolationRequest(BaseModel):
     type: str    # tab_switch | window_blur | fullscreen_exit | etc.
+    exam_name: Optional[str] = "General Assessment"
     metadata: Optional[Dict[str, Any]] = {}
 
 class ReportViolationResponse(BaseModel):

@@ -432,7 +432,7 @@ export default function ExamPage() {
       )}
 
       {/* Anti-cheat: all proctoring attached here */}
-      <AntiCheat isSubmitted={isSubmitted} onAutoSubmit={handleAutoSubmit} />
+      <AntiCheat isSubmitted={isSubmitted} examName={examTitle} onAutoSubmit={handleAutoSubmit} />
 
       {/* ── Welcome Banner (always visible, matching mockup) ── */}
       <div style={{ padding: "16px 28px 0", zIndex: 2, position: "relative" }}>

@@ -8,10 +8,11 @@ import FaceMonitor from "./FaceMonitor";
 
 interface AntiCheatProps {
   isSubmitted: boolean;
+  examName: string;
   onAutoSubmit: () => void;
 }
 
-export default function AntiCheat({ isSubmitted, onAutoSubmit }: AntiCheatProps) {
+export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiCheatProps) {
   const [warningCount, setWarningCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
@@ -24,7 +25,7 @@ export default function AntiCheat({ isSubmitted, onAutoSubmit }: AntiCheatProps)
       isReporting.current = true;
 
       try {
-        const res = await reportViolation(type, metadata);
+        const res = await reportViolation(type, examName, metadata);
         const count = res.warning_count;
         setWarningCount(count);
         setModalMessage(res.message);

@@ -227,39 +227,39 @@ def submit_exam(
     db = get_supabase()
     student_id = current["student_id"]
 
-    # 1. Guard: already submitted?
+    # 1. Extract exam title and Guard: already submitted?
+    answers = request.answers
+    exam_title = answers.get("__exam_title", "General Assessment")
+    
     status_row = (
         db.table("exam_status")
         .select("status")
         .eq("student_id", student_id)
-        .single()
+        .eq("exam_name", exam_title)
         .execute()
     )
-    if status_row.data and status_row.data["status"] == "submitted":
+    if status_row.data and status_row.data[0]["status"] == "submitted":
         # Return existing result
         result_row = (
             db.table("exam_results")
             .select("score, total_marks, submitted_at")
             .eq("student_id", student_id)
-            .single()
+            .eq("exam_name", exam_title)
             .execute()
         )
-        r = result_row.data or {}
+        r = result_row.data[0] if result_row.data else {}
         total = r.get("total_marks", 0)
         score = r.get("score", 0)
         return SubmitExamResponse(
             submitted=True,
             score=score,
             total_marks=total,
-            correct_count=r.get("correct_count", 0),  # These would need to be in DB too if we want persistence
+            correct_count=r.get("correct_count", 0),
             wrong_count=r.get("wrong_count", 0),
             percentage=round(score / total * 100, 1) if total else 0,
             submitted_at=r.get("submitted_at", datetime.now(timezone.utc).isoformat()),
         )
 
-    # 2. Load correct answers using Smart Search (matching get_questions logic)
-    answers = request.answers
-    exam_title = answers.pop("__exam_title", "Initial Assessment")
     branch = current.get("branch", "CS")
 
     # Strategy 1: Strict Branch + Strict Title Match

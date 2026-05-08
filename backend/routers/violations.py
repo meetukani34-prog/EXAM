@@ -46,36 +46,35 @@ async def report_violation(
         if request.type not in VALID_VIOLATION_TYPES:
              return ReportViolationResponse(warning_count=1, auto_submitted=False, message="⚠️ Stay focused on the exam.")
 
-        # 1. Fetch current status safely
+        # 1. Fetch current status safely for this specific exam
+        exam_title = request.exam_name or "General Assessment"
         try:
-            exam_status = db.table("exam_status").select("status, warnings").eq("student_id", student_id).single().execute()
-            if exam_status.data:
-                if exam_status.data["status"] == "submitted":
-                    return ReportViolationResponse(warning_count=exam_status.data.get("warnings", 0), auto_submitted=False, message="Exam already submitted.")
-                new_warnings = (exam_status.data.get("warnings") or 0) + 1
-        except Exception:
-            # Fallback if table/row missing
+            status_res = db.table("exam_status").select("status, warnings").eq("student_id", student_id).eq("exam_name", exam_title).execute()
+            if status_res.data:
+                row = status_res.data[0]
+                if row["status"] == "submitted":
+                    return ReportViolationResponse(warning_count=row.get("warnings", 0), auto_submitted=False, message="Exam already submitted.")
+                new_warnings = (row.get("warnings") or 0) + 1
+        except Exception as e:
+            print(f"[VIOLATIONS] Status fetch failed for {exam_title}: {e}")
             new_warnings = 1
 
-        # 2. Log violation safely
+        # 2. Log violation safely (Mapping types to valid DB constraints)
+        db_type = request.type
+        if db_type not in ["tab_switch", "window_blur", "fullscreen_exit", "no_face_detected", "face_not_front", "multiple_faces"]:
+             db_type = "tab_switch" # Fallback for DB constraint
+             
         try:
-            # Map face violations to a type allowed by the DB check constraint if necessary
-            db_type = request.type
-            if db_type not in ["tab_switch", "window_blur", "fullscreen_exit", "right_click", "copy_attempt", "paste_attempt", "keyboard_shortcut", "auto_submitted"]:
-                db_type = "keyboard_shortcut" # Use as a generic bucket for newer types
-
             db.table("violations").insert({
                 "student_id": student_id,
                 "type": db_type,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "metadata": {** (request.metadata or {}), "original_type": request.type},
+                "exam_name": exam_title,
+                "metadata": request.metadata
             }).execute()
         except Exception as e:
             print(f"[VIOLATIONS] DB Insert failed (check constraint?): {e}")
             pass
 
-        # 3. Update warnings safely
-        try:
             db.table("exam_status").update({
                 "warnings": new_warnings,
                 "last_active": datetime.now(timezone.utc).isoformat(),
