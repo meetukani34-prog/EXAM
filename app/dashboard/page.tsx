@@ -111,8 +111,8 @@ export default function DashboardPage() {
             scheduled_end: config ? config.scheduled_end : null,
             question_count: info.count,
             category: info.category,
-            marks_per_question: config ? config.marks_per_question : 4,
-            negative_marks: config ? config.negative_marks : -1,
+            marks_per_question: (config && config.marks_per_question !== undefined) ? config.marks_per_question : 4,
+            negative_marks: (config && config.negative_marks !== undefined) ? config.negative_marks : -1,
           });
         });
       }
@@ -444,7 +444,7 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
           </div>
           <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9, color: 'var(--nexus-cyan)' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-            Score: +{exam.marks_per_question || 4} / {exam.negative_marks || -1}
+            Score: +{exam.marks_per_question ?? 4} / {exam.negative_marks ?? -1}
           </div>
         </div>
         <div className={styles.progressBar}><div className={styles.progressFill} style={{ width: isLocked ? '40%' : '100%' }} /></div>
