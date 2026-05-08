@@ -335,8 +335,8 @@ export default function DashboardPage() {
 function CategoryTab({ title, subtitle, exams, onLaunch }: { title: string; subtitle: string; exams: ExamNode[]; onLaunch: (e: ExamNode) => void }) {
   return (
     <div className={styles.sectionWrapper}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>{title}</h1>
-      <p style={{ opacity: 0.6, fontSize: 14, marginBottom: 24 }}>{subtitle}</p>
+      <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>{title}</h1>
+      <p style={{ opacity: 0.6, fontSize: 14, marginBottom: 24, color: 'rgba(255,255,255,0.7)' }}>{subtitle}</p>
       {exams.length > 0 ? (
         <div className={styles.examsSection}>
           {exams.map(exam => <ExamCard key={exam.id} exam={exam} onLaunch={onLaunch} />)}
@@ -401,8 +401,8 @@ function ProfileTab({ student }: { student: StudentInfo }) {
 
   return (
     <div style={{ padding: '32px' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#1e293b' }}>Profile</h1>
-      <p style={{ opacity: 0.6, fontSize: 14, marginBottom: 32, color: '#64748b' }}>View your candidate information</p>
+      <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Profile</h1>
+      <p style={{ opacity: 0.6, fontSize: 14, marginBottom: 32, color: 'rgba(255,255,255,0.7)' }}>View your candidate information</p>
 
       {/* Top Identity Card */}
       <div className={styles.profileHeaderCard}>
