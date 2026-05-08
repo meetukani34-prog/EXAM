@@ -61,7 +61,7 @@ class SubmitExamRequest(BaseModel):
 
 class SubmitExamResponse(BaseModel):
     submitted: bool
-    score: int
+    score: float
     total_marks: int
     percentage: float
     submitted_at: str
@@ -186,7 +186,7 @@ class LeaderboardEntry(BaseModel):
     usn: str
     name: str
     branch: str
-    score: int
+    score: float
     total_marks: int
     percentage: float
     time_taken_seconds: Optional[int]
