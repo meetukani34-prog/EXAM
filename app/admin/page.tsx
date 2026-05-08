@@ -807,7 +807,8 @@ function QuestionsTab() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AdminQuestion | null>(null);
   const [selectedBranch, setSelectedBranch] = useState("All");
-  const [selectedCategory, setSelectedCategory] = useState<"all" | "active" | "upcoming" | "expired" | "aptitude" | "programming" | "other">("all");
+  const [selectedCategory, setSelectedCategory] = useState<"all" | "aptitude" | "programming" | "other">("all");
+  const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "upcoming" | "expired">("all");
   const [formData, setFormData] = useState<Omit<AdminQuestion, "id">>({ 
     text: "", 
     options: ["", "", "", ""], 
@@ -953,28 +954,27 @@ function QuestionsTab() {
 
   const filteredQuestions = questions.filter((q) => {
     const branchMatch = selectedBranch === "All" || q.branch === selectedBranch;
+    const categoryMatch = selectedCategory === "all" || getCategory(q.exam_name) === selectedCategory;
     
-    // Primary Category/Status Filter
-    if (selectedCategory === "all") return branchMatch;
+    if (selectedStatus === "all") return branchMatch && categoryMatch;
 
     const conf = configs.find(c => c.exam_title === q.exam_name);
     const now = Date.now();
-
-    if (selectedCategory === "active") {
+    
+    let statusMatch = false;
+    if (selectedStatus === "active") {
       const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
       const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
-      return branchMatch && start <= now && end >= now;
-    } else if (selectedCategory === "upcoming") {
+      statusMatch = start <= now && end >= now;
+    } else if (selectedStatus === "upcoming") {
       const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
-      return branchMatch && start > now;
-    } else if (selectedCategory === "expired") {
+      statusMatch = start > now;
+    } else if (selectedStatus === "expired") {
       const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
-      return branchMatch && end < now;
-    } else {
-      // Sub-category (Aptitude, Programming, etc.)
-      const catMatch = getQCategory(q) === selectedCategory;
-      return branchMatch && catMatch;
+      statusMatch = end < now;
     }
+
+    return branchMatch && categoryMatch && statusMatch;
   });
 
   // New: prefer q.category, fallback to inference
@@ -983,23 +983,9 @@ function QuestionsTab() {
 
   const branchFiltered = selectedBranch === "All" ? questions : questions.filter((q) => q.branch === selectedBranch);
 
+  // Category counts
   const catCounts = {
     all: branchFiltered.length,
-    active: branchFiltered.filter(q => {
-      const conf = configs.find(c => c.exam_title === q.exam_name);
-      const now = Date.now();
-      const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
-      const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
-      return start <= now && end >= now;
-    }).length,
-    upcoming: branchFiltered.filter(q => {
-      const conf = configs.find(c => c.exam_title === q.exam_name);
-      return conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() > Date.now() : false;
-    }).length,
-    expired: branchFiltered.filter(q => {
-      const conf = configs.find(c => c.exam_title === q.exam_name);
-      return conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() < Date.now() : false;
-    }).length,
     aptitude: branchFiltered.filter(q => getQCategory(q) === "aptitude").length,
     programming: branchFiltered.filter(q => getQCategory(q) === "programming").length,
     other: branchFiltered.filter(q => getQCategory(q) === "other").length,
@@ -1076,48 +1062,64 @@ function QuestionsTab() {
         </button>
       </div>
 
-      {/* ── Unified Category Tabs ── */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
+      {/* ── Category Tabs ── */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {([
-          { key: "all" as const, label: "All", emoji: "📄" },
-          { key: "active" as const, label: "Active", emoji: "🟢" },
-          { key: "upcoming" as const, label: "Upcoming", emoji: "🟡" },
-          { key: "expired" as const, label: "Expired", emoji: "⚪" },
-          { key: "aptitude" as const, label: "Aptitude", emoji: "🧠" },
-          { key: "programming" as const, label: "Programming", emoji: "💻" },
-          { key: "other" as const, label: "Other", emoji: "📂" },
+          { key: "all" as const, label: "All", emoji: "\ud83d\udccb" },
+          { key: "aptitude" as const, label: "Aptitude", emoji: "\ud83e\udde0" },
+          { key: "programming" as const, label: "Programming", emoji: "\ud83d\udcbb" },
+          { key: "other" as const, label: "Other", emoji: "\ud83d\udcc2" },
         ]).map(cat => (
           <button
             key={cat.key}
             onClick={() => setSelectedCategory(cat.key)}
             style={{
-              padding: '10px 24px',
-              borderRadius: 14,
+              padding: '8px 20px',
+              borderRadius: 10,
               border: selectedCategory === cat.key ? '2px solid #4f46e5' : '1px solid #e2e8f0',
               background: selectedCategory === cat.key ? '#eef2ff' : '#fff',
               color: selectedCategory === cat.key ? '#4f46e5' : '#64748b',
-              fontWeight: 800,
-              fontSize: 14,
+              fontWeight: 700,
+              fontSize: 13,
               cursor: 'pointer',
               transition: 'all 0.2s',
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              boxShadow: selectedCategory === cat.key ? '0 4px 12px rgba(79,70,229,0.15)' : 'none',
+              gap: 6,
             }}
           >
-            <span style={{ fontSize: 16 }}>{cat.emoji}</span>
-            {cat.label}
-            <span style={{ 
-              marginLeft: 4, 
-              opacity: 0.6, 
-              fontSize: 11, 
-              background: selectedCategory === cat.key ? 'rgba(79,70,229,0.1)' : '#f1f5f9',
-              padding: '2px 8px',
-              borderRadius: 20
-            }}>
-              {catCounts[cat.key as keyof typeof catCounts]}
-            </span>
+            {cat.emoji} {cat.label} ({catCounts[cat.key]})
+          </button>
+        ))}
+      </div>
+
+      {/* ── Status Tabs ── */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        {([
+          { key: "all" as const, label: "All Status", icon: "🌐" },
+          { key: "active" as const, label: "Active", icon: "🟢" },
+          { key: "upcoming" as const, label: "Upcoming", icon: "🟡" },
+          { key: "expired" as const, label: "Expired", icon: "⚪" },
+        ]).map(stat => (
+          <button
+            key={stat.key}
+            onClick={() => setSelectedStatus(stat.key)}
+            style={{
+              padding: '6px 16px',
+              borderRadius: 8,
+              border: selectedStatus === stat.key ? '2px solid #10b981' : '1px solid #e2e8f0',
+              background: selectedStatus === stat.key ? '#ecfdf5' : 'transparent',
+              color: selectedStatus === stat.key ? '#059669' : '#64748b',
+              fontWeight: 600,
+              fontSize: 12,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            {stat.icon} {stat.label}
           </button>
         ))}
       </div>
@@ -1168,71 +1170,80 @@ function QuestionsTab() {
                         </div>
                       </div>
                       
-                      {/* Premium Activation Toggle */}
-                      <div style={{ display: "flex", marginRight: 12 }} onClick={e => e.stopPropagation()}>
+                      {/* Status & Master Toggle */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginRight: 12 }} onClick={e => e.stopPropagation()}>
                         {(() => {
                            const conf = configs.find(c => c.exam_title === name);
-                           const isActive = conf ? conf.is_active : true;
+                           const isManualActive = conf ? conf.is_active : true;
                            
+                           const now = Date.now();
+                           const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
+                           const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
+                           
+                           let statusLabel = "Active";
+                           let statusColor = "#34d399";
+                           let statusIcon = "🟢";
+
+                           if (start > now) {
+                             statusLabel = "Upcoming";
+                             statusColor = "#fbbf24";
+                             statusIcon = "🟡";
+                           } else if (end < now) {
+                             statusLabel = "Expired";
+                             statusColor = "#94a3b8";
+                             statusIcon = "⚪";
+                           }
+
+                           if (!isManualActive) {
+                             statusLabel = "Disabled";
+                             statusColor = "#f87171";
+                             statusIcon = "🔴";
+                           }
+
                            return (
-                             <div style={{ 
-                               display: "flex", 
-                               background: "#f1f5f9", 
-                               padding: "2px", 
-                               borderRadius: "12px", 
-                               border: "1px solid #e2e8f0",
-                               position: "relative",
-                               width: 130,
-                               height: 32,
-                               overflow: "hidden"
-                             }}>
-                               {/* Sliding Background */}
-                               <motion.div
-                                 animate={{ x: isActive ? 0 : 64 }}
-                                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                               {/* Status Badge */}
+                               <div style={{ 
+                                 padding: "4px 12px", 
+                                 borderRadius: "12px", 
+                                 background: `${statusColor}15`, 
+                                 border: `1px solid ${statusColor}40`,
+                                 color: statusColor,
+                                 fontSize: "11px",
+                                 fontWeight: 800,
+                                 display: "flex",
+                                 alignItems: "center",
+                                 gap: 5,
+                                 whiteSpace: "nowrap"
+                               }}>
+                                 {statusIcon} {statusLabel.toUpperCase()}
+                               </div>
+
+                               {/* Master Toggle */}
+                               <div 
+                                 onClick={() => toggleActivation(name, isManualActive)}
                                  style={{
+                                   width: 36,
+                                   height: 18,
+                                   borderRadius: 10,
+                                   background: isManualActive ? "#34d399" : "#cbd5e1",
+                                   position: "relative",
+                                   cursor: "pointer",
+                                   transition: "all 0.3s"
+                                 }}
+                               >
+                                 <div style={{
+                                   width: 14,
+                                   height: 14,
+                                   borderRadius: "50%",
+                                   background: "#fff",
                                    position: "absolute",
                                    top: 2,
-                                   left: 2,
-                                   width: 62,
-                                   height: 26,
-                                   borderRadius: "10px",
-                                   background: isActive ? "#10b981" : "#ef4444",
-                                   boxShadow: isActive 
-                                     ? "0 4px 12px rgba(16,185,129,0.25)" 
-                                     : "0 4px 12px rgba(239,68,68,0.25)",
-                                   zIndex: 1
-                                 }}
-                               />
-                               
-                               <button 
-                                 onClick={() => !isActive && toggleActivation(name, false)}
-                                 style={{
-                                   flex: 1,
-                                   fontSize: "11px",
-                                   fontWeight: 800,
-                                   border: "none",
-                                   cursor: "pointer",
-                                   zIndex: 2,
-                                   background: "transparent",
-                                   color: isActive ? "#fff" : "#94a3b8",
-                                   transition: "color 0.2s"
-                                 }}
-                               >ACTIVE</button>
-                               <button 
-                                 onClick={() => isActive && toggleActivation(name, true)}
-                                 style={{
-                                   flex: 1,
-                                   fontSize: "11px",
-                                   fontWeight: 800,
-                                   border: "none",
-                                   cursor: "pointer",
-                                   zIndex: 2,
-                                   background: "transparent",
-                                   color: !isActive ? "#fff" : "#94a3b8",
-                                   transition: "color 0.2s"
-                                 }}
-                               >INACTIVE</button>
+                                   left: isManualActive ? 20 : 2,
+                                   transition: "all 0.3s",
+                                   boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
+                                 }} />
+                               </div>
                              </div>
                            );
                         })()}
