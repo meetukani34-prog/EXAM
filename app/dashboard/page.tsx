@@ -208,8 +208,8 @@ export default function DashboardPage() {
               <div className={styles.sectionWrapper}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                    <div>
-                      <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Upcoming Exams</h2>
-                      <p style={{ opacity: 0.6, fontSize: 14 }}>View your scheduled assessments</p>
+                      <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Upcoming Exams</h2>
+                      <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>View your scheduled assessments</p>
                    </div>
                    <div style={{ opacity: 0.4 }}>
                       <svg width="120" height="60" viewBox="0 0 120 60">
@@ -232,7 +232,7 @@ export default function DashboardPage() {
 
               <div className={styles.insightsRow}>
                  <div className={styles.hologramPanel}>
-                    <h3 style={{ fontSize: 18, fontWeight: 700 }}>Quick Insights</h3>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Quick Insights</h3>
                     <div style={{ display: 'flex', gap: 40, marginTop: 24 }}>
                        <div>
                           <div style={{ opacity: 0.6, fontSize: 12, marginBottom: 4 }}>Completed Exams</div>
