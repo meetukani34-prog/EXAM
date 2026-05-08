@@ -39,63 +39,63 @@ async def report_violation(
     """
     db = get_supabase()
     student_id = current["student_id"]
+    new_warnings = 1
+    
+    try:
+        # Validate type
+        if request.type not in VALID_VIOLATION_TYPES:
+             return ReportViolationResponse(warning_count=1, auto_submitted=False, message="⚠️ Stay focused on the exam.")
 
-    # Validate type
-    if request.type not in VALID_VIOLATION_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Unknown violation type: {request.type}",
-        )
+        # 1. Fetch current status safely
+        try:
+            exam_status = db.table("exam_status").select("status, warnings").eq("student_id", student_id).single().execute()
+            if exam_status.data:
+                if exam_status.data["status"] == "submitted":
+                    return ReportViolationResponse(warning_count=exam_status.data.get("warnings", 0), auto_submitted=False, message="Exam already submitted.")
+                new_warnings = (exam_status.data.get("warnings") or 0) + 1
+        except Exception:
+            # Fallback if table/row missing
+            new_warnings = 1
 
-    # Check not already submitted
-    exam_status = (
-        db.table("exam_status")
-        .select("status, warnings")
-        .eq("student_id", student_id)
-        .single()
-        .execute()
-    )
+        # 2. Log violation safely
+        try:
+            db.table("violations").insert({
+                "student_id": student_id,
+                "type": request.type,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "metadata": request.metadata or {},
+            }).execute()
+        except Exception: pass
 
-    if exam_status.data and exam_status.data["status"] == "submitted":
+        # 3. Update warnings safely
+        try:
+            db.table("exam_status").update({
+                "warnings": new_warnings,
+                "last_active": datetime.now(timezone.utc).isoformat(),
+            }).eq("student_id", student_id).execute()
+        except Exception: pass
+
+        # 4. Determine response
+        auto_submitted = False
+        if new_warnings >= AUTO_SUBMIT_THRESHOLD:
+            auto_submitted = True
+            message = WARNING_3
+        elif new_warnings == 2:
+            message = WARNING_2
+        else:
+            message = WARNING_1
+
         return ReportViolationResponse(
-            warning_count=exam_status.data.get("warnings", 0),
-            auto_submitted=False,
-            message="Exam already submitted.",
+            warning_count=new_warnings,
+            auto_submitted=auto_submitted,
+            message=message,
         )
 
-    current_warnings = (exam_status.data or {}).get("warnings", 0)
-    new_warnings = current_warnings + 1
-
-    # Log violation event
-    db.table("violations").insert(
-        {
-            "student_id": student_id,
-            "type": request.type,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "metadata": request.metadata or {},
-        }
-    ).execute()
-
-    # Increment warnings in exam_status
-    db.table("exam_status").update(
-        {
-            "warnings": new_warnings,
-            "last_active": datetime.now(timezone.utc).isoformat(),
-        }
-    ).eq("student_id", student_id).execute()
-
-    # Auto-submit trigger
-    auto_submitted = False
-    if new_warnings >= AUTO_SUBMIT_THRESHOLD:
-        auto_submitted = True
-        message = WARNING_3
-    elif new_warnings == 2:
-        message = WARNING_2
-    else:
-        message = WARNING_1
-
-    return ReportViolationResponse(
-        warning_count=new_warnings,
-        auto_submitted=auto_submitted,
-        message=message,
-    )
+    except Exception as e:
+        print(f"[VIOLATIONS] Critical failure: {e}")
+        # ABSOLUTE FALLBACK: Never auto-submit on a system error!
+        return ReportViolationResponse(
+            warning_count=1,
+            auto_submitted=False,
+            message="⚠️ Connection unstable. Please stay on the exam screen."
+        )
