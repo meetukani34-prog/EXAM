@@ -541,19 +541,31 @@ function ProfileTab({ student }: { student: StudentInfo }) {
   const [avatarUrl, setAvatarUrl] = useState(student.avatarUrl || "");
   const [saving, setSaving] = useState(false);
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await updateProfile({ name: editName.trim(), email: editEmail.trim(), avatar_url: avatarUrl });
-      const raw = localStorage.getItem("exam_student");
-      if (raw) {
-        const data = JSON.parse(raw);
-        data.name = editName.trim(); data.email = editEmail.trim(); data.avatarUrl = avatarUrl;
-        localStorage.setItem("exam_student", JSON.stringify(data));
-        window.location.reload();
-      }
-    } catch (err) { alert("Failed to update profile."); } finally { setSaving(false); setEditing(false); }
-  };
+    // ── Profile Update ──────────────────────────────────────────
+    const handleSave = async () => {
+      if (!editName.trim()) { alert("Name is required."); return; }
+      setSaving(true);
+      try {
+        const payload = { name: editName.trim(), email: editEmail.trim(), avatar_url: avatarUrl };
+        console.log("[PROFILE] Updating with payload:", payload);
+        await updateProfile(payload);
+        
+        const raw = localStorage.getItem("exam_student");
+        if (raw) {
+          const data = JSON.parse(raw);
+          data.name = editName.trim(); 
+          data.email = editEmail.trim(); 
+          data.avatarUrl = avatarUrl; // Preserve locally
+          localStorage.setItem("exam_student", JSON.stringify(data));
+          console.log("[PROFILE] Local storage updated.");
+          alert("Profile updated successfully!");
+          window.location.reload();
+        }
+      } catch (err) { 
+        console.error("[PROFILE] Update error:", err);
+        alert("Failed to update profile. Please ensure you ran the SQL migration."); 
+      } finally { setSaving(false); setEditing(false); }
+    };
 
   return (
     <div style={{ padding: '32px' }}>
@@ -616,10 +628,17 @@ function ProfileTab({ student }: { student: StudentInfo }) {
                 <img src={avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=0D8ABC&color=fff`} style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover' }} alt="" />
                 <CldUploadWidget
                   uploadPreset="ml_default"
-                  onSuccess={(result: any) => { if (result.info && typeof result.info !== 'string') setAvatarUrl(result.info.secure_url); }}
+                  onSuccess={(result: any) => { 
+                    if (result.info && typeof result.info !== 'string') {
+                      console.log("[UPLOAD] Success:", result.info.secure_url);
+                      setAvatarUrl(result.info.secure_url); 
+                    }
+                  }}
                 >
                   {({ open }) => (
-                    <button className={styles.changePhotoBtn} onClick={() => open()}>Change Photo</button>
+                    <button className={styles.changePhotoBtn} onClick={() => open()}>
+                      {avatarUrl ? "Change Photo" : "Upload Photo"}
+                    </button>
                   )}
                 </CldUploadWidget>
               </div>
