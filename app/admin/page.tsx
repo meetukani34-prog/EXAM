@@ -809,7 +809,7 @@ function QuestionsTab() {
   const [editing, setEditing] = useState<AdminQuestion | null>(null);
   const [selectedBranch, setSelectedBranch] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState<"all" | "aptitude" | "programming" | "other">("all");
-  const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "upcoming" | "expired">("all");
+  const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "upcoming" | "inactive">("all");
   const [formData, setFormData] = useState<Omit<AdminQuestion, "id">>({ 
     text: "", 
     options: ["", "", "", ""], 
@@ -966,13 +966,13 @@ function QuestionsTab() {
     if (selectedStatus === "active") {
       const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
       const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
-      statusMatch = start <= now && end >= now;
+      statusMatch = (conf?.is_active !== false) && start <= now && end >= now;
     } else if (selectedStatus === "upcoming") {
       const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
-      statusMatch = start > now;
-    } else if (selectedStatus === "expired") {
+      statusMatch = (conf?.is_active !== false) && start > now;
+    } else if (selectedStatus === "inactive") {
       const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
-      statusMatch = end < now;
+      statusMatch = (conf?.is_active === false) || (end < now);
     }
 
     return branchMatch && categoryMatch && statusMatch;
@@ -1100,7 +1100,7 @@ function QuestionsTab() {
           { key: "all" as const, label: "All Status", icon: "🌐" },
           { key: "active" as const, label: "Active", icon: "🟢" },
           { key: "upcoming" as const, label: "Upcoming", icon: "🟡" },
-          { key: "expired" as const, label: "Expired", icon: "⚪" },
+          { key: "inactive" as const, label: "Inactive", icon: "⚪" },
         ]).map(stat => (
           <button
             key={stat.key}
