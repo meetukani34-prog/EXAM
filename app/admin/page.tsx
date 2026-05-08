@@ -808,6 +808,7 @@ function QuestionsTab() {
   const [editing, setEditing] = useState<AdminQuestion | null>(null);
   const [selectedBranch, setSelectedBranch] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState<"all" | "aptitude" | "programming" | "other">("all");
+  const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "upcoming" | "expired">("all");
   const [formData, setFormData] = useState<Omit<AdminQuestion, "id">>({ 
     text: "", 
     options: ["", "", "", ""], 
@@ -951,14 +952,36 @@ function QuestionsTab() {
     return "other";
   }
 
-  const branchFiltered = selectedBranch === "All" ? questions : questions.filter((q) => q.branch === selectedBranch);
-  
+  const filteredQuestions = questions.filter((q) => {
+    const branchMatch = selectedBranch === "All" || q.branch === selectedBranch;
+    const categoryMatch = selectedCategory === "all" || getCategory(q.exam_name) === selectedCategory;
+    
+    if (selectedStatus === "all") return branchMatch && categoryMatch;
+
+    const conf = configs.find(c => c.exam_title === q.exam_name);
+    const now = Date.now();
+    
+    let statusMatch = false;
+    if (selectedStatus === "active") {
+      const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
+      const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
+      statusMatch = start <= now && end >= now;
+    } else if (selectedStatus === "upcoming") {
+      const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
+      statusMatch = start > now;
+    } else if (selectedStatus === "expired") {
+      const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
+      statusMatch = end < now;
+    }
+
+    return branchMatch && categoryMatch && statusMatch;
+  });
+
   // New: prefer q.category, fallback to inference
   const getQCategory = (q: AdminQuestion) => q.category || getCategory(q.exam_name || "");
 
-  const filteredQuestions = selectedCategory === "all" 
-    ? branchFiltered 
-    : branchFiltered.filter(q => getQCategory(q) === selectedCategory);
+
+  const branchFiltered = selectedBranch === "All" ? questions : questions.filter((q) => q.branch === selectedBranch);
 
   // Category counts
   const catCounts = {
@@ -1066,6 +1089,37 @@ function QuestionsTab() {
             }}
           >
             {cat.emoji} {cat.label} ({catCounts[cat.key]})
+          </button>
+        ))}
+      </div>
+
+      {/* ── Status Tabs ── */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        {([
+          { key: "all" as const, label: "All Status", icon: "🌐" },
+          { key: "active" as const, label: "Active", icon: "🟢" },
+          { key: "upcoming" as const, label: "Upcoming", icon: "🟡" },
+          { key: "expired" as const, label: "Expired", icon: "⚪" },
+        ]).map(stat => (
+          <button
+            key={stat.key}
+            onClick={() => setSelectedStatus(stat.key)}
+            style={{
+              padding: '6px 16px',
+              borderRadius: 8,
+              border: selectedStatus === stat.key ? '2px solid #10b981' : '1px solid #e2e8f0',
+              background: selectedStatus === stat.key ? '#ecfdf5' : 'transparent',
+              color: selectedStatus === stat.key ? '#059669' : '#64748b',
+              fontWeight: 600,
+              fontSize: 12,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            {stat.icon} {stat.label}
           </button>
         ))}
       </div>
