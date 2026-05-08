@@ -305,14 +305,22 @@ export default function DashboardPage() {
                 <div className={styles.hologramPanel}>
                   <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Quick Insights</h3>
                   <div style={{ display: 'flex', gap: 40, marginTop: 24 }}>
-                    <div>
-                      <div style={{ opacity: 0.6, fontSize: 12, marginBottom: 4 }}>Completed Exams</div>
-                      <div style={{ fontSize: 24, fontWeight: 800 }}>8</div>
-                    </div>
-                    <div>
-                      <div style={{ opacity: 0.6, fontSize: 12, marginBottom: 4 }}>Skill Score:</div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>85th Percentile</div>
-                    </div>
+                    {(() => {
+                      const completed = studentExams.filter(e => e.last_score !== undefined);
+                      const avg = completed.length > 0 ? Math.round(completed.reduce((s, e) => s + ((e.last_score || 0) / (e.last_total || 1) * 100), 0) / completed.length) : 0;
+                      return (
+                        <>
+                          <div>
+                            <div style={{ opacity: 0.6, fontSize: 12, marginBottom: 4 }}>Completed Exams</div>
+                            <div style={{ fontSize: 24, fontWeight: 800 }}>{completed.length}</div>
+                          </div>
+                          <div>
+                            <div style={{ opacity: 0.6, fontSize: 12, marginBottom: 4 }}>Avg. Proficiency</div>
+                            <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{avg}%</div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   <div className={styles.holoChart}>
@@ -352,7 +360,7 @@ export default function DashboardPage() {
             </>
           )}
 
-          {activeTab !== "home" && activeTab !== "profile" && (
+          {activeTab !== "home" && activeTab !== "profile" && activeTab !== "insights" && (
             <CategoryTab
               title={activeTab === "other" ? "General Assessments" : tabs.find(t => t.id === activeTab)?.label || ""}
               subtitle={activeTab === "other" ? "Diverse quizzes and surveys" : "System ready for authorization"}
@@ -360,6 +368,8 @@ export default function DashboardPage() {
               onLaunch={handleLaunchExam}
             />
           )}
+
+          {activeTab === "insights" && <InsightsTab exams={studentExams} />}
 
           {activeTab === "profile" && student && <ProfileTab student={student} />}
         </main>
@@ -667,3 +677,104 @@ function ProfileIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0
 function OtherIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>; }
 function HistoryIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 8v4l3 3" /><circle cx="12" cy="12" r="10" /></svg>; }
 function InsightsIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>; }
+
+function InsightsTab({ exams }: { exams: ExamNode[] }) {
+  const completed = exams.filter(e => e.last_score !== undefined);
+  
+  return (
+    <div className={styles.sectionWrapper}>
+       <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Skills Insights</h1>
+       <p style={{ opacity: 0.6, fontSize: 14, marginBottom: 32, color: 'rgba(255,255,255,0.7)' }}>Analytical breakdown of your performance</p>
+       
+       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}>
+          {/* Performance Radar Chart */}
+          <div className={styles.hologramPanel} style={{ padding: 32 }}>
+             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 24 }}>Competency Map</h3>
+             <div style={{ height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {completed.length >= 3 ? <RadarChart data={completed} /> : (
+                  <div style={{ textAlign: 'center', opacity: 0.4 }}>
+                    <InsightsIcon />
+                    <div style={{ marginTop: 12 }}>Need at least 3 completed exams for Radar mapping.</div>
+                  </div>
+                )}
+             </div>
+          </div>
+          
+          {/* Detailed Stats */}
+          <div className={styles.hologramPanel} style={{ padding: 32 }}>
+             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 24 }}>Detailed Breakdown</h3>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {completed.map(e => (
+                   <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div>
+                         <div style={{ fontSize: 14, fontWeight: 700 }}>{e.exam_name}</div>
+                         <div style={{ fontSize: 11, opacity: 0.5 }}>{e.branch} Assessment</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                         <div style={{ fontSize: 16, fontWeight: 800, color: '#34d399' }}>{Math.round((e.last_score || 0) / (e.last_total || 1) * 100)}%</div>
+                         <div style={{ fontSize: 10, opacity: 0.5 }}>{e.last_score} / {e.last_total}</div>
+                      </div>
+                   </div>
+                ))}
+                {completed.length === 0 && (
+                   <div style={{ padding: 40, textAlign: 'center', opacity: 0.4 }}>No data available. Complete an exam to see insights.</div>
+                )}
+             </div>
+          </div>
+       </div>
+    </div>
+  );
+}
+
+function RadarChart({ data }: { data: ExamNode[] }) {
+  const size = 300;
+  const center = size / 2;
+  const radius = center - 40;
+  const points = data.map((d, i) => {
+    const angle = (i / data.length) * 2 * Math.PI - Math.PI / 2;
+    const value = (d.last_score || 0) / (d.last_total || 1);
+    const r = radius * value;
+    return {
+      x: center + r * Math.cos(angle),
+      y: center + r * Math.sin(angle),
+      label: d.exam_name
+    };
+  });
+
+  const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {/* Background circles */}
+      {[0.2, 0.4, 0.6, 0.8, 1].map(v => (
+        <circle key={v} cx={center} cy={center} r={radius * v} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" strokeDasharray="4 4" />
+      ))}
+      
+      {/* Axis lines */}
+      {data.map((_, i) => {
+        const angle = (i / data.length) * 2 * Math.PI - Math.PI / 2;
+        return <line key={i} x1={center} y1={center} x2={center + radius * Math.cos(angle)} y2={center + radius * Math.sin(angle)} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />;
+      })}
+
+      {/* The Radar Area */}
+      <path d={pathData} fill="rgba(0, 242, 255, 0.2)" stroke="var(--nexus-cyan)" strokeWidth="2" />
+      
+      {/* Data points */}
+      {points.map((p, i) => (
+        <g key={i}>
+          <circle cx={p.x} cy={p.y} r="4" fill="var(--nexus-cyan)" />
+          <text 
+            x={center + (radius + 20) * Math.cos((i / data.length) * 2 * Math.PI - Math.PI / 2)} 
+            y={center + (radius + 20) * Math.sin((i / data.length) * 2 * Math.PI - Math.PI / 2)} 
+            fill="rgba(255,255,255,0.5)" 
+            fontSize="10" 
+            textAnchor="middle"
+            alignmentBaseline="middle"
+          >
+            {p.label.substring(0, 10)}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
