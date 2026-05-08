@@ -338,6 +338,21 @@ export default function ExamPage() {
                   <div className={styles.detailLabel} style={{ opacity: 0.9 }}>Skipped</div>
                 </div>
                 
+                <div style={{ gridColumn: "1 / -1", marginTop: 12, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                   <div style={{ textAlign: "left" }}>
+                      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.7, color: "#fff", marginBottom: 4 }}>Attempted</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>
+                        {(submitResult.correct_count || 0) + (submitResult.wrong_count || 0)} <span style={{ opacity: 0.5, fontSize: 14, fontWeight: 400 }}>/ {questions.length}</span>
+                      </div>
+                   </div>
+                   <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.7, color: "#fff", marginBottom: 4 }}>Total Score</div>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: "var(--accent-light)", textShadow: "0 0 20px rgba(94,234,212,0.4)" }}>
+                        {submitResult.score}<span style={{ opacity: 0.6, fontSize: 16, fontWeight: 500 }}>/{submitResult.total_marks}</span>
+                      </div>
+                   </div>
+                </div>
+
                 <div style={{ gridColumn: "1 / -1", marginTop: 24, display: "flex", justifyContent: "center" }}>
                    <button 
                      onClick={() => router.push("/dashboard")}
@@ -346,12 +361,13 @@ export default function ExamPage() {
                        background: "rgba(255,255,255,0.1)",
                        border: "1px solid rgba(255,255,255,0.2)",
                        color: "#fff",
-                       padding: "10px 24px",
+                       padding: "10px 32px",
                        borderRadius: "12px",
                        fontWeight: 600,
                        cursor: "pointer",
                        transition: "all 0.2s ease",
-                       backdropFilter: "blur(10px)"
+                       backdropFilter: "blur(10px)",
+                       fontSize: 14
                      }}
                    >
                      Return to Dashboard
