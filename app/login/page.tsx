@@ -228,7 +228,7 @@ export default function LoginPage() {
           {error && (
             <div className={styles.error} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {error}
-              {error.includes("already logged in") && (
+              {(error.toLowerCase().includes("already logged in") || error.toLowerCase().includes("another device")) && (
                 <button
                   type="button"
                   className={styles.submitBtn}
@@ -237,7 +237,9 @@ export default function LoginPage() {
                     fontSize: 12, 
                     padding: '8px 12px',
                     height: 'auto',
-                    marginTop: 4
+                    marginTop: 4,
+                    width: '100%',
+                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
                   }}
                   onClick={async () => {
                     try {
