@@ -1170,49 +1170,71 @@ function QuestionsTab() {
                         </div>
                       </div>
                       
-                      {/* Activation Toggle Buttons */}
-                      <div style={{ display: "flex", gap: 4, marginRight: 12 }} onClick={e => e.stopPropagation()}>
+                      {/* Premium Activation Toggle */}
+                      <div style={{ display: "flex", marginRight: 12 }} onClick={e => e.stopPropagation()}>
                         {(() => {
                            const conf = configs.find(c => c.exam_title === name);
-                           const isActive = conf ? conf.is_active : true; // Default to active if no config yet
+                           const isActive = conf ? conf.is_active : true;
+                           
                            return (
                              <div style={{ 
                                display: "flex", 
-                               background: "rgba(0,0,0,0.04)", 
-                               padding: "3px", 
-                               borderRadius: "20px", 
-                               border: "1px solid rgba(0,0,0,0.06)" 
+                               background: "#f1f5f9", 
+                               padding: "2px", 
+                               borderRadius: "12px", 
+                               border: "1px solid #e2e8f0",
+                               position: "relative",
+                               width: 130,
+                               height: 32,
+                               overflow: "hidden"
                              }}>
+                               {/* Sliding Background */}
+                               <motion.div
+                                 animate={{ x: isActive ? 0 : 64 }}
+                                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                 style={{
+                                   position: "absolute",
+                                   top: 2,
+                                   left: 2,
+                                   width: 62,
+                                   height: 26,
+                                   borderRadius: "10px",
+                                   background: isActive ? "#10b981" : "#ef4444",
+                                   boxShadow: isActive 
+                                     ? "0 4px 12px rgba(16,185,129,0.25)" 
+                                     : "0 4px 12px rgba(239,68,68,0.25)",
+                                   zIndex: 1
+                                 }}
+                               />
+                               
                                <button 
                                  onClick={() => !isActive && toggleActivation(name, false)}
                                  style={{
-                                   fontSize: "10px",
-                                   fontWeight: 700,
-                                   padding: "4px 12px",
-                                   borderRadius: "16px",
+                                   flex: 1,
+                                   fontSize: "11px",
+                                   fontWeight: 800,
                                    border: "none",
                                    cursor: "pointer",
-                                   transition: "all 0.2s",
-                                   background: isActive ? "#34d399" : "transparent",
-                                   color: isActive ? "#fff" : "#64748b",
-                                   boxShadow: isActive ? "0 2px 4px rgba(52,211,153,0.3)" : "none"
+                                   zIndex: 2,
+                                   background: "transparent",
+                                   color: isActive ? "#fff" : "#94a3b8",
+                                   transition: "color 0.2s"
                                  }}
-                               >Active</button>
+                               >ACTIVE</button>
                                <button 
                                  onClick={() => isActive && toggleActivation(name, true)}
                                  style={{
-                                   fontSize: "10px",
-                                   fontWeight: 700,
-                                   padding: "4px 12px",
-                                   borderRadius: "16px",
+                                   flex: 1,
+                                   fontSize: "11px",
+                                   fontWeight: 800,
                                    border: "none",
                                    cursor: "pointer",
-                                   transition: "all 0.2s",
-                                   background: !isActive ? "#f87171" : "transparent",
-                                   color: !isActive ? "#fff" : "#64748b",
-                                   boxShadow: !isActive ? "0 2px 4px rgba(248,113,113,0.3)" : "none"
+                                   zIndex: 2,
+                                   background: "transparent",
+                                   color: !isActive ? "#fff" : "#94a3b8",
+                                   transition: "color 0.2s"
                                  }}
-                               >Inactive</button>
+                               >INACTIVE</button>
                              </div>
                            );
                         })()}
