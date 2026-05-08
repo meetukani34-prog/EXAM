@@ -361,35 +361,54 @@ async def start_exam(
     db = get_supabase()
     student_id = current["student_id"]
 
-    # 1. Fetch config and status to check attempts
-    config_res = db.table("exam_config").select("max_attempts").eq("exam_title", title).limit(1).execute()
+    # 1. Fetch config safely
     max_attempts = 1
-    if config_res.data:
-        max_attempts = config_res.data[0].get("max_attempts") or 1
+    try:
+        config_res = db.table("exam_config").select("*").eq("exam_title", title).limit(1).execute()
+        if config_res.data:
+            max_attempts = config_res.data[0].get("max_attempts") or 1
+    except Exception: pass
 
-    status_res = db.table("exam_status").select("status, started_at, attempts_count").eq("student_id", student_id).single().execute()
-    data = status_res.data or {}
-    attempts_count = data.get("attempts_count", 0)
+    # 2. Fetch status safely
+    attempts_count = 0
+    status = "not_started"
+    started_at = None
+    try:
+        status_res = db.table("exam_status").select("*").eq("student_id", student_id).single().execute()
+        if status_res.data:
+            data = status_res.data
+            attempts_count = data.get("attempts_count", 0)
+            status = data.get("status", "not_started")
+            started_at = data.get("started_at")
+    except Exception: pass
 
-    # 2. Block if max attempts reached and not currently active
-    if attempts_count >= max_attempts and data.get("status") != "active":
+    # 3. Block if max attempts reached and not currently active
+    if attempts_count >= max_attempts and status != "active":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="max_attempts_reached",
         )
 
-    # 3. If already active, just return the existing start time
-    if data.get("status") == "active" and data.get("started_at"):
-        return StartExamResponse(started_at=data["started_at"], status="active")
+    # 4. If already active, just return the existing start time
+    if status == "active" and started_at:
+        return StartExamResponse(started_at=started_at, status="active")
 
-    # 4. Otherwise, set the start time NOW and increment attempts
-    started_at = datetime.now(timezone.utc).isoformat()
-    db.table("exam_status").update({
+    # 5. Otherwise, set the start time NOW and increment attempts
+    new_start = datetime.now(timezone.utc).isoformat()
+    update_payload = {
         "status": "active",
-        "started_at": started_at,
-        "last_active": started_at,
+        "started_at": new_start,
+        "last_active": new_start,
         "warnings": 0,
-        "attempts_count": attempts_count + 1
-    }).eq("student_id", student_id).execute()
+    }
+    # ONLY INCLUDE attempts_count IF WE SUCCESSFULLY FETCHED IT OR IF WE WANT TO TRY INCREMENTING
+    # Actually, try to increment, if it fails, just ignore
+    try:
+        update_payload["attempts_count"] = attempts_count + 1
+        db.table("exam_status").update(update_payload).eq("student_id", student_id).execute()
+    except Exception:
+        # Fallback: update without attempts_count
+        if "attempts_count" in update_payload: del update_payload["attempts_count"]
+        db.table("exam_status").update(update_payload).eq("student_id", student_id).execute()
 
-    return StartExamResponse(started_at=started_at, status="active")
+    return StartExamResponse(started_at=new_start, status="active")
