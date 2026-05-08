@@ -68,21 +68,28 @@ async def get_current_student(
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization credentials missing",
+            detail="Session expired or credentials missing. Please login again.",
         )
 
     token = credentials.credentials
-    payload = decode_token(token)
+    try:
+        payload = decode_token(token)
+    except HTTPException as e:
+        raise e
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid session token format. Please login again.",
+        )
 
     student_id = payload.get("sub")
-    # Support both 'usn' (new) and 'roll_number' (legacy)
     usn = payload.get("usn") or payload.get("roll_number")
     branch = payload.get("branch", "CS")
 
     if not student_id or not usn:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload: student_id or usn missing",
+            detail="Session payload corrupted. Please logout and login again.",
         )
 
     # ── Blocking Check (Crystalline Lockdown) ──
