@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS students (
   password_hash     TEXT NOT NULL,
   is_active_session BOOLEAN DEFAULT FALSE,
   current_token     TEXT,
+  avatar_url        TEXT,
+  is_blocked        BOOLEAN DEFAULT FALSE,
   created_at        TIMESTAMPTZ DEFAULT NOW()
 );
 
