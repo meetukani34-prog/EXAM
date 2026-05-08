@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import styles from "./instructions.module.css";
 import { startExam } from "@/lib/api";
 import Skeleton from "@/components/Skeleton";
+import { useFullscreen } from "@/hooks/useFullscreen";
 
 export default function InstructionsPage() {
   const router = useRouter();
@@ -61,8 +62,18 @@ export default function InstructionsPage() {
     }
   }, [router]);
 
+  const { enter: enterFullscreen } = useFullscreen();
+
   const handleStartExam = async () => {
     if (starting) return;
+    
+    // ── Trigger Fullscreen IMMEDIATELY to catch user gesture ──
+    try {
+      await enterFullscreen();
+    } catch (e) {
+      console.warn("Manual fullscreen trigger failed:", e);
+    }
+
     setStarting(true);
     try {
       const res = await startExam(studentInfo?.examTitle || "Initial Assessment");
