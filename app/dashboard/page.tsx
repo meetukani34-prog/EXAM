@@ -44,7 +44,7 @@ export default function DashboardPage() {
 
   // Load student from session
   useEffect(() => {
-    const isPreview = window.location.search.includes("preview=true");
+    const isPreview = typeof window !== 'undefined' && window.location.search.includes("preview=true");
     if (isPreview) {
       const mock: StudentInfo = {
         id: "PREVIEW", name: "Admin Preview", branch: "CS",
@@ -76,54 +76,40 @@ export default function DashboardPage() {
         .select("branch, exam_name, category");
 
       const nodes: ExamNode[] = [];
-      const seen = new Set<string>();
-
-      // ── Inference Fallback ──
+      
       function inferCategory(examName: string): string {
         const n = (examName || "").toLowerCase();
-        if (n.includes("aptitude") || n.includes("quant") || n.includes("reasoning") || n.includes("logical") || n.includes("verbal") || n.includes("english") || n.includes("comprehension") || n.includes("maths") || n.includes("numerical")) return "aptitude";
-        if (n.includes("program") || n.includes("code") || n.includes("coding") || n.includes("dsa") || n.includes("algorithm") || n.includes("data structure") || n.includes("python") || n.includes("java") || n.includes("c++") || n.includes("javascript")) return "programming";
+        if (n.includes("aptitude") || n.includes("quant") || n.includes("reasoning")) return "aptitude";
+        if (n.includes("program") || n.includes("code") || n.includes("coding")) return "programming";
         return "other";
       }
 
       if (qData) {
-        // 1. Get all unique (exam_name, branch) pairs from questions
         const uniqueExams = new Map<string, { exam_name: string, branch: string, count: number, category: string }>();
-        
         qData.forEach(q => {
           const br = q.branch || "CS";
           const ex = q.exam_name || "General Assessment";
           const key = `${ex}|${br}`;
-          
           if (!uniqueExams.has(key)) {
-            uniqueExams.set(key, { 
-              exam_name: ex, 
-              branch: br, 
-              count: 0, 
-              category: q.category || inferCategory(ex) 
-            });
+            uniqueExams.set(key, { exam_name: ex, branch: br, count: 0, category: q.category || inferCategory(ex) });
           }
           uniqueExams.get(key)!.count++;
         });
 
-        // 2. Build nodes and merge with configs
         uniqueExams.forEach((info, key) => {
-          // Find matching config if any
           const config = configs.find(c => c.exam_title === info.exam_name);
-          
           nodes.push({
             id: key,
             exam_name: info.exam_name,
             branch: info.branch,
-            is_active: config ? config.is_active : true, // Default to active if discovered
-            duration_minutes: config ? config.duration_minutes : 20, // Default 20
+            is_active: config ? config.is_active : true,
+            duration_minutes: config ? config.duration_minutes : 20,
             scheduled_start: config ? config.scheduled_start : null,
             question_count: info.count,
             category: info.category,
           });
         });
       }
-
       setAllExams(nodes);
     } catch (e) {
       console.error("Failed to load exams:", e);
@@ -134,504 +120,264 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadExams();
-
-    const channel = supabase
-      .channel("exam_config_realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "exam_config" }, () => loadExams())
-      .subscribe();
-
-    const qChannel = supabase
-      .channel("questions_realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "questions" }, () => loadExams())
-      .subscribe();
-
-    // Safety timeout: Ensure loading is disabled after 8 seconds no matter what
-    const timer = setTimeout(() => setLoading(false), 8000);
-
-    return () => {
-      clearTimeout(timer);
-      supabase.removeChannel(channel);
-      supabase.removeChannel(qChannel);
-    };
+    const channel = supabase.channel("exam_config_rt").on("postgres_changes", { event: "*", schema: "public", table: "exam_config" }, () => loadExams()).subscribe();
+    const qChannel = supabase.channel("questions_rt").on("postgres_changes", { event: "*", schema: "public", table: "questions" }, () => loadExams()).subscribe();
+    return () => { supabase.removeChannel(channel); supabase.removeChannel(qChannel); };
   }, [loadExams]);
 
-  // ── Filter exams for student branch ─────────────────────
-  const studentExams = student?.branch === "ALL"
-    ? allExams
-    : allExams.filter(e => e.branch === student?.branch);
+  const studentExams = student?.branch === "ALL" ? allExams : allExams.filter(e => e.branch === student?.branch);
 
-  // ── Launch exam ─────────────────────────────────────────
-  const handleLaunchExam = useCallback((exam: ExamNode) => {
+  const handleLaunchExam = (exam: ExamNode) => {
     if (!exam.is_active) return;
-
-    if (sessionStorage.getItem("exam_preview") === "true") {
-      const infoStr = sessionStorage.getItem("exam_student");
-      if (infoStr) {
-        const info = JSON.parse(infoStr);
-        info.branch = exam.branch;
-        sessionStorage.setItem("exam_student", JSON.stringify(info));
-      }
-    }
-
     sessionStorage.setItem("exam_selected_title", exam.exam_name);
     router.push("/instructions");
-  }, [router]);
+  };
 
-  // ── Logout ──────────────────────────────────────────────
   const handleLogout = () => {
     sessionStorage.removeItem("exam_token");
     sessionStorage.removeItem("exam_student");
     router.replace("/login");
   };
 
-  // ── Tab data ──────────────────────────────────────────────
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    {
-      id: "home",
-      label: "Home",
-      icon: (
-        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
-        </svg>
-      ),
-    },
-    {
-      id: "aptitude",
-      label: "Aptitude Test",
-      icon: (
-        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-          <polyline points="10 9 9 9 8 9" />
-        </svg>
-      ),
-    },
-    {
-      id: "programming",
-      label: "Programming",
-      icon: (
-        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="16 18 22 12 16 6" />
-          <polyline points="8 6 2 12 8 18" />
-        </svg>
-      ),
-    },
-    {
-      id: "other",
-      label: "Other Quiz",
-      icon: (
-        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-          <line x1="12" y1="17" x2="12.01" y2="17" />
-        </svg>
-      ),
-    },
-    {
-      id: "profile",
-      label: "Profile",
-      icon: (
-        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-      ),
-    },
-    {
-      id: "learning",
-      label: "Learning Path",
-      icon: (
-        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-          <path d="M6 12v5c3 3 9 3 12 0v-5" />
-        </svg>
-      ),
-    },
-    {
-      id: "insights",
-      label: "Skills Insights",
-      icon: (
-        <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-      ),
-    },
+    { id: "home", label: "Home", icon: <HomeIcon /> },
+    { id: "aptitude", label: "Aptitude Test", icon: <AptitudeIcon /> },
+    { id: "programming", label: "Programming", icon: <CodeIcon /> },
+    { id: "profile", label: "Profile", icon: <ProfileIcon /> },
+    { id: "learning", label: "History", icon: <HistoryIcon /> },
+    { id: "insights", label: "Skills Insights", icon: <InsightsIcon /> },
   ];
+
+  if (!student) return null;
 
   return (
     <div className={styles.shell}>
       {/* ── Top Navigation ── */}
       <nav className={styles.topNav}>
         <div className={styles.topNavLeft}>
-          <button 
-            className={styles.mobileMenuBtn} 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-          <div className={styles.logoMark}>
-            <span className={styles.logoTitle}>FOCUS<span>R</span></span>
-          </div>
-          <div className={styles.separator} />
-          <svg className={styles.medalIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55.47.98.97 1.21l1.03.46c.5.23 1 .23 1.5 0l1.03-.46c.5-.23.97-.66.97-1.21v-2.34" /><circle cx="12" cy="10" r="7" />
-          </svg>
-          <div className={styles.logoSub}>
-            <span className={styles.logoSubMain}>FocusR Assessment</span>
-            <span className={styles.logoSubPortal}>Candidate Portal</span>
+          <div className={styles.logoTitle}>
+             <AtomIcon />
+             NEXUS <span style={{ opacity: 0.5, fontSize: 14, fontWeight: 500, letterSpacing: 1, marginLeft: 10 }}>Candidate Portal</span>
           </div>
         </div>
 
         <div className={styles.topNavRight}>
-          {student && (
-            <div 
-              className={styles.userInfo} 
-              onClick={() => setShowUserDropdown(!showUserDropdown)}
-              style={{ position: 'relative', cursor: 'pointer' }}
-            >
-              {student.avatarUrl ? (
-                <img src={student.avatarUrl} alt="" className={styles.userAvatarMini} />
-              ) : (
-                <div className={styles.userAvatarMini} style={{ background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                  </svg>
+          <div className={styles.userPanel} onClick={() => setShowUserDropdown(!showUserDropdown)}>
+             <img src={student.avatarUrl || "/default-avatar.png"} className={styles.userAvatar} alt="" />
+             <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {student.usn || student.name.split(' ')[0].toLowerCase() + '67'} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
                 </div>
-              )}
-              <div className={styles.userNameContainer}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <div className={styles.userName}>{student.usn || student.name.split(' ')[0].toLowerCase() + '67'}</div>
-                  <svg className={styles.dropdownArrow} style={{ transform: showUserDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </div>
-                <div className={styles.userRole}>Candidate</div>
-              </div>
-
-              {showUserDropdown && (
-                <div className={styles.notificationDropdown} style={{ top: 'calc(100% + 15px)', width: 180 }}>
-                  <div className={styles.notificationItem} onClick={() => { setActiveTab("profile"); setShowUserDropdown(false); }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                    <span>My Profile</span>
-                  </div>
-                  <div className={styles.notificationItem} onClick={handleLogout} style={{ color: '#ef4444' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-                    <span>Logout</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          <div className={styles.notificationBell} style={{ position: 'relative', cursor: 'pointer' }} onClick={() => setShowNotifications(!showNotifications)}>
-             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
-             </svg>
-             <span style={{ position: 'absolute', top: -2, right: -2, background: '#ef4444', color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 4px', borderRadius: 10, border: '2px solid #fff' }}>3</span>
-             
-             {showNotifications && (
-               <div className={styles.notificationDropdown}>
-                 <div className={styles.notificationItem}>
-                   <div className={styles.notificationBadge}>3</div>
-                   <span>Aptitude results ready</span>
-                 </div>
-                 <div className={`${styles.notificationItem} ${styles.notificationItemActive}`}>
-                   <div className={styles.notificationBadge}>3</div>
-                   <span>Aptitude results ready</span>
-                 </div>
-                 <div className={styles.notificationItem}>
-                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
-                   <span>Aptitude results ready</span>
-                 </div>
-                 <div className={styles.notificationFooter}>
-                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-                   <span>Options</span>
-                 </div>
-               </div>
-             )}
+                <div style={{ fontSize: 11, opacity: 0.6 }}>Candidate</div>
+             </div>
           </div>
-          <button className={styles.logoutBtn} onClick={handleLogout}>
-            Logout
-          </button>
+          
+          <div className={styles.notificationBell} onClick={() => setShowNotifications(!showNotifications)} style={{ cursor: 'pointer' }}>
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+             </svg>
+             <div className={styles.notifBadge}>3</div>
+          </div>
         </div>
       </nav>
 
-      {/* ── Body ── */}
       <div className={styles.bodyLayout}>
-        {/* ── Sidebar ── */}
-        <aside className={`${styles.sidebar} ${isMenuOpen ? styles.sidebarMobileOpen : ""}`}>
+        {/* ── Sidebar: The Shield ── */}
+        <aside className={styles.sidebar}>
           {tabs.map(tab => (
             <button
               key={tab.id}
               className={`${styles.sidebarItem} ${activeTab === tab.id ? styles.sidebarItemActive : ""}`}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setIsMenuOpen(false);
-              }}
+              onClick={() => setActiveTab(tab.id)}
             >
               {tab.icon}
               {tab.label}
+              {activeTab === tab.id && <svg style={{ marginLeft: 'auto', opacity: 0.3 }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>}
             </button>
           ))}
+
+          <div className={styles.atomContainer}>
+             <AtomIcon big />
+          </div>
         </aside>
 
         {/* ── Main Content ── */}
         <main className={styles.mainContent}>
           {activeTab === "home" && (
-            <HomeTab
-              exams={studentExams}
-              loading={loading}
-              onLaunch={handleLaunchExam}
-            />
-          )}
-          {activeTab === "aptitude" && (
-            <CategoryTab 
-              title="Aptitude Assessments"
-              subtitle="Test your logical and verbal reasoning"
-              exams={studentExams.filter(e => e.category === "aptitude")}
-              onLaunch={handleLaunchExam}
-            />
-          )}
-          {activeTab === "programming" && (
-            <CategoryTab 
-              title="Programming Challenges"
-              subtitle="Showcase your coding skills"
-              exams={studentExams.filter(e => e.category === "programming")}
-              onLaunch={handleLaunchExam}
-            />
-          )}
-          {activeTab === "other" && (
-            <CategoryTab 
-              title="General Assessments"
-              subtitle="Diverse quizzes and surveys"
-              exams={studentExams.filter(e => e.category === "other")}
-              onLaunch={handleLaunchExam}
-            />
-          )}
-          {activeTab === "learning" && (
-            <div className={styles.sectionWrapper}>
-              <h1 className={styles.pageTitle}>Learning Path</h1>
-              <p className={styles.pageSubtitle}>Personalized roadmap for your career growth</p>
-              <div className={styles.emptyState}>
-                <div className={styles.emptyIcon}>🎓</div>
-                <div className={styles.emptyTitle}>Coming Soon</div>
-                <div className={styles.emptyText}>We're curating personalized learning resources for you.</div>
+            <>
+              <div className={styles.sectionWrapper}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                   <div>
+                      <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Upcoming Exams</h2>
+                      <p style={{ opacity: 0.6, fontSize: 14 }}>View your scheduled assessments</p>
+                   </div>
+                   <div style={{ opacity: 0.4 }}>
+                      <svg width="120" height="60" viewBox="0 0 120 60">
+                         <circle cx="20" cy="20" r="2" fill="#fff" />
+                         <circle cx="40" cy="40" r="2" fill="#fff" />
+                         <circle cx="60" cy="15" r="2" fill="#fff" />
+                         <circle cx="80" cy="45" r="2" fill="#fff" />
+                         <circle cx="100" cy="25" r="2" fill="#fff" />
+                         <path d="M20 20 L40 40 L60 15 L80 45 L100 25" stroke="rgba(255,255,255,0.2)" fill="none" />
+                      </svg>
+                   </div>
+                </div>
+                
+                <div className={styles.examsSection} style={{ marginTop: 24 }}>
+                   {studentExams.slice(0, 2).map(exam => (
+                      <ExamCard key={exam.id} exam={exam} onLaunch={handleLaunchExam} />
+                   ))}
+                </div>
               </div>
-            </div>
-          )}
-          {activeTab === "insights" && (
-            <div className={styles.sectionWrapper}>
-              <h1 className={styles.pageTitle}>Skills Insights</h1>
-              <p className={styles.pageSubtitle}>Analyze your performance across different domains</p>
-              <div className={styles.emptyState}>
-                <div className={styles.emptyIcon}>📊</div>
-                <div className={styles.emptyTitle}>Analysis in Progress</div>
-                <div className={styles.emptyText}>Detailed skill breakdowns will appear here after your first few exams.</div>
+
+              <div className={styles.insightsRow}>
+                 <div className={styles.hologramPanel}>
+                    <h3 style={{ fontSize: 18, fontWeight: 700 }}>Quick Insights</h3>
+                    <div style={{ display: 'flex', gap: 40, marginTop: 24 }}>
+                       <div>
+                          <div style={{ opacity: 0.6, fontSize: 12, marginBottom: 4 }}>Completed Exams</div>
+                          <div style={{ fontSize: 24, fontWeight: 800 }}>8</div>
+                       </div>
+                       <div>
+                          <div style={{ opacity: 0.6, fontSize: 12, marginBottom: 4 }}>Skill Score:</div>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>85th Percentile</div>
+                       </div>
+                    </div>
+                    
+                    <div className={styles.holoChart}>
+                       <svg width="100%" height="100%" viewBox="0 0 400 120">
+                          <defs>
+                             <linearGradient id="mnt" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="rgba(0, 242, 255, 0.4)" />
+                                <stop offset="100%" stopColor="transparent" />
+                             </linearGradient>
+                          </defs>
+                          <path d="M0 120 L50 80 L100 100 L150 40 L200 70 L250 20 L300 90 L350 50 L400 120 Z" fill="url(#mnt)" stroke="var(--nexus-cyan)" strokeWidth="2" />
+                          <circle cx="150" cy="40" r="3" fill="#fff" />
+                          <circle cx="250" cy="20" r="3" fill="#fff" />
+                       </svg>
+                    </div>
+                 </div>
+
+                 <div className={styles.hologramPanel} style={{ flex: 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className={styles.platonicSolid}>
+                       <div className={styles.octahedron}>
+                          {[...Array(8)].map((_, i) => (
+                             <div key={i} style={{
+                                position: 'absolute',
+                                width: 0, height: 0,
+                                borderLeft: '40px solid transparent',
+                                borderRight: '40px solid transparent',
+                                borderBottom: '70px solid rgba(0, 242, 255, 0.2)',
+                                transformOrigin: '50% 100%',
+                                transform: `rotateY(${i * 45}deg) rotateX(${i < 4 ? 35 : -35}deg) translateZ(30px)`,
+                                boxShadow: 'inset 0 0 10px rgba(0, 242, 255, 0.4)'
+                             }} />
+                          ))}
+                       </div>
+                    </div>
+                 </div>
               </div>
-            </div>
+            </>
           )}
-          {activeTab === "profile" && student && (
-            <ProfileTab student={student} />
+
+          {activeTab !== "home" && activeTab !== "profile" && (
+            <CategoryTab 
+               title={tabs.find(t => t.id === activeTab)?.label || ""}
+               subtitle="System ready for authorization"
+               exams={studentExams.filter(e => e.category === activeTab)}
+               onLaunch={handleLaunchExam}
+            />
           )}
+
+          {activeTab === "profile" && student && <ProfileTab student={student} />}
         </main>
       </div>
-    </div>
-  );
-}
 
-// ══════════════════════════════════════════════════════════════
-// CATEGORY TAB
-// ══════════════════════════════════════════════════════════════
-function CategoryTab({
-  title, subtitle, exams, onLaunch
-}: {
-  title: string;
-  subtitle: string;
-  exams: ExamNode[];
-  onLaunch: (exam: ExamNode) => void;
-}) {
-  return (
-    <div className={styles.sectionWrapper}>
-      <h1 className={styles.pageTitle}>{title}</h1>
-      <p className={styles.pageSubtitle}>{subtitle}</p>
-
-      {exams.length > 0 ? (
-        <div className={styles.examsSection}>
-          {exams.map(exam => (
-            <ExamCard key={exam.id} exam={exam} onLaunch={onLaunch} />
-          ))}
-        </div>
-      ) : (
-        <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>📂</div>
-          <div className={styles.emptyTitle}>No exams found</div>
-          <div className={styles.emptyText}>
-            There are no exams available in this category for your branch.
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════
-// HOME TAB
-// ══════════════════════════════════════════════════════════════
-function HomeTab({
-  exams, loading, onLaunch,
-}: {
-  exams: ExamNode[];
-  loading: boolean;
-  onLaunch: (exam: ExamNode) => void;
-}) {
-  if (loading) {
-    return (
-      <div className={styles.loading}>
-        <div className={styles.spinner} />
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className={styles.sectionWrapper}>
-      <h1 className={styles.pageTitle}>Upcoming Exams</h1>
-      <p className={styles.pageSubtitle}>View your scheduled assessments</p>
-
-      {exams.length > 0 && (
-        <div className={styles.examsSection}>
-          {exams.map(exam => (
-            <ExamCard key={exam.id} exam={exam} onLaunch={onLaunch} />
-          ))}
-        </div>
-      )}
-
-      {exams.length === 0 && !loading && (
-        <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>📋</div>
-          <div className={styles.emptyTitle}>No exams available</div>
-          <div className={styles.emptyText}>
-            There are no scheduled exams for your branch right now. Check back later.
-          </div>
-        </div>
-      )}
-    </div>
-
-    <div className={styles.sectionWrapper}>
-      <h2 className={styles.pageTitle} style={{ fontSize: 22 }}>Quick Insights</h2>
-      <div className={styles.insightsGrid}>
-        <div className={styles.insightCard}>
-          <div className={styles.insightLabel}>Completed Exams</div>
-          <div className={styles.insightValue}>8</div>
-          <svg className={styles.sparkline} viewBox="0 0 100 40" style={{ height: 40, width: '100%', stroke: '#c2a16d', strokeWidth: 2, fill: 'none' }}>
-            <path d="M0 35 L10 32 L20 38 L30 25 L40 28 L50 15 L60 22 L70 5 L80 12 L90 8 L100 15" />
-          </svg>
-        </div>
-        <div className={styles.insightCard}>
-          <div className={styles.insightLabel}>Skill Score</div>
-          <div className={styles.insightValue}>85th Percentile</div>
-          <div style={{ height: 40, display: 'flex', alignItems: 'flex-end', gap: 4 }}>
-             <div style={{ flex: 1, height: '40%', background: 'rgba(0,0,0,0.05)', borderRadius: 2 }} />
-             <div style={{ flex: 1, height: '60%', background: 'rgba(0,0,0,0.1)', borderRadius: 2 }} />
-             <div style={{ flex: 1, height: '45%', background: 'rgba(0,0,0,0.05)', borderRadius: 2 }} />
-             <div style={{ flex: 1, height: '85%', background: '#c2a16d', borderRadius: 2 }} />
-             <div style={{ flex: 1, height: '70%', background: 'rgba(0,0,0,0.15)', borderRadius: 2 }} />
-          </div>
-        </div>
-        <div className={styles.insightCard} style={{ display: 'flex', justifyContent: 'center' }}>
-           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#64748b' }}>Profile Strength</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#1e1b4b' }}>Advanced</div>
-              </div>
+      {/* ── Overlays ── */}
+      {showUserDropdown && (
+        <div className={styles.notificationDropdown} style={{ top: 90, right: 24, width: 220, border: '1px solid var(--nexus-border)', background: 'rgba(2, 6, 23, 0.95)' }}>
+           <div className={styles.notificationItem} onClick={() => { setActiveTab("profile"); setShowUserDropdown(false); }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+              <span>Access Profile</span>
+           </div>
+           <div className={styles.notificationItem} onClick={handleLogout} style={{ color: '#ef4444' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+              <span>Deauthorize Session</span>
            </div>
         </div>
-      </div>
+      )}
+
+      {showNotifications && (
+        <div className={styles.notificationDropdown} style={{ top: 90, right: 24, width: 300, border: '1px solid var(--nexus-border)', background: 'rgba(2, 6, 23, 0.95)' }}>
+           <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: 12, fontWeight: 700, opacity: 0.6 }}>SYSTEM ALERTS</div>
+           {[1, 2, 3].map(i => (
+             <div key={i} className={styles.notificationItem}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--nexus-cyan)" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                <div style={{ flex: 1 }}>
+                   <div>Aptitude results ready</div>
+                   <div style={{ fontSize: 10, opacity: 0.5 }}>{i * 5} minutes ago</div>
+                </div>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+             </div>
+           ))}
+           <div className={styles.notificationFooter}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+              <span>Options</span>
+           </div>
+        </div>
+      )}
     </div>
-    </>
   );
 }
 
-// ── Exam Card ──────────────────────────────────────────────
+// ── Components ──────────────────────────────────────────────────
+function CategoryTab({ title, subtitle, exams, onLaunch }: { title: string; subtitle: string; exams: ExamNode[]; onLaunch: (e: ExamNode) => void }) {
+  return (
+    <div className={styles.sectionWrapper}>
+      <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>{title}</h1>
+      <p style={{ opacity: 0.6, fontSize: 14, marginBottom: 24 }}>{subtitle}</p>
+      {exams.length > 0 ? (
+        <div className={styles.examsSection}>
+          {exams.map(exam => <ExamCard key={exam.id} exam={exam} onLaunch={onLaunch} />)}
+        </div>
+      ) : (
+        <div style={{ padding: 60, textAlign: 'center', opacity: 0.5 }}>No data detected in current sector.</div>
+      )}
+    </div>
+  );
+}
+
 function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) => void }) {
-  const getStatus = () => {
-    if (!exam.is_active) return { label: "Inactive", className: styles.statusInactive };
-    if (exam.scheduled_start) {
-      const start = new Date(exam.scheduled_start);
-      if (start > new Date()) return { label: "Scheduled", className: styles.statusScheduled };
-    }
-    return { label: "Active", className: styles.statusActive };
-  };
-
-  const status = getStatus();
-  const scheduledDate = exam.scheduled_start
-    ? new Date(exam.scheduled_start).toLocaleDateString("en-CA")
-    : new Date().toLocaleDateString("en-CA");
-  const scheduledTime = exam.scheduled_start
-    ? new Date(exam.scheduled_start).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
-    : "Now";
-
-  const pattern = exam.exam_name.toLowerCase().includes('programming') ? '/pattern_code.png' : '/pattern_neural.png';
-
+  const pattern = exam.exam_name.toLowerCase().includes('programming') ? '/card_pattern_code.png' : '/card_pattern_neural.png';
   return (
     <div className={styles.examCard}>
-      <div className={styles.cardPattern} style={{ backgroundImage: `url('${pattern}')` }} />
-      <div className={styles.examCardHeader}>
-        <h3 className={styles.examTitle}>{exam.exam_name}</h3>
-        <span className={`${styles.statusBadge}`}>
-          {status.label}
-        </span>
-      </div>
-
-      <div className={styles.examMeta}>
-        <div className={styles.examMetaItem}>
-          <svg className={styles.examMetaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          {scheduledDate}
+      <img src={pattern} className={styles.cardPattern} alt="" />
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+           <h3 className={styles.examTitle}>{exam.exam_name}</h3>
+           <span className={styles.statusBadge}>Scheduled</span>
         </div>
-        <div className={styles.examMetaItem}>
-          <svg className={styles.examMetaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-          {scheduledTime} • {exam.duration_minutes} min
+        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+           <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.7 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+              2024-05-08
+           </div>
+           <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.7 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+              14:00 • {exam.duration_minutes} min
+           </div>
         </div>
-      </div>
-
-      <div className={styles.progressContainer}>
-        <div 
-          className={styles.progressBar} 
-          style={{ width: exam.is_active ? '40%' : '0%' }}
-        />
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-         <button
-          className={styles.startExamBtn}
-          onClick={() => onLaunch(exam)}
-          disabled={!exam.is_active}
-        >
-          {exam.is_active ? "Start Exam" : "Locked"}
-        </button>
-        <div className={styles.startsIn}>
-           Starts in 2D 14H
+        <div className={styles.progressBar}><div className={styles.progressFill} style={{ width: '40%' }} /></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 }}>
+           <button className={styles.startExamBtn} onClick={() => onLaunch(exam)}>Start Exam</button>
+           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--nexus-gold)' }}>Starts in 2D 14H</div>
         </div>
       </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════════
-// PROFILE TAB
-// ══════════════════════════════════════════════════════════════
 function ProfileTab({ student }: { student: StudentInfo }) {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(student.name);
@@ -642,289 +388,60 @@ function ProfileTab({ student }: { student: StudentInfo }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 1. Update Backend
-      await updateProfile({
-        name: editName.trim(),
-        email: editEmail.trim(),
-        avatar_url: avatarUrl,
-      });
-
-      // 2. Update SessionStorage
+      await updateProfile({ name: editName.trim(), email: editEmail.trim(), avatar_url: avatarUrl });
       const raw = sessionStorage.getItem("exam_student");
       if (raw) {
         const data = JSON.parse(raw);
-        data.name = editName.trim();
-        data.email = editEmail.trim();
-        data.avatarUrl = avatarUrl;
+        data.name = editName.trim(); data.email = editEmail.trim(); data.avatarUrl = avatarUrl;
         sessionStorage.setItem("exam_student", JSON.stringify(data));
-        // Update the student object via page reload
         window.location.reload();
       }
-    } catch (err) {
-      console.error("Failed to update profile:", err);
-      alert("Failed to update profile. Please try again.");
-    } finally {
-      setSaving(false);
-      setEditing(false);
-    }
+    } catch (err) { alert("Failed to update profile."); } finally { setSaving(false); setEditing(false); }
   };
 
   return (
-    <>
-      <h1 className={styles.pageTitle}>Profile</h1>
-      <p className={styles.pageSubtitle}>View your candidate information</p>
-
-      {/* Profile Header */}
-      <div className={styles.profileHeader}>
-        <div className={styles.profileHeaderLeft}>
-          <div className={styles.profileAvatar} style={{ position: 'relative', overflow: 'hidden' }}>
-            {avatarUrl ? (
-              <img src={avatarUrl} alt={student.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            )}
-          </div>
-          <div>
-            <div className={styles.profileName}>{student.name}</div>
-            <div className={styles.profileEmail}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <polyline points="22,6 12,13 2,6" />
-              </svg>
-              {student.email || "candidate@examguard.com"}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <CldUploadWidget 
-            uploadPreset="ml_default"
-            onSuccess={async (result: any) => {
-              if (result.info && typeof result.info !== 'string') {
-                const newUrl = result.info.secure_url;
-                setAvatarUrl(newUrl);
-                
-                try {
-                  // Update backend immediately for avatar
-                  await updateProfile({ avatar_url: newUrl });
-
-                  // Update session immediately
-                  const raw = sessionStorage.getItem("exam_student");
-                  if (raw) {
-                    const data = JSON.parse(raw);
-                    data.avatarUrl = newUrl;
-                    sessionStorage.setItem("exam_student", JSON.stringify(data));
-                  }
-                } catch (err) {
-                  console.error("Failed to persist avatar:", err);
-                }
-              }
-            }}
-          >
-            {({ open }) => (
-              <button 
-                className={styles.logoutBtn} 
-                onClick={() => open()}
-                style={{ border: '1px solid var(--portal-primary)', color: 'var(--portal-primary)' }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                  <circle cx="12" cy="13" r="4" />
-                </svg>
-                Change Photo
-              </button>
-            )}
-          </CldUploadWidget>
-
-          <button className={styles.editProfileBtn} onClick={() => setEditing(true)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            Edit Profile
-          </button>
-        </div>
+    <div className={styles.sectionWrapper}>
+      <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 24 }}>Authorized Profile</h2>
+      <div style={{ display: 'flex', gap: 32, alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: 32, borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)' }}>
+         <img src={avatarUrl || "/default-avatar.png"} style={{ width: 100, height: 100, borderRadius: '50%', border: '3px solid var(--nexus-cyan)' }} alt="" />
+         <div>
+            <div style={{ fontSize: 24, fontWeight: 800 }}>{student.name}</div>
+            <div style={{ opacity: 0.6 }}>{student.email || "candidate@nexus.com"}</div>
+            <button onClick={() => setEditing(true)} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--nexus-cyan)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>Edit Systems</button>
+         </div>
       </div>
-
-      {/* Edit Modal */}
+      
       {editing && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 9999,
-          background: "rgba(0,0,0,0.3)",
-          backdropFilter: "blur(4px)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: 16,
-            padding: 32,
-            width: "90%",
-            maxWidth: 440,
-            boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-            animation: "fadeIn 0.2s ease",
-          }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 24, color: "#1e293b" }}>
-              Edit Profile
-            </h2>
-
-            <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#f1f5f9', overflow: 'hidden', border: '2px solid #e2e8f0' }}>
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                    </svg>
-                  </div>
-                )}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+           <div style={{ background: '#0f172a', border: '1px solid var(--nexus-cyan)', padding: 32, borderRadius: 20, width: 400 }}>
+              <h3 style={{ marginBottom: 20 }}>Update Credentials</h3>
+              <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Name" style={{ width: '100%', padding: 12, marginBottom: 12, background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: 8 }} />
+              <input value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="Email" style={{ width: '100%', padding: 12, marginBottom: 20, background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: 8 }} />
+              <div style={{ display: 'flex', gap: 12 }}>
+                 <button onClick={handleSave} style={{ flex: 1, padding: 12, background: 'var(--nexus-cyan)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700 }}>{saving ? "Syncing..." : "Commit"}</button>
+                 <button onClick={() => setEditing(false)} style={{ flex: 1, padding: 12, background: '#334155', color: '#fff', border: 'none', borderRadius: 8 }}>Abort</button>
               </div>
-              <CldUploadWidget 
-                uploadPreset="ml_default"
-                onSuccess={(result: any) => {
-                  if (result.info && typeof result.info !== 'string') {
-                    setAvatarUrl(result.info.secure_url);
-                  }
-                }}
-              >
-                {({ open }) => (
-                  <button 
-                    onClick={() => open()}
-                    style={{ background: 'none', border: 'none', color: '#4f46e5', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    Change Photo
-                  </button>
-                )}
-              </CldUploadWidget>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={editName}
-                onChange={e => setEditName(e.target.value)}
-                style={{
-                  width: "100%", padding: "10px 14px",
-                  border: "1px solid #e2e8f0", borderRadius: 8,
-                  fontSize: 14, color: "#1e293b", outline: "none",
-                  transition: "border 0.2s",
-                }}
-                onFocus={e => e.target.style.borderColor = "#4f46e5"}
-                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
-              />
-            </div>
-
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={editEmail}
-                onChange={e => setEditEmail(e.target.value)}
-                style={{
-                  width: "100%", padding: "10px 14px",
-                  border: "1px solid #e2e8f0", borderRadius: 8,
-                  fontSize: 14, color: "#1e293b", outline: "none",
-                  transition: "border 0.2s",
-                }}
-                onFocus={e => e.target.style.borderColor = "#4f46e5"}
-                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
-              />
-            </div>
-
-            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-              <button
-                onClick={() => setEditing(false)}
-                style={{
-                  padding: "10px 20px", border: "1px solid #e2e8f0",
-                  borderRadius: 8, background: "#fff", color: "#64748b",
-                  fontSize: 14, fontWeight: 600, cursor: "pointer",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                style={{
-                  padding: "10px 24px", border: "none",
-                  borderRadius: 8, background: "#4f46e5", color: "#fff",
-                  fontSize: 14, fontWeight: 600, cursor: "pointer",
-                  boxShadow: "0 2px 6px rgba(79,70,229,0.25)",
-                }}
-              >
-                {saving ? "Saving..." : "Save Changes"}
-              </button>
-            </div>
-          </div>
+           </div>
         </div>
       )}
-
-      {/* Personal Information */}
-      <div className={styles.profileInfoCard}>
-        <h3 className={styles.profileInfoTitle}>Personal Information</h3>
-        <div className={styles.profileGrid}>
-          <ProfileField
-            icon={
-              <svg className={styles.profileFieldIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            }
-            label="Full Name"
-            value={student.name}
-          />
-          <ProfileField
-            icon={
-              <svg className={styles.profileFieldIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <polyline points="22,6 12,13 2,6" />
-              </svg>
-            }
-            label="Email"
-            value={student.email || "candidate@examguard.com"}
-          />
-          <ProfileField
-            icon={
-              <svg className={styles.profileFieldIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-              </svg>
-            }
-            label="Branch"
-            value={student.branch}
-          />
-          <ProfileField
-            icon={
-              <svg className={styles.profileFieldIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
-                <path d="M7 8h4M7 12h6M7 16h5" />
-                <circle cx="17" cy="13" r="2.5" />
-              </svg>
-            }
-            label="USN"
-            value={student.usn || student.id.slice(0, 12)}
-          />
-        </div>
-      </div>
-    </>
-  );
-}
-
-function ProfileField({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className={styles.profileField}>
-      {icon}
-      <div>
-        <div className={styles.profileFieldLabel}>{label}</div>
-        <div className={styles.profileFieldValue}>{value}</div>
-      </div>
     </div>
   );
 }
+
+// ── Icons ───────────────────────────────────────────────────────
+function AtomIcon({ big }: { big?: boolean }) {
+  return (
+    <svg className={styles.atomIcon} style={{ width: big ? 100 : 28, height: big ? 100 : 28 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="3" />
+      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(0 12 12)" />
+      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
+      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)" />
+    </svg>
+  );
+}
+function HomeIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>; }
+function AptitudeIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>; }
+function CodeIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>; }
+function ProfileIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>; }
+function HistoryIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 8v4l3 3" /><circle cx="12" cy="12" r="10" /></svg>; }
+function InsightsIcon() { return <svg className={styles.sidebarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>; }
