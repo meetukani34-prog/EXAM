@@ -59,13 +59,20 @@ async def report_violation(
 
         # 2. Log violation safely
         try:
+            # Map face violations to a type allowed by the DB check constraint if necessary
+            db_type = request.type
+            if db_type not in ["tab_switch", "window_blur", "fullscreen_exit", "right_click", "copy_attempt", "paste_attempt", "keyboard_shortcut", "auto_submitted"]:
+                db_type = "keyboard_shortcut" # Use as a generic bucket for newer types
+
             db.table("violations").insert({
                 "student_id": student_id,
-                "type": request.type,
+                "type": db_type,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "metadata": request.metadata or {},
+                "metadata": {** (request.metadata or {}), "original_type": request.type},
             }).execute()
-        except Exception: pass
+        except Exception as e:
+            print(f"[VIOLATIONS] DB Insert failed (check constraint?): {e}")
+            pass
 
         # 3. Update warnings safely
         try:

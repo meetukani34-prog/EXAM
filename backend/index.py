@@ -112,7 +112,7 @@ try:
             status_code=500,
             content={
                 "detail": str(exc),
-                "traceback": tb if not os.getenv("PROD") else "Hidden for security"
+                "traceback": tb # ALWAYS SHOW FOR NOW TO SOLVE 500 ERROR
             },
         )
 

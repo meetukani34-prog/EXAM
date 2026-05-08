@@ -9,8 +9,8 @@ interface FaceMonitorProps {
   isSubmitted: boolean;
 }
 
-const FACE_CHECK_INTERVAL = 5000;
-const NOFACE_THRESHOLD = 3;
+const FACE_CHECK_INTERVAL = 10000;
+const NOFACE_THRESHOLD = 5;
 
 let modelLoadingPromise: Promise<void> | null = null;
 
