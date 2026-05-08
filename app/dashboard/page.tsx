@@ -39,6 +39,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Load student from session
   useEffect(() => {
@@ -266,6 +268,14 @@ export default function DashboardPage() {
       {/* ── Top Navigation ── */}
       <nav className={styles.topNav}>
         <div className={styles.topNavLeft}>
+          <button 
+            className={styles.mobileMenuBtn} 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
           <div className={styles.logoMark}>
             <span className={styles.logoTitle}>FOCUS<span>R</span></span>
           </div>
@@ -281,7 +291,11 @@ export default function DashboardPage() {
 
         <div className={styles.topNavRight}>
           {student && (
-            <div className={styles.userInfo}>
+            <div 
+              className={styles.userInfo} 
+              onClick={() => setShowUserDropdown(!showUserDropdown)}
+              style={{ position: 'relative', cursor: 'pointer' }}
+            >
               {student.avatarUrl ? (
                 <img src={student.avatarUrl} alt="" className={styles.userAvatarMini} />
               ) : (
@@ -294,10 +308,23 @@ export default function DashboardPage() {
               <div className={styles.userNameContainer}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <div className={styles.userName}>{student.usn || student.name.split(' ')[0].toLowerCase() + '67'}</div>
-                  <svg className={styles.dropdownArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <svg className={styles.dropdownArrow} style={{ transform: showUserDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
                 <div className={styles.userRole}>Candidate</div>
               </div>
+
+              {showUserDropdown && (
+                <div className={styles.notificationDropdown} style={{ top: 'calc(100% + 15px)', width: 180 }}>
+                  <div className={styles.notificationItem} onClick={() => { setActiveTab("profile"); setShowUserDropdown(false); }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                    <span>My Profile</span>
+                  </div>
+                  <div className={styles.notificationItem} onClick={handleLogout} style={{ color: '#ef4444' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                    <span>Logout</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <div className={styles.notificationBell} style={{ position: 'relative', cursor: 'pointer' }} onClick={() => setShowNotifications(!showNotifications)}>
@@ -336,12 +363,15 @@ export default function DashboardPage() {
       {/* ── Body ── */}
       <div className={styles.bodyLayout}>
         {/* ── Sidebar ── */}
-        <aside className={styles.sidebar}>
+        <aside className={`${styles.sidebar} ${isMenuOpen ? styles.sidebarMobileOpen : ""}`}>
           {tabs.map(tab => (
             <button
               key={tab.id}
               className={`${styles.sidebarItem} ${activeTab === tab.id ? styles.sidebarItemActive : ""}`}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setIsMenuOpen(false);
+              }}
             >
               {tab.icon}
               {tab.label}
