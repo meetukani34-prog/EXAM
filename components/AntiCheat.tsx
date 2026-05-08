@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import { reportViolation } from "@/lib/api";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import WarningModal from "./WarningModal";
@@ -17,9 +17,11 @@ export default function AntiCheat({ isSubmitted, onAutoSubmit }: AntiCheatProps)
   const [modalMessage, setModalMessage] = useState("");
   const { enter: enterFullscreen } = useFullscreen();
 
+  const isReporting = useRef(false);
   const triggerViolation = useCallback(
     async (type: string, metadata?: Record<string, unknown>) => {
-      if (isSubmitted) return;
+      if (isSubmitted || isReporting.current) return;
+      isReporting.current = true;
 
       try {
         const res = await reportViolation(type, metadata);
@@ -46,6 +48,11 @@ export default function AntiCheat({ isSubmitted, onAutoSubmit }: AntiCheatProps)
           if (next >= 3) onAutoSubmit();
           return next;
         });
+      } finally {
+        // Unlock after a short delay to allow the modal to be seen
+        setTimeout(() => {
+          isReporting.current = false;
+        }, 2000);
       }
     },
     [isSubmitted, onAutoSubmit]

@@ -21,6 +21,10 @@ VALID_VIOLATION_TYPES = {
     "multiple_faces",
 }
 AUTO_SUBMIT_THRESHOLD = 3
+# Final message overrides for clarity
+WARNING_1 = "⚠️ Warning 1: Please return to the exam and stay focused."
+WARNING_2 = "🚨 Final warning! One more violation and your exam will be auto-submitted."
+WARNING_3 = "⚠️ 3rd violation detected. Your exam has been auto-submitted."
 
 
 @router.post("/report-violation", response_model=ReportViolationResponse)
@@ -84,13 +88,11 @@ async def report_violation(
     auto_submitted = False
     if new_warnings >= AUTO_SUBMIT_THRESHOLD:
         auto_submitted = True
-        message = "⚠️ 3rd violation detected. Your exam has been auto-submitted."
+        message = WARNING_3
     elif new_warnings == 2:
-        message = (
-            "🚨 Final warning! One more violation and your exam will be auto-submitted."
-        )
+        message = WARNING_2
     else:
-        message = "⚠️ Warning 1: Please return to the exam and stay focused."
+        message = WARNING_1
 
     return ReportViolationResponse(
         warning_count=new_warnings,
