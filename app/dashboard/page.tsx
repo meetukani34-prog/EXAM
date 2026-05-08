@@ -90,13 +90,17 @@ export default function DashboardPage() {
         return "other";
       }
 
-      if (qData && student) {
-        // Fetch current student's exam status/attempts
-        const { data: sData } = await supabase
-          .from("exam_status")
-          .select("status, attempts_count")
-          .eq("student_id", student.id)
-          .single();
+      if (qData) {
+        // Fetch current student's exam status/attempts (if student is logged in)
+        let sData = null;
+        if (student && student.id !== "PREVIEW") {
+          const { data } = await supabase
+            .from("exam_status")
+            .select("status, attempts_count")
+            .eq("student_id", student.id)
+            .maybeSingle(); // Use maybeSingle to avoid errors if not found
+          sData = data;
+        }
 
         const uniqueExams = new Map<string, { exam_name: string, branch: string, count: number, category: string }>();
         qData.forEach(q => {
@@ -135,7 +139,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [student]);
 
   useEffect(() => {
     loadExams();
