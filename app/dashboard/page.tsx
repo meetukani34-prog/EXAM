@@ -220,10 +220,10 @@ export default function DashboardPage() {
                   const end = e.scheduled_end ? new Date(e.scheduled_end).getTime() : null;
                   return start <= now && (!end || end >= now);
                 });
-                const upcoming = studentExams.filter(e => {
-                  if (!e.scheduled_start) return false;
-                  const start = new Date(e.scheduled_start).getTime();
-                  return start > now;
+                const expired = studentExams.filter(e => {
+                  if (!e.scheduled_end) return false;
+                  const end = new Date(e.scheduled_end).getTime();
+                  return end < now;
                 });
 
 
@@ -252,20 +252,20 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* ── Upcoming Exams ── */}
+                    {/* ── Expired Exams ── */}
                     <div className={styles.sectionWrapper} style={{ marginTop: 40 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Upcoming Exams</h2>
-                          <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Future scheduled assessments</p>
+                          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Expired Exams</h2>
+                          <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Past assessments that have concluded</p>
                         </div>
                       </div>
-                      <div className={styles.examsSection} style={{ marginTop: 24 }}>
-                        {upcoming.length > 0 ? upcoming.map(exam => (
+                      <div className={styles.examsSection} style={{ marginTop: 24, opacity: 0.6 }}>
+                        {expired.length > 0 ? expired.map(exam => (
                           <ExamCard key={exam.id} exam={exam} onLaunch={handleLaunchExam} />
                         )) : (
                           <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, width: '100%' }}>
-                            No upcoming exams scheduled.
+                            No expired exams.
                           </div>
                         )}
                       </div>
