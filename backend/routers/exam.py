@@ -365,13 +365,10 @@ async def start_exam(
     db = get_supabase()
     student_id = current["student_id"]
 
-    # 1. Check if already started or submitted
+    # 1. Check current status
     status_res = db.table("exam_status").select("status, started_at").eq("student_id", student_id).single().execute()
     data = status_res.data or {}
     
-    if data.get("status") == "submitted":
-        raise HTTPException(status_code=403, detail="Exam already submitted.")
-
     # 2. If already active, just return the existing start time
     if data.get("status") == "active" and data.get("started_at"):
         return StartExamResponse(started_at=data["started_at"], status="active")

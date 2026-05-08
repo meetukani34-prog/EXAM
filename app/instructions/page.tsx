@@ -81,12 +81,18 @@ export default function InstructionsPage() {
       router.push("/exam");
     } catch (err: any) {
       console.error("Failed to start exam", err);
-      let msg = "Error starting exam. Please try again.";
+      let msg = "Error starting exam.";
+      
       if (err.message?.includes("425") || err.message?.includes("scheduled")) {
         msg = "This exam is scheduled for a future time. Please wait until the start time.";
       } else if (err.message?.includes("423") || err.message?.includes("inactive")) {
         msg = "This exam is currently inactive. Please contact the administrator.";
+      } else {
+        // Include detailed error if available for debugging
+        const detail = err.detail || err.message || JSON.stringify(err);
+        msg = `System Error: ${detail}. Please try refreshing or contact support.`;
       }
+      
       alert(msg);
       setStarting(false);
     }
