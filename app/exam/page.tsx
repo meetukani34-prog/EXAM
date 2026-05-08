@@ -182,8 +182,6 @@ export default function ExamPage() {
         await flush(); // Save any dirty answers first
         const res = await submitExam(answers, examTitle);
         clearExamStorage();
-        sessionStorage.removeItem("exam_token");
-        sessionStorage.removeItem("exam_student");
         setIsSubmitted(true);
         setSubmitResult(res);
         setSubmitting(false);
@@ -340,11 +338,24 @@ export default function ExamPage() {
                   <div className={styles.detailLabel} style={{ opacity: 0.9 }}>Skipped</div>
                 </div>
                 
-                <div style={{ gridColumn: "1 / -1", marginTop: 12, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.2)", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                   <div style={{ fontSize: 13, opacity: 0.8, color: "#fff" }}>Total Score</div>
-                   <div style={{ fontSize: 28, fontWeight: 800, color: "var(--accent-light)", textShadow: "0 0 20px rgba(94,234,212,0.4)" }}>
-                     {submitResult.score}/{submitResult.total_marks}
-                   </div>
+                <div style={{ gridColumn: "1 / -1", marginTop: 24, display: "flex", justifyContent: "center" }}>
+                   <button 
+                     onClick={() => router.push("/dashboard")}
+                     className={styles.dashboardBtn}
+                     style={{
+                       background: "rgba(255,255,255,0.1)",
+                       border: "1px solid rgba(255,255,255,0.2)",
+                       color: "#fff",
+                       padding: "10px 24px",
+                       borderRadius: "12px",
+                       fontWeight: 600,
+                       cursor: "pointer",
+                       transition: "all 0.2s ease",
+                       backdropFilter: "blur(10px)"
+                     }}
+                   >
+                     Return to Dashboard
+                   </button>
                 </div>
               </div>
             )}
