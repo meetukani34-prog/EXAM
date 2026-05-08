@@ -17,9 +17,22 @@ async def get_exam_status(current: dict = Depends(get_current_student)):
     db = get_supabase()
     student_id = current["student_id"]
     try:
-        # Return all rows so dashboard can map them
-        res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
-        return res.data or []
+        # Fetch status rows and result rows for this student
+        status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
+        results_res = db.table("exam_results").select("exam_name, score, total_marks").eq("student_id", student_id).execute()
+        
+        status_data = status_res.data or []
+        results_data = results_res.data or []
+        
+        # Merge score into status data for the dashboard
+        results_map = {r["exam_name"]: r for r in results_data if r.get("exam_name")}
+        for s in status_data:
+            ename = s.get("exam_name")
+            if ename and ename in results_map:
+                s["last_score"] = results_map[ename].get("score")
+                s["last_total"] = results_map[ename].get("total_marks")
+        
+        return status_data
     except Exception as e:
         print(f"[EXAM] Status fetch failed: {e}")
         return []

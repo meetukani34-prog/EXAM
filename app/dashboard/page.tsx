@@ -23,6 +23,8 @@ interface ExamNode {
   max_attempts?: number;
   attempts_count?: number;
   student_status?: string;
+  last_score?: number;
+  last_total?: number;
 }
 
 interface StudentInfo {
@@ -131,7 +133,9 @@ export default function DashboardPage() {
             negative_marks: (config && config.negative_marks !== undefined) ? config.negative_marks : -1,
             max_attempts: config ? (config.max_attempts || 1) : 1,
             attempts_count: sData ? (sData.attempts_count || 0) : 0,
-            student_status: sData ? sData.status : 'not_started'
+            student_status: sData ? sData.status : 'not_started',
+            last_score: sData ? sData.last_score : undefined,
+            last_total: sData ? sData.last_total : undefined,
           });
         });
       }
@@ -473,6 +477,24 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20V10" /><path d="M18 20V4" /><path d="M6 20v-4" /></svg>
              Attempts: {exam.attempts_count} / {exam.max_attempts}
           </div>
+          {exam.last_score !== undefined && (
+            <div style={{ 
+              fontSize: 14, 
+              fontWeight: 800, 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 8, 
+              color: '#34d399',
+              background: 'rgba(52, 211, 153, 0.1)',
+              padding: '4px 10px',
+              borderRadius: 8,
+              width: 'fit-content',
+              marginTop: 4
+            }}>
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+               Score: {exam.last_score} / {exam.last_total || 0}
+            </div>
+          )}
         </div>
         <div className={styles.progressBar}>
            <div className={styles.progressFill} style={{ width: hasReachedLimit ? '100%' : (isDisabled ? '0%' : '100%'), background: hasReachedLimit ? '#34d399' : (isInactive ? '#ef4444' : undefined) }} />
