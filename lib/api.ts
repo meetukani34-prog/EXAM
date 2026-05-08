@@ -68,6 +68,13 @@ export interface LoginResponse {
   avatar_url?: string;
 }
 
+export async function resetSession(usn: string, password: string): Promise<void> {
+  await apiFetch("/auth/session/reset", {
+    method: "POST",
+    body: JSON.stringify({ usn, password }),
+  });
+}
+
 export async function loginStudent(
   usn: string,
   password: string,

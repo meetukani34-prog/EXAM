@@ -258,6 +258,31 @@ async def logout(current: dict = Depends(get_current_student)):
         {"is_active_session": False, "current_token": None}
     ).eq("id", current["student_id"]).execute()
     return {"logged_out": True}
+
+@router.post("/session/reset", tags=["auth"])
+async def reset_session(request: LoginRequest):
+    """Allow a student to force-clear their own session if they get stuck 'logged in'."""
+    db = get_supabase()
+    
+    # 1. Verify credentials first!
+    result = db.table("students").select("*").eq("usn", request.usn.strip().upper()).execute()
+    if not result.data:
+        # Fallback for legacy USN/roll_number
+        result = db.table("students").select("*").eq("roll_number", request.usn.strip().upper()).execute()
+        
+    if not result.data:
+        raise HTTPException(status_code=401, detail="Invalid USN")
+        
+    student = result.data[0]
+    if not verify_password(request.password, student["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid Password")
+        
+    # 2. Clear the session
+    db.table("students").update(
+        {"is_active_session": False, "current_token": None}
+    ).eq("id", student["id"]).execute()
+    
+    return {"success": True, "message": "Session reset successfully. You can now login."}
     
 @router.post("/support", tags=["public"])
 async def submit_support_request(request: SupportRequestCreate):

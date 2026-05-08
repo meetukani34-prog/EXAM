@@ -225,7 +225,39 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          {error && <div className={styles.error}>{error}</div>}
+          {error && (
+            <div className={styles.error} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {error}
+              {error.includes("already logged in") && (
+                <button
+                  type="button"
+                  className={styles.submitBtn}
+                  style={{ 
+                    background: '#ef4444', 
+                    fontSize: 12, 
+                    padding: '8px 12px',
+                    height: 'auto',
+                    marginTop: 4
+                  }}
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      const { resetSession } = await import("@/lib/api");
+                      await resetSession(usn, password);
+                      setError("");
+                      alert("Stale session cleared. You can now login.");
+                    } catch (err: any) {
+                      setError(err.message);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                >
+                  Logout from other device
+                </button>
+              )}
+            </div>
+          )}
 
           <button type="submit" className={styles.submitBtn} disabled={loading}>
             {loading ? "Verifying..." : isRegistering ? "Secure Sign In" : "Secure Login"}
