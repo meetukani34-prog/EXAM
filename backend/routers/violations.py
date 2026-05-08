@@ -72,14 +72,16 @@ async def report_violation(
                 "metadata": request.metadata
             }).execute()
         except Exception as e:
-            print(f"[VIOLATIONS] DB Insert failed (check constraint?): {e}")
-            pass
+            print(f"[VIOLATIONS] DB Insert failed: {e}")
 
+        # 3. Update warning count on exam_status (MANDATORY)
+        try:
             db.table("exam_status").update({
                 "warnings": new_warnings,
                 "last_active": datetime.now(timezone.utc).isoformat(),
-            }).eq("student_id", student_id).execute()
-        except Exception: pass
+            }).eq("student_id", student_id).eq("exam_name", exam_title).execute()
+        except Exception as e:
+            print(f"[VIOLATIONS] Status update failed: {e}")
 
         # 4. Determine response
         auto_submitted = False
