@@ -91,11 +91,11 @@ export default function DashboardPage() {
       }
 
       if (qData) {
-        // Fetch current student's exam status/attempts (if student is logged in)
-        let sData = null;
+        // Fetch ALL exam statuses for this student
+        let statusList: any[] = [];
         if (student && student.id !== "PREVIEW") {
           try {
-            sData = await getExamStatus();
+            statusList = await getExamStatus();
           } catch(err) {
             console.error("Failed to fetch exam status:", err);
           }
@@ -114,6 +114,9 @@ export default function DashboardPage() {
 
         uniqueExams.forEach((info, key) => {
           const config = configs.find(c => c.exam_title === info.exam_name);
+          // Find status for THIS specific exam
+          const sData = statusList.find(s => s.exam_name === info.exam_name);
+
           nodes.push({
             id: key,
             exam_name: info.exam_name,

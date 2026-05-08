@@ -157,8 +157,8 @@ export async function submitExam(
   });
 }
 
-export async function getExamStatus(): Promise<{ status: string; attempts_count: number }> {
-  return apiFetch<{ status: string; attempts_count: number }>("/exam/status");
+export async function getExamStatus(): Promise<any[]> {
+  return apiFetch<any[]>("/exam/status");
 }
 
 export async function startExam(title: string): Promise<{ started_at: string }> {
