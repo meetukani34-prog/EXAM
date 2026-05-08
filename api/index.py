@@ -1,7 +1,6 @@
 """
 Vercel Serverless Function Entry Point.
-This thin wrapper imports the FastAPI app from the backend/ directory.
-Vercel auto-detects this file as a Python serverless function.
+Build Trigger: 2026-05-08_1615
 """
 import os
 import sys
