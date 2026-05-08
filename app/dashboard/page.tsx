@@ -400,30 +400,106 @@ function ProfileTab({ student }: { student: StudentInfo }) {
   };
 
   return (
-    <div className={styles.sectionWrapper}>
-      <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 24 }}>Authorized Profile</h2>
-      <div style={{ display: 'flex', gap: 32, alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: 32, borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)' }}>
-         <img src={avatarUrl || "/default-avatar.png"} style={{ width: 100, height: 100, borderRadius: '50%', border: '3px solid var(--nexus-cyan)' }} alt="" />
-         <div>
-            <div style={{ fontSize: 24, fontWeight: 800 }}>{student.name}</div>
-            <div style={{ opacity: 0.6 }}>{student.email || "candidate@nexus.com"}</div>
-            <button onClick={() => setEditing(true)} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--nexus-cyan)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>Edit Systems</button>
+    <div style={{ padding: '32px' }}>
+      <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#1e293b' }}>Profile</h1>
+      <p style={{ opacity: 0.6, fontSize: 14, marginBottom: 32, color: '#64748b' }}>View your candidate information</p>
+
+      {/* Top Identity Card */}
+      <div className={styles.profileHeaderCard}>
+         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <img src={avatarUrl || "/default-avatar.png"} style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} alt="" />
+            <div>
+               <div style={{ fontSize: 24, fontWeight: 800 }}>{student.name}</div>
+               <div style={{ opacity: 0.6, display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  {student.email || "candidate@nexus.com"}
+               </div>
+            </div>
+         </div>
+         <button className={styles.editBtn} onClick={() => setEditing(true)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit Profile
+         </button>
+      </div>
+
+      {/* Details Card */}
+      <div className={styles.profileInfoCard}>
+         <h3 className={styles.profileInfoTitle}>Personal Information</h3>
+         <div className={styles.profileGrid}>
+            <ProfileField 
+               label="Full Name" 
+               value={student.name} 
+               icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>} 
+            />
+            <ProfileField 
+               label="Email" 
+               value={student.email || "candidate@nexus.com"} 
+               icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>} 
+            />
+            <ProfileField 
+               label="Branch" 
+               value={student.branch || "DS"} 
+               icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>} 
+            />
+            <ProfileField 
+               label="USN" 
+               value={student.usn || "1A"} 
+               icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="17" cy="13" r="2.5"/></svg>} 
+            />
          </div>
       </div>
-      
+
+      {/* Edit Modal (Exact Style) */}
       {editing && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
-           <div style={{ background: '#0f172a', border: '1px solid var(--nexus-cyan)', padding: 32, borderRadius: 20, width: 400 }}>
-              <h3 style={{ marginBottom: 20 }}>Update Credentials</h3>
-              <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Name" style={{ width: '100%', padding: 12, marginBottom: 12, background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: 8 }} />
-              <input value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="Email" style={{ width: '100%', padding: 12, marginBottom: 20, background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: 8 }} />
-              <div style={{ display: 'flex', gap: 12 }}>
-                 <button onClick={handleSave} style={{ flex: 1, padding: 12, background: 'var(--nexus-cyan)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700 }}>{saving ? "Syncing..." : "Commit"}</button>
-                 <button onClick={() => setEditing(false)} style={{ flex: 1, padding: 12, background: '#334155', color: '#fff', border: 'none', borderRadius: 8 }}>Abort</button>
+        <div className={styles.modalOverlay}>
+           <div className={styles.modalContent}>
+              <h2 className={styles.modalTitle}>Edit Profile</h2>
+              
+              <div style={{ textAlign: 'center', marginBottom: 40 }}>
+                 <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <img src={avatarUrl || "/default-avatar.png"} style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover' }} alt="" />
+                    <CldUploadWidget 
+                      uploadPreset="ml_default"
+                      onSuccess={(result: any) => { if (result.info && typeof result.info !== 'string') setAvatarUrl(result.info.secure_url); }}
+                    >
+                      {({ open }) => (
+                        <button className={styles.changePhotoBtn} onClick={() => open()}>Change Photo</button>
+                      )}
+                    </CldUploadWidget>
+                 </div>
+              </div>
+
+              <div className={styles.inputGroup}>
+                 <label className={styles.inputLabel}>Full Name</label>
+                 <input className={styles.textInput} value={editName} onChange={e => setEditName(e.target.value)} />
+              </div>
+
+              <div className={styles.inputGroup}>
+                 <label className={styles.inputLabel}>Email Address</label>
+                 <input className={styles.textInput} value={editEmail} onChange={e => setEditEmail(e.target.value)} />
+              </div>
+
+              <div className={styles.modalActions}>
+                 <button className={styles.cancelBtn} onClick={() => setEditing(false)}>Cancel</button>
+                 <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                 </button>
               </div>
            </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ProfileField({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+  return (
+    <div className={styles.profileField}>
+       <div className={styles.profileFieldIcon}>{icon}</div>
+       <div>
+          <div className={styles.profileFieldLabel}>{label}</div>
+          <div className={styles.profileFieldValue}>{value}</div>
+       </div>
     </div>
   );
 }
