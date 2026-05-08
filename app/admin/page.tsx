@@ -31,6 +31,8 @@ import {
   fetchSupportRequests,
   updateSupportRequestStatus,
   SupportRequest,
+  ExamConfig,
+  updateExamConfig,
 } from "@/lib/api";
 import { BRANCHES as BRANCH_LIST, BRANCH_IDS } from "@/lib/constants";
 import styles from "./admin.module.css";
@@ -800,6 +802,7 @@ function WarningBadge({ count }: { count: number }) {
 // ── Questions Tab (unchanged logic, kept here) ────────────────
 function QuestionsTab() {
   const [questions, setQuestions] = useState<AdminQuestion[]>([]);
+  const [configs, setConfigs] = useState<ExamConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AdminQuestion | null>(null);
@@ -821,7 +824,14 @@ function QuestionsTab() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { const data = await fetchAdminQuestions(); setQuestions(data); }
+    try { 
+      const [qData, cData] = await Promise.all([
+        fetchAdminQuestions(),
+        fetchPublicExamConfig()
+      ]);
+      setQuestions(qData); 
+      setConfigs(cData);
+    }
     catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, []);
@@ -912,6 +922,23 @@ function QuestionsTab() {
       setFolderBranchModal(null);
     } catch (error: any) {
       alert(`Failed to update branch: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleActivation = async (title: string, currentStatus: boolean) => {
+    try {
+      setLoading(true);
+      await updateExamConfig({ exam_title: title, is_active: !currentStatus });
+      // Update local state immediately for snappy UI
+      setConfigs(prev => prev.map(c => c.exam_title === title ? { ...c, is_active: !currentStatus } : c));
+      // If title didn't exist in configs, add it
+      if (!configs.find(c => c.exam_title === title)) {
+        load();
+      }
+    } catch (error) {
+      alert("Failed to update status");
     } finally {
       setLoading(false);
     }
@@ -1088,6 +1115,55 @@ function QuestionsTab() {
                           {name} <small style={{ fontWeight: 400, opacity: 0.7 }}>({branch})</small>
                         </div>
                       </div>
+                      
+                      {/* Activation Toggle Buttons */}
+                      <div style={{ display: "flex", gap: 4, marginRight: 12 }} onClick={e => e.stopPropagation()}>
+                        {(() => {
+                           const conf = configs.find(c => c.exam_title === name);
+                           const isActive = conf ? conf.is_active : true; // Default to active if no config yet
+                           return (
+                             <div style={{ 
+                               display: "flex", 
+                               background: "rgba(0,0,0,0.04)", 
+                               padding: "3px", 
+                               borderRadius: "20px", 
+                               border: "1px solid rgba(0,0,0,0.06)" 
+                             }}>
+                               <button 
+                                 onClick={() => !isActive && toggleActivation(name, false)}
+                                 style={{
+                                   fontSize: "10px",
+                                   fontWeight: 700,
+                                   padding: "4px 12px",
+                                   borderRadius: "16px",
+                                   border: "none",
+                                   cursor: "pointer",
+                                   transition: "all 0.2s",
+                                   background: isActive ? "#34d399" : "transparent",
+                                   color: isActive ? "#fff" : "#64748b",
+                                   boxShadow: isActive ? "0 2px 4px rgba(52,211,153,0.3)" : "none"
+                                 }}
+                               >Active</button>
+                               <button 
+                                 onClick={() => isActive && toggleActivation(name, true)}
+                                 style={{
+                                   fontSize: "10px",
+                                   fontWeight: 700,
+                                   padding: "4px 12px",
+                                   borderRadius: "16px",
+                                   border: "none",
+                                   cursor: "pointer",
+                                   transition: "all 0.2s",
+                                   background: !isActive ? "#f87171" : "transparent",
+                                   color: !isActive ? "#fff" : "#64748b",
+                                   boxShadow: !isActive ? "0 2px 4px rgba(248,113,113,0.3)" : "none"
+                                 }}
+                               >Inactive</button>
+                             </div>
+                           );
+                        })()}
+                      </div>
+
                       {!expandedClusters[clusterKey] && (
                         <div style={{ display: "flex", gap: 6 }} onClick={e => e.stopPropagation()}>
                           <button
