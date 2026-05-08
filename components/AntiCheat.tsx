@@ -58,16 +58,29 @@ export default function AntiCheat({ isSubmitted, onAutoSubmit }: AntiCheatProps)
     [isSubmitted, onAutoSubmit]
   );
 
+  // ── Sync status on focus ─────────────────────────────────
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isSubmitted) return;
+      // If we have warnings but no modal is showing, show it!
+      if (warningCount > 0 && !showModal) {
+        setShowModal(true);
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [warningCount, showModal, isSubmitted]);
+
   // ── Tab visibility ────────────────────────────────────────
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === "hidden") {
+      if (document.visibilityState === "hidden" && !isSubmitted) {
         triggerViolation("tab_switch");
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [triggerViolation]);
+  }, [triggerViolation, isSubmitted]);
 
   // ── Window blur ───────────────────────────────────────────
   useEffect(() => {

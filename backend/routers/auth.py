@@ -158,7 +158,7 @@ async def login(request: LoginRequest):
     else:
         # Create exam_status row for fresh student
         db.table("exam_status").insert(
-            {"student_id": student["id"], "status": "not_started"}
+            {"student_id": student["id"], "status": "not_started", "warnings": 0}
         ).execute()
 
     # 8. Fetch the LATEST active exam config

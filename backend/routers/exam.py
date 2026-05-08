@@ -374,7 +374,8 @@ async def start_exam(
     db.table("exam_status").update({
         "status": "active",
         "started_at": started_at,
-        "last_active": started_at
+        "last_active": started_at,
+        "warnings": 0  # RESET WARNINGS FOR NEW EXAM
     }).eq("student_id", student_id).execute()
 
     return StartExamResponse(started_at=started_at, status="active")
