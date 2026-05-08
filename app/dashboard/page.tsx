@@ -225,11 +225,7 @@ export default function DashboardPage() {
                   const start = new Date(e.scheduled_start).getTime();
                   return start > now;
                 });
-                const expired = studentExams.filter(e => {
-                  if (!e.scheduled_end) return false;
-                  const end = new Date(e.scheduled_end).getTime();
-                  return end < now;
-                });
+
 
                 return (
                   <>
@@ -270,25 +266,6 @@ export default function DashboardPage() {
                         )) : (
                           <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, width: '100%' }}>
                             No upcoming exams scheduled.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* ── Expired Exams ── */}
-                    <div className={styles.sectionWrapper} style={{ marginTop: 40 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Expired Exams</h2>
-                          <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Past assessments that have concluded</p>
-                        </div>
-                      </div>
-                      <div className={styles.examsSection} style={{ marginTop: 24, opacity: 0.6 }}>
-                        {expired.length > 0 ? expired.map(exam => (
-                          <ExamCard key={exam.id} exam={exam} onLaunch={handleLaunchExam} />
-                        )) : (
-                          <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, width: '100%' }}>
-                            No expired exams.
                           </div>
                         )}
                       </div>
