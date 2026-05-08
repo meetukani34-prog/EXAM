@@ -215,15 +215,18 @@ export default function DashboardPage() {
               {(() => {
                 const now = Date.now();
                 const active = studentExams.filter(e => {
+                  if (!e.is_active) return false;
                   if (!e.scheduled_start) return true;
                   const start = new Date(e.scheduled_start).getTime();
                   const end = e.scheduled_end ? new Date(e.scheduled_end).getTime() : null;
                   return start <= now && (!end || end >= now);
                 });
-                const expired = studentExams.filter(e => {
-                  if (!e.scheduled_end) return false;
-                  const end = new Date(e.scheduled_end).getTime();
-                  return end < now;
+
+                const inactive = studentExams.filter(e => {
+                  if (!e.is_active) return true;
+                  const start = new Date(e.scheduled_start || 0).getTime();
+                  const end = e.scheduled_end ? new Date(e.scheduled_end).getTime() : Infinity;
+                  return now < start || now > end;
                 });
 
 
@@ -252,20 +255,20 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* ── Expired Exams ── */}
+                    {/* ── Inactive Exams ── */}
                     <div className={styles.sectionWrapper} style={{ marginTop: 40 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Expired Exams</h2>
-                          <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Past assessments that have concluded</p>
+                          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Inactive Exams</h2>
+                          <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Scheduled, expired, or deactivated assessments</p>
                         </div>
                       </div>
                       <div className={styles.examsSection} style={{ marginTop: 24, opacity: 0.6 }}>
-                        {expired.length > 0 ? expired.map(exam => (
+                        {inactive.length > 0 ? inactive.map(exam => (
                           <ExamCard key={exam.id} exam={exam} onLaunch={handleLaunchExam} />
                         )) : (
                           <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, width: '100%' }}>
-                            No expired exams.
+                            No inactive exams.
                           </div>
                         )}
                       </div>
