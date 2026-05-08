@@ -194,7 +194,7 @@ export default function DashboardPage() {
 
         <div className={styles.topNavRight}>
           <div className={styles.userPanel} onClick={() => setShowUserDropdown(!showUserDropdown)}>
-            <img src={student.avatarUrl || "/default-avatar.png"} className={styles.userAvatar} alt="" />
+            <img src={student.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=0D8ABC&color=fff`} className={styles.userAvatar} alt="" />
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                 {student.usn || student.name.split(' ')[0].toLowerCase() + '67'} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
@@ -562,7 +562,7 @@ function ProfileTab({ student }: { student: StudentInfo }) {
       {/* Top Identity Card */}
       <div className={styles.profileHeaderCard}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <img src={avatarUrl || "/default-avatar.png"} style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} alt="" />
+          <img src={avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=0D8ABC&color=fff`} style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} alt="" />
           <div>
             <div style={{ fontSize: 24, fontWeight: 800 }}>{student.name}</div>
             <div style={{ opacity: 0.6, display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
@@ -612,7 +612,7 @@ function ProfileTab({ student }: { student: StudentInfo }) {
 
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
               <div style={{ position: 'relative', display: 'inline-block' }}>
-                <img src={avatarUrl || "/default-avatar.png"} style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover' }} alt="" />
+                <img src={avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=0D8ABC&color=fff`} style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover' }} alt="" />
                 <CldUploadWidget
                   uploadPreset="ml_default"
                   onSuccess={(result: any) => { if (result.info && typeof result.info !== 'string') setAvatarUrl(result.info.secure_url); }}
