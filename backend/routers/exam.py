@@ -22,7 +22,7 @@ def _check_exam_active(title: str):
     """Raises 423 if the exam has been deactivated by admin."""
     db = get_supabase()
     try:
-        result = db.table("exam_config").select("is_active, scheduled_start").eq("exam_title", title).limit(1).execute()
+        result = db.table("exam_config").select("is_active, scheduled_start, max_attempts").eq("exam_title", title).limit(1).execute()
         if result.data:
             row = result.data[0]
             if not row.get("is_active", True):
@@ -361,21 +361,35 @@ async def start_exam(
     db = get_supabase()
     student_id = current["student_id"]
 
-    # 1. Check current status
-    status_res = db.table("exam_status").select("status, started_at").eq("student_id", student_id).single().execute()
+    # 1. Fetch config and status to check attempts
+    config_res = db.table("exam_config").select("max_attempts").eq("exam_title", title).limit(1).execute()
+    max_attempts = 1
+    if config_res.data:
+        max_attempts = config_res.data[0].get("max_attempts") or 1
+
+    status_res = db.table("exam_status").select("status, started_at, attempts_count").eq("student_id", student_id).single().execute()
     data = status_res.data or {}
-    
-    # 2. If already active, just return the existing start time
+    attempts_count = data.get("attempts_count", 0)
+
+    # 2. Block if max attempts reached and not currently active
+    if attempts_count >= max_attempts and data.get("status") != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="max_attempts_reached",
+        )
+
+    # 3. If already active, just return the existing start time
     if data.get("status") == "active" and data.get("started_at"):
         return StartExamResponse(started_at=data["started_at"], status="active")
 
-    # 3. Otherwise, set the start time NOW
+    # 4. Otherwise, set the start time NOW and increment attempts
     started_at = datetime.now(timezone.utc).isoformat()
     db.table("exam_status").update({
         "status": "active",
         "started_at": started_at,
         "last_active": started_at,
-        "warnings": 0  # RESET WARNINGS FOR NEW EXAM
+        "warnings": 0,
+        "attempts_count": attempts_count + 1
     }).eq("student_id", student_id).execute()
 
     return StartExamResponse(started_at=started_at, status="active")

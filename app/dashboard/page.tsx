@@ -20,6 +20,9 @@ interface ExamNode {
   category?: string;
   marks_per_question?: number;
   negative_marks?: number;
+  max_attempts?: number;
+  attempts_count?: number;
+  student_status?: string;
 }
 
 interface StudentInfo {
@@ -87,7 +90,14 @@ export default function DashboardPage() {
         return "other";
       }
 
-      if (qData) {
+      if (qData && student) {
+        // Fetch current student's exam status/attempts
+        const { data: sData } = await supabase
+          .from("exam_status")
+          .select("status, attempts_count")
+          .eq("student_id", student.id)
+          .single();
+
         const uniqueExams = new Map<string, { exam_name: string, branch: string, count: number, category: string }>();
         qData.forEach(q => {
           const br = q.branch || "CS";
@@ -113,6 +123,9 @@ export default function DashboardPage() {
             category: info.category,
             marks_per_question: (config && config.marks_per_question !== undefined) ? config.marks_per_question : 4,
             negative_marks: (config && config.negative_marks !== undefined) ? config.negative_marks : -1,
+            max_attempts: config ? (config.max_attempts || 1) : 1,
+            attempts_count: sData ? (sData.attempts_count || 0) : 0,
+            student_status: sData ? sData.status : 'not_started'
           });
         });
       }
@@ -426,13 +439,17 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
   const displayDate = exam.scheduled_start ? new Date(exam.scheduled_start).toLocaleDateString() : "2024-05-08";
   const displayTime = exam.scheduled_start ? new Date(exam.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : "14:00";
 
+  const hasReachedLimit = (exam.attempts_count || 0) >= (exam.max_attempts || 1) && exam.student_status === 'submitted';
+
   return (
-    <div className={styles.examCard} style={{ opacity: isLocked ? 0.8 : 1 }}>
+    <div className={styles.examCard} style={{ opacity: (isLocked || hasReachedLimit) ? 0.8 : 1 }}>
       <img src={pattern} className={styles.cardPattern} alt="" />
       <div style={{ position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <h3 className={styles.examTitle}>{exam.exam_name}</h3>
-          <span className={styles.statusBadge}>{isLocked ? "Scheduled" : "Live"}</span>
+          <span className={styles.statusBadge}>
+            {isLocked ? "Scheduled" : (hasReachedLimit ? "Completed" : "Live")}
+          </span>
         </div>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.7 }}>
@@ -444,16 +461,30 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
             {displayTime} • {exam.duration_minutes} min
           </div>
           <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9, color: 'var(--nexus-cyan)' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-            Score: +{exam.marks_per_question ?? 4} / {exam.negative_marks ?? -1}
+             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20V10" /><path d="M18 20V4" /><path d="M6 20v-4" /></svg>
+             Attempts: {exam.attempts_count} / {exam.max_attempts}
           </div>
         </div>
-        <div className={styles.progressBar}><div className={styles.progressFill} style={{ width: isLocked ? '40%' : '100%' }} /></div>
+        <div className={styles.progressBar}>
+           <div className={styles.progressFill} style={{ width: hasReachedLimit ? '100%' : (isLocked ? '0%' : '100%'), background: hasReachedLimit ? '#34d399' : undefined }} />
+        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 }}>
-          <button className={styles.startExamBtn} onClick={() => !isLocked && onLaunch(exam)} style={{ opacity: isLocked ? 0.5 : 1, cursor: isLocked ? 'not-allowed' : 'pointer' }}>
-            {isLocked ? "Locked" : "Start Exam"}
+          <button 
+            className={styles.startExamBtn} 
+            onClick={() => !isLocked && !hasReachedLimit && onLaunch(exam)} 
+            style={{ 
+              opacity: (isLocked || hasReachedLimit) ? 0.6 : 1, 
+              cursor: (isLocked || hasReachedLimit) ? 'not-allowed' : 'pointer',
+              background: hasReachedLimit ? 'rgba(52, 211, 153, 0.1)' : undefined,
+              color: hasReachedLimit ? '#34d399' : undefined,
+              border: hasReachedLimit ? '1px solid rgba(52, 211, 153, 0.2)' : undefined
+            }}
+          >
+            {isLocked ? "Locked" : (hasReachedLimit ? "Attempted" : "Start Exam")}
           </button>
-          <div style={{ fontSize: 13, fontWeight: 700, color: isLocked ? 'var(--nexus-gold)' : 'var(--nexus-cyan)' }}>{countdown || "Ready"}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: isLocked ? 'var(--nexus-gold)' : (hasReachedLimit ? '#34d399' : 'var(--nexus-cyan)') }}>
+            {hasReachedLimit ? "Verified" : (countdown || "Ready")}
+          </div>
         </div>
       </div>
     </div>
