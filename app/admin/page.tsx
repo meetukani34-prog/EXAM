@@ -1033,6 +1033,9 @@ function QuestionsTab() {
     return "other";
   }
 
+  // New: prefer q.category, fallback to inference
+  const getQCategory = (q: AdminQuestion) => q.category || getCategory(q.exam_name || "");
+
   const filteredQuestions = questions.filter((q) => {
     const branchMatch = selectedBranch === "All" || q.branch === selectedBranch;
     const categoryMatch = selectedCategory === "all" || getQCategory(q) === selectedCategory;
@@ -1058,8 +1061,6 @@ function QuestionsTab() {
     return branchMatch && categoryMatch && statusMatch;
   });
 
-  // New: prefer q.category, fallback to inference
-  const getQCategory = (q: AdminQuestion) => q.category || getCategory(q.exam_name || "");
 
 
   const branchFiltered = selectedBranch === "All" ? questions : questions.filter((q) => q.branch === selectedBranch);
