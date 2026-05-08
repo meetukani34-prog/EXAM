@@ -62,7 +62,7 @@ export default function LoginPage() {
           email: data.email,
           branch: data.branch,
           examStartTime: data.exam_start_time,
-          examDurationMinutes: data.exam_duration_minutes || 20,
+          examDurationMinutes: data.exam_duration_minutes,
           examTitle: data.exam_title,
           totalQuestions: data.total_questions,
           avatarUrl: data.avatar_url,

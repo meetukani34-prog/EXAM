@@ -27,6 +27,7 @@ export default function InstructionsPage() {
 
     const studentData = sessionStorage.getItem("exam_student");
     const selectedTitle = sessionStorage.getItem("exam_selected_title");
+    const selectedDuration = sessionStorage.getItem("exam_selected_duration");
     
     if (studentData) {
       try {
@@ -35,7 +36,7 @@ export default function InstructionsPage() {
           name: parsed.name || "Student",
           usn: parsed.usn || "Candidate",
           examTitle: selectedTitle || parsed.examTitle || "Online Assessment",
-          duration: parsed.examDurationMinutes || 20,
+          duration: selectedDuration ? parseInt(selectedDuration) : (parsed.examDurationMinutes || 20),
           totalQuestions: parsed.totalQuestions || 30,
         });
       } catch (err) {
@@ -46,16 +47,15 @@ export default function InstructionsPage() {
         name: "Student",
         usn: "Candidate",
         examTitle: selectedTitle,
-        duration: 20,
+        duration: selectedDuration ? parseInt(selectedDuration) : 20,
         totalQuestions: 30
       });
     } else {
-      // Fallback if session storage is weirdly empty but token exists
       setStudentInfo({ 
         name: "Student", 
         usn: "Candidate", 
         examTitle: "Online Assessment", 
-        duration: 20,
+        duration: selectedDuration ? parseInt(selectedDuration) : 20,
         totalQuestions: 30 
       });
     }

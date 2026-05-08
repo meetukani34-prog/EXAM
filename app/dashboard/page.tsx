@@ -136,6 +136,7 @@ export default function DashboardPage() {
   const handleLaunchExam = (exam: ExamNode) => {
     if (!exam.is_active) return;
     sessionStorage.setItem("exam_selected_title", exam.exam_name);
+    sessionStorage.setItem("exam_selected_duration", String(exam.duration_minutes));
     router.push("/instructions");
   };
 

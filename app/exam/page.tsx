@@ -70,16 +70,19 @@ export default function ExamPage() {
       return;
     }
 
+    const selectedDuration = sessionStorage.getItem("exam_selected_duration");
     const info = raw ? JSON.parse(raw) : { 
       id: "PREVIEW", 
       name: "Admin Preview", 
       examStartTime: null, 
-      examDurationMinutes: 20,
+      examDurationMinutes: selectedDuration ? parseInt(selectedDuration) : 20,
       examTitle: "Online Assessment"
     };
     
-    // STRICT OVERRIDE: Always force 20 minutes for production
-    info.examDurationMinutes = 20;
+    // Use selected duration if available
+    if (selectedDuration) {
+      info.examDurationMinutes = parseInt(selectedDuration);
+    }
     
     setStudent(info);
 
