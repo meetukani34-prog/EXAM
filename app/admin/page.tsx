@@ -807,8 +807,7 @@ function QuestionsTab() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AdminQuestion | null>(null);
   const [selectedBranch, setSelectedBranch] = useState("All");
-  const [selectedCategory, setSelectedCategory] = useState<"all" | "aptitude" | "programming" | "other">("all");
-  const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "upcoming" | "expired">("all");
+  const [selectedCategory, setSelectedCategory] = useState<"all" | "active" | "upcoming" | "expired" | "aptitude" | "programming" | "other">("all");
   const [formData, setFormData] = useState<Omit<AdminQuestion, "id">>({ 
     text: "", 
     options: ["", "", "", ""], 
@@ -954,27 +953,28 @@ function QuestionsTab() {
 
   const filteredQuestions = questions.filter((q) => {
     const branchMatch = selectedBranch === "All" || q.branch === selectedBranch;
-    const categoryMatch = selectedCategory === "all" || getCategory(q.exam_name) === selectedCategory;
     
-    if (selectedStatus === "all") return branchMatch && categoryMatch;
+    // Primary Category/Status Filter
+    if (selectedCategory === "all") return branchMatch;
 
     const conf = configs.find(c => c.exam_title === q.exam_name);
     const now = Date.now();
-    
-    let statusMatch = false;
-    if (selectedStatus === "active") {
-      const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
-      const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
-      statusMatch = start <= now && end >= now;
-    } else if (selectedStatus === "upcoming") {
-      const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
-      statusMatch = start > now;
-    } else if (selectedStatus === "expired") {
-      const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
-      statusMatch = end < now;
-    }
 
-    return branchMatch && categoryMatch && statusMatch;
+    if (selectedCategory === "active") {
+      const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
+      const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
+      return branchMatch && start <= now && end >= now;
+    } else if (selectedCategory === "upcoming") {
+      const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
+      return branchMatch && start > now;
+    } else if (selectedCategory === "expired") {
+      const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
+      return branchMatch && end < now;
+    } else {
+      // Sub-category (Aptitude, Programming, etc.)
+      const catMatch = getQCategory(q) === selectedCategory;
+      return branchMatch && catMatch;
+    }
   });
 
   // New: prefer q.category, fallback to inference
@@ -983,9 +983,23 @@ function QuestionsTab() {
 
   const branchFiltered = selectedBranch === "All" ? questions : questions.filter((q) => q.branch === selectedBranch);
 
-  // Category counts
   const catCounts = {
     all: branchFiltered.length,
+    active: branchFiltered.filter(q => {
+      const conf = configs.find(c => c.exam_title === q.exam_name);
+      const now = Date.now();
+      const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
+      const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
+      return start <= now && end >= now;
+    }).length,
+    upcoming: branchFiltered.filter(q => {
+      const conf = configs.find(c => c.exam_title === q.exam_name);
+      return conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() > Date.now() : false;
+    }).length,
+    expired: branchFiltered.filter(q => {
+      const conf = configs.find(c => c.exam_title === q.exam_name);
+      return conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() < Date.now() : false;
+    }).length,
     aptitude: branchFiltered.filter(q => getQCategory(q) === "aptitude").length,
     programming: branchFiltered.filter(q => getQCategory(q) === "programming").length,
     other: branchFiltered.filter(q => getQCategory(q) === "other").length,
@@ -1062,64 +1076,48 @@ function QuestionsTab() {
         </button>
       </div>
 
-      {/* ── Category Tabs ── */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+      {/* ── Unified Category Tabs ── */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
         {([
-          { key: "all" as const, label: "All", emoji: "\ud83d\udccb" },
-          { key: "aptitude" as const, label: "Aptitude", emoji: "\ud83e\udde0" },
-          { key: "programming" as const, label: "Programming", emoji: "\ud83d\udcbb" },
-          { key: "other" as const, label: "Other", emoji: "\ud83d\udcc2" },
+          { key: "all" as const, label: "All", emoji: "📄" },
+          { key: "active" as const, label: "Active", emoji: "🟢" },
+          { key: "upcoming" as const, label: "Upcoming", emoji: "🟡" },
+          { key: "expired" as const, label: "Expired", emoji: "⚪" },
+          { key: "aptitude" as const, label: "Aptitude", emoji: "🧠" },
+          { key: "programming" as const, label: "Programming", emoji: "💻" },
+          { key: "other" as const, label: "Other", emoji: "📂" },
         ]).map(cat => (
           <button
             key={cat.key}
             onClick={() => setSelectedCategory(cat.key)}
             style={{
-              padding: '8px 20px',
-              borderRadius: 10,
+              padding: '10px 24px',
+              borderRadius: 14,
               border: selectedCategory === cat.key ? '2px solid #4f46e5' : '1px solid #e2e8f0',
               background: selectedCategory === cat.key ? '#eef2ff' : '#fff',
               color: selectedCategory === cat.key ? '#4f46e5' : '#64748b',
-              fontWeight: 700,
-              fontSize: 13,
+              fontWeight: 800,
+              fontSize: 14,
               cursor: 'pointer',
               transition: 'all 0.2s',
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
+              boxShadow: selectedCategory === cat.key ? '0 4px 12px rgba(79,70,229,0.15)' : 'none',
             }}
           >
-            {cat.emoji} {cat.label} ({catCounts[cat.key]})
-          </button>
-        ))}
-      </div>
-
-      {/* ── Status Tabs ── */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-        {([
-          { key: "all" as const, label: "All Status", icon: "🌐" },
-          { key: "active" as const, label: "Active", icon: "🟢" },
-          { key: "upcoming" as const, label: "Upcoming", icon: "🟡" },
-          { key: "expired" as const, label: "Expired", icon: "⚪" },
-        ]).map(stat => (
-          <button
-            key={stat.key}
-            onClick={() => setSelectedStatus(stat.key)}
-            style={{
-              padding: '6px 16px',
-              borderRadius: 8,
-              border: selectedStatus === stat.key ? '2px solid #10b981' : '1px solid #e2e8f0',
-              background: selectedStatus === stat.key ? '#ecfdf5' : 'transparent',
-              color: selectedStatus === stat.key ? '#059669' : '#64748b',
-              fontWeight: 600,
-              fontSize: 12,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            {stat.icon} {stat.label}
+            <span style={{ fontSize: 16 }}>{cat.emoji}</span>
+            {cat.label}
+            <span style={{ 
+              marginLeft: 4, 
+              opacity: 0.6, 
+              fontSize: 11, 
+              background: selectedCategory === cat.key ? 'rgba(79,70,229,0.1)' : '#f1f5f9',
+              padding: '2px 8px',
+              borderRadius: 20
+            }}>
+              {catCounts[cat.key as keyof typeof catCounts]}
+            </span>
           </button>
         ))}
       </div>
