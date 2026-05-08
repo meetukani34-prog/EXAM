@@ -249,25 +249,26 @@ def submit_exam(
     exam_title = answers.pop("__exam_title", "Initial Assessment")
     branch = current.get("branch", "CS")
 
-    # Strategy 1: Branch Match (Priority)
+    # Strategy 1: Strict Branch + Strict Title Match
     questions_result = (
         db.table("questions")
         .select("id, correct_answer, marks")
         .eq("branch", branch)
+        .eq("exam_name", exam_title)
         .execute()
     )
 
-    # Strategy 2: Title + Branch
+    # Strategy 2: Strict Branch + Fuzzy Title Match
     if not questions_result.data:
         questions_result = (
             db.table("questions")
             .select("id, correct_answer, marks")
-            .eq("exam_name", exam_title)
             .eq("branch", branch)
+            .ilike("exam_name", f"%{exam_title}%")
             .execute()
         )
 
-    # Strategy 3: Title Only
+    # Strategy 3: Title Only (Absolute Fallback)
     if not questions_result.data:
         questions_result = (
             db.table("questions")
