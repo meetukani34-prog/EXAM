@@ -26,19 +26,29 @@ export default function InstructionsPage() {
     }
 
     const studentData = sessionStorage.getItem("exam_student");
+    const selectedTitle = sessionStorage.getItem("exam_selected_title");
+    
     if (studentData) {
       try {
         const parsed = JSON.parse(studentData);
         setStudentInfo({
           name: parsed.name || "Student",
           usn: parsed.usn || "Candidate",
-          examTitle: parsed.examTitle || "Online Assessment",
-          duration: 20,
+          examTitle: selectedTitle || parsed.examTitle || "Online Assessment",
+          duration: parsed.examDurationMinutes || 20,
           totalQuestions: parsed.totalQuestions || 30,
         });
       } catch (err) {
         console.error("Could not parse student data", err);
       }
+    } else if (selectedTitle) {
+      setStudentInfo({
+        name: "Student",
+        usn: "Candidate",
+        examTitle: selectedTitle,
+        duration: 20,
+        totalQuestions: 30
+      });
     } else {
       // Fallback if session storage is weirdly empty but token exists
       setStudentInfo({ 
@@ -69,9 +79,15 @@ export default function InstructionsPage() {
       }
 
       router.push("/exam");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to start exam", err);
-      alert("Error starting exam. Please try again.");
+      let msg = "Error starting exam. Please try again.";
+      if (err.message?.includes("425") || err.message?.includes("scheduled")) {
+        msg = "This exam is scheduled for a future time. Please wait until the start time.";
+      } else if (err.message?.includes("423") || err.message?.includes("inactive")) {
+        msg = "This exam is currently inactive. Please contact the administrator.";
+      }
+      alert(msg);
       setStarting(false);
     }
   };
