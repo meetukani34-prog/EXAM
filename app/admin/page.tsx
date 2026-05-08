@@ -1035,7 +1035,7 @@ function QuestionsTab() {
 
   const filteredQuestions = questions.filter((q) => {
     const branchMatch = selectedBranch === "All" || q.branch === selectedBranch;
-    const categoryMatch = selectedCategory === "all" || getCategory(q.exam_name) === selectedCategory;
+    const categoryMatch = selectedCategory === "all" || getQCategory(q) === selectedCategory;
     
     if (selectedStatus === "all") return branchMatch && categoryMatch;
 
