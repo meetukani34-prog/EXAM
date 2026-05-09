@@ -111,8 +111,9 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     fetchOdyssey();
   };
 
-  // Merge students with their odyssey progress and filter for active participants
+  // Merge students with their odyssey progress and filter for PyHunt participants
   const participants = students
+    .filter(s => s.exam_name === "PyHunt") // Only show students who are explicitly in a PyHunt session
     .map(s => {
       const progress = odysseyData.find(p => p.student_id === s.student_id);
       return {
@@ -120,9 +121,8 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
         pyhunt: progress || null
       };
     })
-    .filter(p => p.pyhunt !== null) // Only show students who have given/started the pyhunt exam
     .sort((a, b) => {
-      // Sort by progress (highest round first)
+      // Sort by progress (highest round first) if available
       const roundA = a.pyhunt?.current_round || 0;
       const roundB = b.pyhunt?.current_round || 0;
       if (roundB !== roundA) return roundB - roundA;
@@ -1185,19 +1185,33 @@ export default function AdminPage() {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>#</th><th>USN NO.</th><th>Name</th><th>Email</th>
+                    <th>#</th><th>USN NO.</th><th>Name</th><th>Exam</th><th>Email</th>
                     <th>Branch</th><th>Status</th><th>Start Time</th><th>Total Time</th>
                     <th>Submitted At</th><th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visible.length === 0 ? (
-                    <tr><td colSpan={10} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>No students found.</td></tr>
+                    <tr><td colSpan={11} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>No students found.</td></tr>
                   ) : visible.map((s, i) => (
                     <tr key={s.student_id} className={s.warnings >= 3 ? styles.rowDanger : s.warnings >= 2 ? styles.rowWarning : ""}>
                       <td className="mono text-muted" style={{ fontSize: 12 }}>{i + 1}</td>
                       <td><span className="mono" style={{ fontSize: 13 }}>{s.usn}</span></td>
                       <td>{s.name}</td>
+                      <td>
+                        <span style={{ 
+                          fontSize: 10, 
+                          fontWeight: 800, 
+                          padding: '2px 8px', 
+                          borderRadius: 6,
+                          background: s.exam_name === "PyHunt" ? "rgba(0, 242, 255, 0.1)" : "rgba(139, 92, 246, 0.1)",
+                          color: s.exam_name === "PyHunt" ? "#00f2ff" : "#a78bfa",
+                          border: `1px solid ${s.exam_name === "PyHunt" ? "rgba(0, 242, 255, 0.2)" : "rgba(139, 92, 246, 0.2)"}`,
+                          textTransform: 'uppercase'
+                        }}>
+                          {s.exam_name || "—"}
+                        </span>
+                      </td>
                       <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{s.email || "—"}</td>
                       <td><span className="badge badge-neutral">{s.branch}</span></td>
                       <td><StatusBadge status={s.status} lastActive={s.last_active} /></td>

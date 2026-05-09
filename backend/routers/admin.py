@@ -159,40 +159,48 @@ async def upload_question_image(
 async def get_all_students(_: bool = Depends(verify_admin)):
     try:
         db = get_supabase()
-        # Query students first to ensure all registered students are visible
-        # We join exam_status to get their current progress
+        # Query students joined with ALL their exam_status records
         result = db.table("students").select("*, exam_status(*)").execute()
 
         rows = []
         if result.data:
             for s in result.data:
-                # Handle cases where exam_status might be missing or multiple (though it should be 1-to-1)
-                e_status = s.get("exam_status")
-                if isinstance(e_status, list) and len(e_status) > 0:
-                    e_status = e_status[0]
-                elif not e_status:
-                    # Fallback for students without an exam_status row yet
-                    e_status = {
-                        "status": "not_started",
-                        "warnings": 0,
-                        "last_active": None,
-                        "submitted_at": None,
-                        "started_at": None
-                    }
+                e_statuses = s.get("exam_status")
+                
+                # If student has NO exam status records yet, add a 'not_started' entry
+                if not e_statuses or len(e_statuses) == 0:
+                    rows.append(StudentStatus(
+                        student_id=s["id"],
+                        usn=s.get("usn") or s.get("roll_number") or "UNKNOWN",
+                        name=s.get("name", "UNKNOWN"),
+                        email=s.get("email"),
+                        branch=s.get("branch", "CS"),
+                        status="not_started",
+                        warnings=0,
+                        last_active=None,
+                        submitted_at=None,
+                        started_at=None,
+                        is_blocked=s.get("is_blocked", False),
+                        exam_name=None
+                    ))
+                    continue
 
-                rows.append(StudentStatus(
-                    student_id=s["id"],
-                    usn=s.get("usn") or s.get("roll_number") or "UNKNOWN",
-                    name=s.get("name", "UNKNOWN"),
-                    email=s.get("email"),
-                    branch=s.get("branch", "CS"),
-                    status=e_status.get("status", "not_started"),
-                    warnings=e_status.get("warnings", 0),
-                    last_active=e_status.get("last_active"),
-                    submitted_at=e_status.get("submitted_at"),
-                    started_at=e_status.get("started_at"),
-                    is_blocked=s.get("is_blocked", False)
-                ))
+                # If student has one or more exam sessions, add an entry for each
+                for e_status in e_statuses:
+                    rows.append(StudentStatus(
+                        student_id=s["id"],
+                        usn=s.get("usn") or s.get("roll_number") or "UNKNOWN",
+                        name=s.get("name", "UNKNOWN"),
+                        email=s.get("email"),
+                        branch=s.get("branch", "CS"),
+                        status=e_status.get("status", "not_started"),
+                        warnings=e_status.get("warnings", 0),
+                        last_active=e_status.get("last_active"),
+                        submitted_at=e_status.get("submitted_at"),
+                        started_at=e_status.get("started_at"),
+                        is_blocked=s.get("is_blocked", False),
+                        exam_name=e_status.get("exam_name")
+                    ))
         return rows
     except Exception as e:
         print(f"CRITICAL get_all_students: {e}")

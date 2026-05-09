@@ -152,6 +152,7 @@ class StudentStatus(BaseModel):
     started_at: Optional[str] = None
     is_blocked: bool = False
     avatar_url: Optional[str] = None
+    exam_name: Optional[str] = None
 
 # ── Exam Config ───────────────────────────────────────────────
 class ExamConfig(BaseModel):
