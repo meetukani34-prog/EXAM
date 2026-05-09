@@ -120,7 +120,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
         pyhunt: progress || null
       };
     })
-    .filter(s => s.exam_name === "PyHunt" || s.pyhunt !== null) // Show if in PyHunt session OR has odyssey progress
+    .filter(s => s.exam_name?.toLowerCase() === "pyhunt" || s.pyhunt !== null) // Show if in PyHunt session OR has odyssey progress
     .sort((a, b) => {
       // Sort by progress (highest round first) if available
       const roundA = a.pyhunt?.current_round || 0;
