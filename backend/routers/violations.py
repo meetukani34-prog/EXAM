@@ -48,16 +48,18 @@ async def report_violation(
 
         # 1. Fetch current status safely for this specific exam
         exam_title = request.exam_name or "General Assessment"
+        current_warnings = 0
         try:
             status_res = db.table("exam_status").select("status, warnings").eq("student_id", student_id).eq("exam_name", exam_title).execute()
             if status_res.data:
                 row = status_res.data[0]
                 if row["status"] == "submitted":
                     return ReportViolationResponse(warning_count=row.get("warnings", 0), auto_submitted=False, message="Exam already submitted.")
-                new_warnings = (row.get("warnings") or 0) + 1
+                current_warnings = row.get("warnings") or 0
         except Exception as e:
             print(f"[VIOLATIONS] Status fetch failed for {exam_title}: {e}")
-            new_warnings = 1
+
+        new_warnings = current_warnings + 1
 
         # 2. Log violation safely (Mapping types to valid DB constraints)
         db_type = request.type
@@ -74,14 +76,17 @@ async def report_violation(
         except Exception as e:
             print(f"[VIOLATIONS] DB Insert failed: {e}")
 
-        # 3. Update warning count on exam_status (MANDATORY)
+        # 3. Update warning count on exam_status (MANDATORY UPSERT)
         try:
-            db.table("exam_status").update({
+            db.table("exam_status").upsert({
+                "student_id": student_id,
+                "exam_name": exam_title,
                 "warnings": new_warnings,
+                "status": "active",
                 "last_active": datetime.now(timezone.utc).isoformat(),
-            }).eq("student_id", student_id).eq("exam_name", exam_title).execute()
+            }, on_conflict="student_id,exam_name").execute()
         except Exception as e:
-            print(f"[VIOLATIONS] Status update failed: {e}")
+            print(f"[VIOLATIONS] Status upsert failed: {e}")
 
         # 4. Determine response
         auto_submitted = False
