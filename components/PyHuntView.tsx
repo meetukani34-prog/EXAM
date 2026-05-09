@@ -248,32 +248,9 @@ export default function PyHuntView() {
     );
   }
 
-  if (isAutoSubmitted) {
-    return (
-      <div className={styles.lobbyContainer}>
-        <div className={styles.lobbyContent} style={{ borderColor: '#ef4444', background: 'rgba(239, 68, 68, 0.05)' }}>
-          <div className={styles.lobbyIcon} style={{ background: 'rgba(239, 68, 68, 0.2)', boxShadow: '0 0 30px rgba(239, 68, 68, 0.3)' }}>
-            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-          </div>
-          <h1 className={styles.lobbyTitle} style={{ color: '#ef4444' }}>Mission Terminated</h1>
-          <p className={styles.lobbySubtitle}>
-            Your logic session has been auto-submitted due to repeated security violations. All progress has been logged for review.
-          </p>
-          <div style={{ marginTop: 24, fontSize: 13, opacity: 0.6, color: '#ef4444', fontWeight: 700, letterSpacing: '0.1em' }}>
-            SESSION STATUS: DEAUTHORIZED
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={styles.pyhuntShell}>
-      <AntiCheat isSubmitted={currentRound > 5 || isAutoSubmitted} examName="PyHunt" onAutoSubmit={() => setIsAutoSubmitted(true)} />
+      <AntiCheat isSubmitted={currentRound > 5} examName="PyHunt" onAutoSubmit={() => setIsAutoSubmitted(true)} />
       
       <aside className={styles.timeline}>
         {ROUNDS.map(r => (
