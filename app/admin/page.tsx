@@ -133,9 +133,14 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
             <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.03em' }}>🐍 PyHunt Observer</h2>
-            <div className={adminStyles.statusIndicator} />
+            <div className={adminStyles.statusIndicator} title="Live Logic Stream Active" />
+            <span style={{ fontSize: 10, background: 'rgba(0, 242, 255, 0.1)', color: '#00f2ff', padding: '2px 8px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>
+              SYNC: {new Date().toLocaleTimeString()} · V2.1
+            </span>
           </div>
-          <p style={{ opacity: 0.5, fontSize: 14, margin: 0 }}>Master Command Center for Logic Orbits ({participants.length} total participants)</p>
+          <p style={{ opacity: 0.5, fontSize: 14, margin: 0 }}>
+            Master Command Center for Logic Orbits ({participants.length} participants detected)
+          </p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button 
