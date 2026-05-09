@@ -654,3 +654,67 @@ select.input option {
     font-size: 10px;
   }
 }
+
+
+/* -- PyHunt Configuration Styles -- */
+.configTabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  background: rgba(255,255,255,0.03);
+  padding: 8px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.configTab {
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.configTab:hover {
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+}
+
+.configTabActive {
+  background: #00f2ff !important;
+  color: #000 !important;
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+}
+
+.configContent {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.configCard {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.codeBadge {
+  padding: 6px 12px;
+  background: rgba(0, 242, 255, 0.1);
+  border: 1px solid rgba(0, 242, 255, 0.2);
+  border-radius: 8px;
+  color: #00f2ff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+

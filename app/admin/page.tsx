@@ -83,6 +83,7 @@ function getStoredAuth(): boolean {
 
 // ── PyHunt Observer Component ──────────────────────────────────
 function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], setOdysseyData: (d: any[]) => void }) {
+  const [view, setView] = useState<'observer' | 'config'>('observer');
   const fetchOdyssey = useCallback(async () => {
     const { data } = await supabase
       .from('odyssey_progress')
@@ -102,14 +103,6 @@ function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], s
     fetchOdyssey();
   };
 
-  const getFrictionStats = () => {
-    const rounds = [1, 2, 3, 4, 5];
-    return rounds.map(r => ({
-      round: r,
-      count: (odysseyData || []).filter(d => d.current_round === r).length
-    }));
-  };
-
   return (
     <div style={{ padding: 24 }}>
       <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -118,66 +111,173 @@ function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], s
           <p style={{ opacity: 0.6, fontSize: 13 }}>Master Command Center for PyHunt Logic Orbits</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          {getFrictionStats().map(s => (
-            <div key={s.round} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 16px', borderRadius: 12, textAlign: 'center' }}>
-              <div style={{ fontSize: 10, opacity: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>Orbit {s.round}</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: '#00f2ff' }}>{s.count}</div>
-            </div>
-          ))}
+          <button 
+            className={`btn ${view === 'observer' ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setView('observer')}
+          >
+            📡 Observer
+          </button>
+          <button 
+            className={`btn ${view === 'config' ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setView('config')}
+          >
+            ⚙️ Configuration
+          </button>
         </div>
       </header>
 
-      <div className={styles.tableWrapper}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Student Node</th>
-              <th>Current Orbit</th>
-              <th>Entropy (Errors)</th>
-              <th>Last Signal</th>
-              <th>Intervention</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(odysseyData || []).map(d => (
-              <tr key={d.id}>
-                <td>
-                  <div style={{ fontWeight: 700 }}>{d.students?.name}</div>
-                  <div style={{ fontSize: 11, opacity: 0.6 }}>{d.students?.usn}</div>
-                </td>
-                <td>
-                  <span style={{ 
-                    padding: '4px 12px', 
-                    borderRadius: 20, 
-                    background: `rgba(0, 242, 255, ${d.current_round * 0.15})`, 
-                    color: d.current_round === 5 ? '#000' : '#00f2ff',
-                    fontWeight: 800,
-                    fontSize: 12
-                  }}>
-                    ORBIT {d.current_round}
-                  </span>
-                </td>
-                <td>
-                  <div style={{ color: (d.error_entropy || 0) > 5 ? '#ef4444' : 'inherit' }}>
-                    {d.error_entropy || 0} Bits
-                  </div>
-                </td>
-                <td>{timeAgo(d.last_ping)}</td>
-                <td>
-                  <button 
-                    className="btn btn-primary"
-                    style={{ fontSize: 11, padding: '4px 10px' }}
-                    onClick={() => handleForceUnlock(d.student_id, d.current_round + 1)}
-                    disabled={d.current_round >= 5}
-                  >
-                    Force Levitation
-                  </button>
-                </td>
+      {view === 'observer' ? (
+        <div className={styles.tableWrapper}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Student Node</th>
+                <th>Current Orbit</th>
+                <th>Entropy (Errors)</th>
+                <th>Last Signal</th>
+                <th>Intervention</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {(odysseyData || []).map(d => (
+                <tr key={d.id}>
+                  <td>
+                    <div style={{ fontWeight: 700 }}>{d.students?.name}</div>
+                    <div style={{ fontSize: 11, opacity: 0.6 }}>{d.students?.usn}</div>
+                  </td>
+                  <td>
+                    <span style={{ 
+                      padding: '4px 12px', 
+                      borderRadius: 20, 
+                      fontSize: 12, 
+                      fontWeight: 800,
+                      background: d.current_round === 5 ? 'rgba(52, 211, 153, 0.1)' : 'rgba(255,255,255,0.05)',
+                      color: d.current_round === 5 ? '#34d399' : '#fff',
+                      border: `1px solid ${d.current_round === 5 ? 'rgba(52, 211, 153, 0.2)' : 'rgba(255,255,255,0.1)'}`
+                    }}>
+                      Orbit {d.current_round}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ color: d.error_entropy > 5 ? '#ef4444' : 'inherit' }}>
+                      {d.error_entropy} Bits
+                    </span>
+                  </td>
+                  <td>{new Date(d.last_ping).toLocaleTimeString()}</td>
+                  <td>
+                    <button 
+                      className="btn btn-outline" 
+                      style={{ fontSize: 11, padding: '4px 10px' }}
+                      onClick={() => handleForceUnlock(d.student_id, d.current_round + 1)}
+                    >
+                      LEVITE NEXT
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {(odysseyData || []).length === 0 && (
+            <div style={{ padding: 60, textAlign: 'center', opacity: 0.4 }}>No student nodes currently in orbit.</div>
+          )}
+        </div>
+      ) : (
+        <PyHuntConfig />
+      )}
+    </div>
+  );
+}
+
+function PyHuntConfig() {
+  const [activeTab, setActiveTab] = useState("clues");
+  const [configs, setConfigs] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("pyhunt_config_local");
+      if (saved) return JSON.parse(saved);
+    }
+    return [
+      { round: 1, name: "MCQ", clue: "ROUND 1 COMPLETE", code: "LIBRARY42" },
+      { round: 2, name: "Jumble", clue: "Round 2 Complete! GOOD JUB NOW FOR 3", code: "LAB2CO" },
+      { round: 3, name: "Palindrome", clue: "The mirror speaks the truth.", code: "HEX33" },
+      { round: 4, name: "FizzBuzz", clue: "Numbers dance in patterns.", code: "F1ZZ" },
+    ];
+  });
+
+  const saveConfig = (newConfigs: any) => {
+    setConfigs(newConfigs);
+    localStorage.setItem("pyhunt_config_local", JSON.stringify(newConfigs));
+  };
+
+  const updateConfig = (round: number, field: string, val: string) => {
+    const updated = configs.map((c: any) => c.round === round ? { ...c, [field]: val } : c);
+    saveConfig(updated);
+  };
+
+  return (
+    <div>
+       <div style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>⚙️ PyHunt Configuration</h2>
+          <p style={{ opacity: 0.6, fontSize: 13 }}>Configure clues, unlock codes, and logic parameters for the mission.</p>
+       </div>
+
+       <div className={styles.configTabs}>
+          {["clues", "mcq", "jumble", "r3", "r4"].map(t => (
+            <button 
+              key={t}
+              className={`${styles.configTab} ${activeTab === t ? styles.configTabActive : ""}`}
+              onClick={() => setActiveTab(t)}
+            >
+              {t === "clues" && "🔑 Clues & Codes"}
+              {t === "mcq" && "📄 MCQ Questions"}
+              {t === "jumble" && "🧩 Code Jumble"}
+              {t === "r3" && "🐍 Round 3 Code"}
+              {t === "r4" && "📊 Round 4 Code"}
+            </button>
+          ))}
+       </div>
+
+       <div className={styles.configContent}>
+          {activeTab === "clues" && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {configs.map((c: any) => (
+                <div key={c.round} className={styles.configCard}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <h4 style={{ margin: 0, color: '#00f2ff' }}>After Round {c.round} ({c.name})</h4>
+                      <div className={styles.codeBadge}>🔒 CODE: {c.code || "PENDING"}</div>
+                   </div>
+                   
+                   <div className={styles.inputGroup}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, opacity: 0.4, marginBottom: 8, textTransform: 'uppercase' }}>CLUE TEXT (SHOWN TO STUDENT AFTER ROUND)</label>
+                      <textarea 
+                        style={{ width: '100%', padding: 16, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 14, minHeight: 80, resize: 'none' }}
+                        value={c.clue}
+                        onChange={(e) => updateConfig(c.round, 'clue', e.target.value)}
+                        placeholder="Enter location hint..."
+                      />
+                   </div>
+
+                   <div style={{ marginTop: 16 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, opacity: 0.4, marginBottom: 8, textTransform: 'uppercase' }}>UNLOCK CODE (STUDENT MUST TYPE THIS TO PROCEED)</label>
+                      <input 
+                        type="text"
+                        style={{ width: '100%', padding: 12, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 14 }}
+                        value={c.code}
+                        onChange={(e) => updateConfig(c.round, 'code', e.target.value)}
+                        placeholder="e.g. LIBRARY42"
+                      />
+                   </div>
+                   <p style={{ fontSize: 11, opacity: 0.5, margin: '8px 0 0' }}>💡 Tip: Use a short memorable word. Students enter it case-insensitively.</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {activeTab !== "clues" && (
+             <div style={{ padding: 60, textAlign: 'center', opacity: 0.5 }}>
+                <h3 style={{ fontSize: 24, fontWeight: 800 }}>Coming Soon</h3>
+                <p>Specific parameter configuration for this round is being calibrated.</p>
+             </div>
+          )}
+       </div>
     </div>
   );
 }
