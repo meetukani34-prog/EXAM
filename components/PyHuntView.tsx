@@ -5,13 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePyodide } from '@/hooks/usePyodide';
 import { supabase } from '@/lib/supabase';
 import styles from './PyHuntView.module.css';
+import AntiCheat from './AntiCheat';
 
 const ROUNDS = [
-  { id: 1, name: "MCQ", description: "Identify the correct Python syntax and logic from the given options.", target: "syntax" },
+  { id: 1, name: "MCQ Logic", description: "Identify the correct Python syntax and logic from the given options.", target: "syntax" },
   { id: 2, name: "Code Jumble", description: "Rearrange the logical blocks to achieve the target state.", target: "structural" },
   { id: 3, name: "Palindrome", description: "Master the strings. Implement a palindrome verifier.", target: "linguistic" },
   { id: 4, name: "FizzBuzz", description: "Implement the FizzBuzz pattern (1-100) with maximum precision.", target: "algorithmic" },
-  { id: 5, name: "Turtle Art", description: "Use the Turtle Logic to draw specific sacred geometry.", target: "visual" },
+  { id: 5, name: "Final Transmission", description: "The ultimate sequence. Decrypt the final campus coordinate.", target: "visual" },
 ];
 
 export default function PyHuntView() {
@@ -22,6 +23,11 @@ export default function PyHuntView() {
   const [loading, setLoading] = useState(true);
   const { runCode, loading: pyLoading } = usePyodide();
   const [student, setStudent] = useState<any>(null);
+  
+  // Gate State
+  const [isAtGate, setIsAtGate] = useState(false);
+  const [gateInput, setGateInput] = useState("");
+  const [gateError, setGateError] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem("exam_student");
@@ -59,7 +65,7 @@ export default function PyHuntView() {
     
     const isValid = validateRound(currentRound, result.stdout);
     if (isValid) {
-      handleUnlockNext();
+      setIsAtGate(true);
     }
   };
 
@@ -71,13 +77,28 @@ export default function PyHuntView() {
     return false;
   };
 
-  const handleUnlockNext = async () => {
-    const next = currentRound + 1;
-    setCurrentRound(next);
-    await supabase
-      .from('odyssey_progress')
-      .update({ current_round: next, last_ping: new Date().toISOString() })
-      .eq('student_id', student.id);
+  const handleGateUnlock = async () => {
+    const savedConfigs = JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]");
+    const currentConfig = savedConfigs.find((c: any) => c.round === currentRound);
+    const targetCode = currentConfig?.code || (currentRound === 1 ? "LIBRARY42" : "ALPHA");
+
+    if (gateInput.trim().toUpperCase() === targetCode.toUpperCase()) {
+      const next = currentRound + 1;
+      setCurrentRound(next);
+      setIsAtGate(false);
+      setGateInput("");
+      setGateError(false);
+      setCode("");
+      setOutput("");
+
+      await supabase
+        .from('odyssey_progress')
+        .update({ current_round: next, last_ping: new Date().toISOString() })
+        .eq('student_id', student.id);
+    } else {
+      setGateError(true);
+      setTimeout(() => setGateError(false), 2000);
+    }
   };
 
   if (loading) return <div className={styles.levitate}>Igniting PyHunt Engines...</div>;
@@ -88,14 +109,14 @@ export default function PyHuntView() {
         <div className={styles.lobbyContent}>
           <div className={styles.lobbyIcon}>
             <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="var(--nexus-cyan)" strokeWidth="1.5">
-              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM12 20c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z" />
-              <path d="M12 6v6l4 2" />
-              <path d="M7 12h10" />
+              <circle cx="12" cy="12" r="10" strokeOpacity="0.3" />
+              <path d="M12 6v6l4 2" strokeLinecap="round" />
+              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" strokeDasharray="4 4" />
             </svg>
           </div>
           <h1 className={styles.lobbyTitle}>PyHunt</h1>
           <p className={styles.lobbySubtitle}>
-            Python Treasure Hunt — Solve 5 rounds of challenges to find hidden clues across campus!
+            Python Treasure Hunt — Solve 5 rounds of challenges and decode physical hints to reach the final coordinate!
           </p>
           
           <div className={styles.roundList}>
@@ -117,47 +138,91 @@ export default function PyHuntView() {
 
   return (
     <div className={styles.pyhuntShell}>
+      <AntiCheat isSubmitted={currentRound > 5} examName="PyHunt" onAutoSubmit={() => {}} />
+      
       <aside className={styles.timeline}>
         {ROUNDS.map(r => (
           <div key={r.id} className={`${styles.orbitNode} ${currentRound >= r.id ? styles.active : ""} ${currentRound === r.id ? styles.pulsing : ""}`}>
             <div className={styles.orbitNumber}>{r.id}</div>
             <div className={styles.orbitMeta}>
                <div className={styles.orbitName}>{r.name}</div>
-               {currentRound === r.id && <div className={styles.orbitDesc}>{r.description}</div>}
+               {currentRound === r.id && <div className={styles.orbitDesc}>{ROUNDS[currentRound-1].description}</div>}
             </div>
           </div>
         ))}
       </aside>
 
       <main className={styles.logicChamber}>
-        <header className={styles.chamberHeader}>
-           <h2>Orbit {currentRound}: {ROUNDS[currentRound-1].name}</h2>
-           <div className={styles.engineStatus}>
-             <div className={styles.pulseDot} />
-             {pyLoading ? "Caching Logic Engine..." : "Engine Ready"}
-           </div>
-        </header>
+        <AnimatePresence mode="wait">
+          {isAtGate ? (
+            <motion.div 
+              key="gate"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              className={styles.gateOverlay}
+            >
+              <div className={styles.gateCard}>
+                <div className={styles.gateIcon}>🔒</div>
+                <h2>ORBITAL UNLOCK REQUIRED</h2>
+                <div className={styles.clueBox}>
+                  <label>LOCATION TRANSMISSION HINT:</label>
+                  <p>{JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]").find((c: any) => c.round === currentRound)?.clue || "Find the next node to receive your code."}</p>
+                </div>
+                <div className={styles.gateInputGroup}>
+                  <label>ENTER UNLOCK CODE</label>
+                  <input 
+                    type="text" 
+                    value={gateInput}
+                    onChange={(e) => setGateInput(e.target.value)}
+                    className={`${styles.gateInput} ${gateError ? styles.gateError : ""}`}
+                    placeholder="e.g. ALPHA_NINER"
+                    onKeyDown={(e) => e.key === 'Enter' && handleGateUnlock()}
+                  />
+                  {gateError && <div className={styles.errorMsg}>Invalid Unlock Code. Check your surroundings.</div>}
+                </div>
+                <button onClick={handleGateUnlock} className={styles.unlockBtn}>🔓 Unlock Next Orbit</button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="editor"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+            >
+              <header className={styles.chamberHeader}>
+                 <h2>Orbit {currentRound}: {ROUNDS[currentRound-1].name}</h2>
+                 <div className={styles.engineStatus}>
+                   <div className={styles.pulseDot} />
+                   {pyLoading ? "Caching Logic Engine..." : "Engine Ready"}
+                 </div>
+              </header>
 
-        <div className={styles.editorContainer}>
-           <textarea 
-             className={styles.codeArea}
-             value={code}
-             onChange={(e) => setCode(e.target.value)}
-             placeholder="# Manifest your Python logic here..."
-           />
-           <div className={styles.editorGlow} />
-        </div>
+              <div className={styles.editorContainer}>
+                 <textarea 
+                   className={styles.codeArea}
+                   value={code}
+                   onChange={(e) => setCode(e.target.value)}
+                   placeholder="# Manifest your Python logic here..."
+                 />
+                 <div className={styles.editorGlow} />
+              </div>
 
-        <div className={styles.controlPanel}>
-           <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>
-             Execute Crystalline protocol
-           </button>
-        </div>
+              <div className={styles.controlPanel}>
+                 <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>
+                   Execute Logic Protocol
+                 </button>
+              </div>
 
-        <div className={styles.terminal}>
-           <div className={styles.terminalLabel}>TRANSMISSION OUTPUT</div>
-           <pre>{output}</pre>
-        </div>
+              <div className={styles.terminal}>
+                 <div className={styles.terminalLabel}>TRANSMISSION OUTPUT</div>
+                 <pre>{output}</pre>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
