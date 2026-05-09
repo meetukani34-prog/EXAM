@@ -16,7 +16,6 @@ def _compute_leaderboard() -> LeaderboardResponse:
     db = get_supabase()
 
     # Fetch all submitted results
-    # We now use the exam_name column directly from exam_results
     results = (
         db.table("exam_results")
         .select("student_id, exam_name, score, total_marks, submitted_at, answers")
@@ -29,27 +28,47 @@ def _compute_leaderboard() -> LeaderboardResponse:
         .select("student_id, exam_name, started_at, status")
         .execute()
     )
-    # Map statuses by (student_id, exam_name)
     status_map = {(s["student_id"], s["exam_name"]): s for s in (statuses.data or [])}
 
     # Fetch student profiles
     students = db.table("students").select("id, usn, name, branch").execute()
     student_map = {s["id"]: s for s in (students.data or [])}
 
+    # --- FALLBACK LOGIC: Map questions to exams ---
+    all_question_ids = []
+    for r in (results.data or []):
+        ans = r.get("answers") or {}
+        if ans:
+            all_question_ids.extend(list(ans.keys()))
+    
+    q_map = {}
+    if all_question_ids:
+        unique_q_ids = list(set(all_question_ids))
+        # Limit batch size to 500 for safety
+        qs = db.table("questions").select("id, exam_name").in_("id", unique_q_ids[:500]).execute()
+        q_map = {q["id"]: q["exam_name"] for q in (qs.data or [])}
+    # -----------------------------------------------
+
     entries: list[LeaderboardEntry] = []
 
     for r in (results.data or []):
         sid = r["student_id"]
-        ename = r.get("exam_name") or "Initial Assessment"
         student = student_map.get(sid)
         if not student:
             continue
 
+        # Resolve exam name: 1. Column, 2. Inference, 3. Default
+        ename = r.get("exam_name")
+        if not ename:
+            ans = r.get("answers") or {}
+            for qid in ans.keys():
+                if qid in q_map:
+                    ename = q_map[qid]
+                    break
+        ename = ename or "Initial Assessment"
+
         # Match status for THIS specific student + exam session
         exam_status = status_map.get((sid, ename), {})
-        
-        # If no explicit session status found, we still check the result
-        # but velocity might be missing.
         
         score = r.get("score") or 0
         total_marks = r.get("total_marks") or 0
