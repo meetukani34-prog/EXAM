@@ -21,57 +21,47 @@ VALID_VIOLATION_TYPES = {
     "multiple_faces",
 }
 AUTO_SUBMIT_THRESHOLD = 3
-# Final message overrides for clarity
 WARNING_1 = "⚠️ Warning 1: Please return to the exam and stay focused."
 WARNING_2 = "🚨 Final warning! One more violation and your exam will be auto-submitted."
 WARNING_3 = "⚠️ 3rd violation detected. Your exam has been auto-submitted."
-
 
 @router.post("/report-violation", response_model=ReportViolationResponse)
 async def report_violation(
     request: ReportViolationRequest,
     current: dict = Depends(get_current_student),
 ):
-    """
-    Log a cheating violation event.
-    Increments warning count.
-    At threshold (3), triggers auto-submit signal.
-    """
     db = get_supabase()
     student_id = current["student_id"]
-    new_warnings = 1
+    exam_title = request.exam_name or "General Assessment"
     
     try:
-        # Validate type
-        if request.type not in VALID_VIOLATION_TYPES:
-             return ReportViolationResponse(warning_count=1, auto_submitted=False, message="⚠️ Stay focused on the exam.")
-
-        # 1. Fetch current status safely (per-student, then check exam_name)
-        exam_title = request.exam_name or "General Assessment"
+        # 1. Fetch current status
         current_warnings = 0
-        try:
-            # We fetch by student_id since it's UNIQUE in the schema
-            status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
-            if status_res.data:
-                row = status_res.data[0]
-                
-                # If the record is for a DIFFERENT exam, we treat it as a fresh start for the new exam
-                if row.get("exam_name") != exam_title:
-                    current_warnings = 0
-                else:
-                    if row["status"] == "submitted":
-                        return ReportViolationResponse(warning_count=row.get("warnings", 0), auto_submitted=False, message="Exam already submitted.")
-                    current_warnings = row.get("warnings") or 0
-        except Exception as e:
-            print(f"[VIOLATIONS] Status fetch failed: {e}")
-
+        status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
+        
+        existing_row = None
+        if status_res.data:
+            existing_row = status_res.data[0]
+            # If same exam, use existing warnings. Otherwise, it's a fresh start.
+            if existing_row.get("exam_name") == exam_title:
+                if existing_row.get("status") == "submitted":
+                     return ReportViolationResponse(
+                         warning_count=existing_row.get("warnings", 3),
+                         auto_submitted=True,
+                         message="Exam already submitted."
+                     )
+                current_warnings = existing_row.get("warnings") or 0
+        
+        # Increment
         new_warnings = current_warnings + 1
+        
+        # ── SAFETY RESET ──
+        # If we transitioned to a new exam title, FORCE the first violation to be 1.
+        if existing_row and existing_row.get("exam_name") != exam_title:
+            new_warnings = 1
 
-        # 2. Log violation safely
-        db_type = request.type
-        if db_type not in ["tab_switch", "window_blur", "fullscreen_exit", "no_face_detected", "face_not_front", "multiple_faces"]:
-             db_type = "tab_switch"
-             
+        # 2. Log violation
+        db_type = request.type if request.type in VALID_VIOLATION_TYPES else "tab_switch"
         try:
             db.table("violations").insert({
                 "student_id": student_id,
@@ -79,26 +69,21 @@ async def report_violation(
                 "exam_name": exam_title,
                 "metadata": request.metadata
             }).execute()
-        except Exception as e:
-            print(f"[VIOLATIONS] DB Insert failed: {e}")
+        except: pass
 
-        # 3. Update warning count on exam_status (MANDATORY UPSERT)
-        try:
-            # Use student_id as the ONLY conflict target since it's the unique key in schema
-            db.table("exam_status").upsert({
-                "student_id": student_id,
-                "exam_name": exam_title,
-                "warnings": new_warnings,
-                "status": "active",
-                "last_active": datetime.now(timezone.utc).isoformat(),
-            }, on_conflict="student_id").execute()
-        except Exception as e:
-            print(f"[VIOLATIONS] Status upsert failed: {e}")
+        # 3. Upsert status
+        db.table("exam_status").upsert({
+            "student_id": student_id,
+            "exam_name": exam_title,
+            "warnings": new_warnings,
+            "status": "submitted" if new_warnings >= AUTO_SUBMIT_THRESHOLD else "active",
+            "last_active": datetime.now(timezone.utc).isoformat(),
+            "submitted_at": datetime.now(timezone.utc).isoformat() if new_warnings >= AUTO_SUBMIT_THRESHOLD else None
+        }, on_conflict="student_id").execute()
 
-        # 4. Determine response
-        auto_submitted = False
-        if new_warnings >= AUTO_SUBMIT_THRESHOLD:
-            auto_submitted = True
+        # 4. Response
+        auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
+        if auto_submitted:
             message = WARNING_3
         elif new_warnings == 2:
             message = WARNING_2
@@ -112,10 +97,9 @@ async def report_violation(
         )
 
     except Exception as e:
-        print(f"[VIOLATIONS] Critical failure: {e}")
-        # ABSOLUTE FALLBACK: Never auto-submit on a system error!
+        print(f"[VIOLATIONS] Critical Error: {e}")
         return ReportViolationResponse(
             warning_count=1,
             auto_submitted=False,
-            message="⚠️ Connection unstable. Please stay on the exam screen."
+            message="⚠️ Stay focused on the exam."
         )
