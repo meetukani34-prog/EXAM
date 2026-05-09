@@ -104,7 +104,7 @@ function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], s
   };
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24, background: '#020617', borderRadius: 24, border: '1px solid rgba(0, 242, 255, 0.1)', color: '#fff', minHeight: '80vh' }}>
       <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
           <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>🐍 PyHunt Observer</h2>
