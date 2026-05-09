@@ -237,6 +237,7 @@ export default function AdminPage() {
   const [liveStats, setLiveStats] = useState({ answers: 0, violations: 0, submittals: 0 });
   const [quizzes, setQuizzes] = useState<BranchExamSummary[]>([]);
   const [quizFilter, setQuizFilter] = useState<string>("all");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -448,27 +449,39 @@ export default function AdminPage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-            <rect width="32" height="32" rx="10" fill="url(#adminGrad)" />
-            <path d="M8 12h16M8 16h10M8 20h12" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            <defs>
-              <linearGradient id="adminGrad" x1="0" y1="0" x2="32" y2="32">
-                <stop stopColor="#8b5cf6" /><stop offset="1" stopColor="#3b82f6" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <div>
-            <h1 className={styles.title} style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em" }}>
-              EXAM Admin
-            </h1>
-            <p className={styles.subtitle} style={{ fontSize: 11 }}>
-              Live Exam Monitor · Updated {timeAgo(lastUpdate.toISOString())}
-            </p>
+          <button 
+            className={styles.menuToggle} 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            {isSidebarOpen ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+            )}
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+              <rect width="32" height="32" rx="10" fill="url(#adminGrad)" />
+              <path d="M8 12h16M8 16h10M8 20h12" stroke="white" strokeWidth="2" strokeLinecap="round" />
+              <defs>
+                <linearGradient id="adminGrad" x1="0" y1="0" x2="32" y2="32">
+                  <stop stopColor="#8b5cf6" /><stop offset="1" stopColor="#3b82f6" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div>
+              <h1 className={styles.title} style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em" }}>
+                EXAM Admin
+              </h1>
+              <p className={styles.subtitle} style={{ fontSize: 11 }}>
+                Live Exam Monitor · Updated {timeAgo(lastUpdate.toISOString())}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <nav className={adminStyles.tabs}>
+        {/* Desktop Navigation */}
+        <nav className={`${adminStyles.tabs} ${styles.desktopNav}`}>
           {TAB_CONFIG.map((t) => (
             <button
               key={t.id}
@@ -482,7 +495,7 @@ export default function AdminPage() {
           ))}
         </nav>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div className={styles.headerRight}>
           {activeTab === "monitor" && <ExportButton quizzes={quizzes} />}
           <button className="btn btn-outline" style={{ fontSize: 12, padding: "6px 12px" }} onClick={() => setAuthed(false)}>
             Logout
@@ -490,16 +503,68 @@ export default function AdminPage() {
         </div>
       </header>
 
+      {/* Mobile Sidebar */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className={styles.sidebarOverlay}
+              onClick={() => setIsSidebarOpen(false)}
+            />
+            <motion.aside 
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className={styles.sidebar}
+            >
+              <div className={styles.sidebarHeader}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="8" fill="url(#adminGradSide)" />
+                    <path d="M8 12h16M8 16h10M8 20h12" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                    <defs>
+                      <linearGradient id="adminGradSide" x1="0" y1="0" x2="32" y2="32">
+                        <stop stopColor="#8b5cf6" /><stop offset="1" stopColor="#3b82f6" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <span style={{ fontWeight: 800, fontSize: 16 }}>Command Center</span>
+                </div>
+              </div>
+              <nav className={styles.sidebarNav}>
+                {TAB_CONFIG.map((t) => (
+                  <button
+                    key={t.id}
+                    className={`${styles.sidebarItem} ${activeTab === t.id ? styles.sidebarItemActive : ""}`}
+                    onClick={() => {
+                      setActiveTab(t.id);
+                      setIsSidebarOpen(false);
+                    }}
+                  >
+                    <span style={{ fontSize: 18 }}>{t.icon}</span>
+                    <span>{t.label}</span>
+                  </button>
+                ))}
+              </nav>
+              <div className={styles.sidebarFooter}>
+                <button className="btn btn-outline" style={{ width: "100%" }} onClick={() => setAuthed(false)}>
+                  Logout System
+                </button>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* ── Monitor Tab ── */}
       {activeTab === "monitor" && (
         <>
           {/* ── Canva-Style 3 Hero Stat Cards ── */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 20,
-            padding: "20px 24px 0",
-          }}>
+          <div className={styles.heroStatsGrid}>
             {/* Active Students */}
             <div style={{
               background: "var(--bg-card)",
