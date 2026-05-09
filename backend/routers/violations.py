@@ -43,15 +43,23 @@ async def report_violation(
     print(f"[VIOLATION] Reporting {request.type} for {student_id} on {exam_title}")
 
     try:
-        # 1. Fetch current warnings (Direct query by student_id)
-        status_res = db.table("exam_status").select("warnings, id").eq("student_id", student_id).execute()
+        # 1. Fetch current warnings (Direct query by student_id AND exam_name)
+        # This ensures we don't pick up warnings from a previous/different exam
+        status_res = db.table("exam_status").select("warnings, id")\
+            .eq("student_id", student_id)\
+            .eq("exam_name", exam_title)\
+            .order("updated_at", desc=True)\
+            .limit(1)\
+            .execute()
         
         current_warnings = 0
+        record_id = None
         if status_res.data:
             current_warnings = status_res.data[0].get("warnings", 0)
-            print(f"[VIOLATION] Found record. Current warnings: {current_warnings}")
+            record_id = status_res.data[0].get("id")
+            print(f"[VIOLATION] Found record {record_id}. Current warnings: {current_warnings}")
         else:
-            print(f"[VIOLATION] No record found for student {student_id}")
+            print(f"[VIOLATION] No record found for student {student_id} on {exam_title}")
 
         # Increment
         new_warnings = current_warnings + 1
@@ -75,15 +83,22 @@ async def report_violation(
             "warnings": new_warnings,
             "status": "submitted" if auto_submitted else "active",
             "last_active": "now()",
-            "exam_name": exam_title # Ensure title is synced
+            "updated_at": "now()"
         }
         
         if auto_submitted:
             update_data["submitted_at"] = "now()"
 
         try:
-            # Perform a simple update since we know the student exists (from login/start)
-            db.table("exam_status").update(update_data).eq("student_id", student_id).execute()
+            # Perform update specifically for this session
+            if record_id:
+                db.table("exam_status").update(update_data).eq("id", record_id).execute()
+            else:
+                # Fallback if record not found (shouldn't happen with proper start_exam)
+                db.table("exam_status").update(update_data)\
+                    .eq("student_id", student_id)\
+                    .eq("exam_name", exam_title)\
+                    .execute()
             print(f"[VIOLATION] DB updated for {student_id}")
         except Exception as e:
             print(f"[VIOLATION] DB update failed: {e}")
