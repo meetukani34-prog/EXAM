@@ -221,6 +221,16 @@ function PyHuntConfig() {
     ];
   });
 
+  const [jumbles, setJumbles] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("pyhunt_jumbles_local");
+      if (saved) return JSON.parse(saved);
+    }
+    return [
+      { id: 1, blocks: ["def hello():", "  print('world')", "hello()"], target: "def hello():\n  print('world')\nhello()" },
+    ];
+  });
+
   const [globalAuth, setGlobalAuth] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("pyhunt_global_auth");
