@@ -211,6 +211,26 @@ function PyHuntConfig() {
     ];
   });
 
+  const [mcqs, setMcqs] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("pyhunt_mcqs_local");
+      if (saved) return JSON.parse(saved);
+    }
+    return [
+      { id: 1, question: "What is the output of print(2**3)?", options: ["6", "8", "9", "5"], answer: 1 },
+    ];
+  });
+
+  const [jumbles, setJumbles] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("pyhunt_jumbles_local");
+      if (saved) return JSON.parse(saved);
+    }
+    return [
+      { id: 1, blocks: ["def hello():", "  print('world')", "hello()"], target: "def hello():\n  print('world')\nhello()" },
+    ];
+  });
+
   const saveConfig = (newConfigs: any) => {
     setConfigs(newConfigs);
     localStorage.setItem("pyhunt_config_local", JSON.stringify(newConfigs));
@@ -219,6 +239,28 @@ function PyHuntConfig() {
   const updateConfig = (round: number, field: string, val: string) => {
     const updated = configs.map((c: any) => c.round === round ? { ...c, [field]: val } : c);
     saveConfig(updated);
+  };
+
+  const saveMcqs = (newMcqs: any) => {
+    setMcqs(newMcqs);
+    localStorage.setItem("pyhunt_mcqs_local", JSON.stringify(newMcqs));
+  };
+
+  const addMcq = () => {
+    saveMcqs([...mcqs, { id: Date.now(), question: "", options: ["", "", "", ""], answer: 0 }]);
+  };
+
+  const updateMcq = (id: number, field: string, val: any) => {
+    saveMcqs(mcqs.map((q: any) => q.id === id ? { ...q, [field]: val } : q));
+  };
+
+  const removeMcq = (id: number) => {
+    saveMcqs(mcqs.filter((q: any) => q.id !== id));
+  };
+
+  const saveJumbles = (newJumbles: any) => {
+    setJumbles(newJumbles);
+    localStorage.setItem("pyhunt_jumbles_local", JSON.stringify(newJumbles));
   };
 
   return (
@@ -276,14 +318,85 @@ function PyHuntConfig() {
                         placeholder="e.g. ALPHA_NINER"
                       />
                    </div>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.4 }}>
-                      <span style={{ fontSize: 12 }}>💡 Recommendation: Use unique identifiers for each geographic node.</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === "mcq" && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 style={{ color: '#fff', margin: 0 }}>Active MCQ Set (Round 1)</h4>
+                <button className="btn btn-primary" onClick={addMcq} style={{ fontSize: 12, padding: '8px 16px' }}>+ Add Question</button>
+              </div>
+              {mcqs.map((q: any, idx: number) => (
+                <div key={q.id} className={adminStyles.configCard}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <span className={adminStyles.codeBadge}>QUESTION {idx + 1}</span>
+                    <button onClick={() => removeMcq(q.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
+                  </div>
+                  <div className={adminStyles.inputGroup}>
+                    <label className={adminStyles.inputLabel}>QUESTION TEXT</label>
+                    <input 
+                      className={adminStyles.configInput}
+                      value={q.question}
+                      onChange={(e) => updateMcq(q.id, 'question', e.target.value)}
+                      placeholder="Enter the python question..."
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    {q.options.map((opt: string, optIdx: number) => (
+                      <div key={optIdx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <input 
+                          type="radio" 
+                          name={`ans-${q.id}`} 
+                          checked={q.answer === optIdx} 
+                          onChange={() => updateMcq(q.id, 'answer', optIdx)}
+                        />
+                        <input 
+                          className={adminStyles.configInput}
+                          value={opt}
+                          onChange={(e) => {
+                            const newOpts = [...q.options];
+                            newOpts[optIdx] = e.target.value;
+                            updateMcq(q.id, 'options', newOpts);
+                          }}
+                          placeholder={`Option ${optIdx + 1}`}
+                          style={{ padding: '8px 12px', fontSize: 13 }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === "jumble" && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <h4 style={{ color: '#fff', margin: 0 }}>Code Jumble Parameters (Round 2)</h4>
+              {jumbles.map((j: any) => (
+                <div key={j.id} className={adminStyles.configCard}>
+                   <div className={adminStyles.inputGroup}>
+                      <label className={adminStyles.inputLabel}>TARGET CODE STRUCTURE (USE NEWLINES)</label>
+                      <textarea 
+                        className={adminStyles.configTextarea}
+                        value={j.target}
+                        onChange={(e) => {
+                           const val = e.target.value;
+                           saveJumbles(jumbles.map((item: any) => item.id === j.id ? { ...item, target: val, blocks: val.split('\n').filter((l: string) => l.trim()) } : item));
+                        }}
+                        placeholder="def hello():\n  print('world')"
+                        style={{ height: 200 }}
+                      />
+                      <p style={{ fontSize: 11, opacity: 0.5, marginTop: 8 }}>The system will automatically split this into blocks for the student to rearrange.</p>
                    </div>
                 </div>
               ))}
             </div>
           )}
-          {activeTab !== "clues" && (
+
+          {["r3", "r4"].includes(activeTab) && (
              <div style={{ padding: 100, textAlign: 'center', opacity: 0.3 }}>
                 <h3 style={{ fontSize: 24, fontWeight: 900 }}>Module Calibrating</h3>
                 <p>Specific parameter configuration for this logic orbit is being integrated.</p>
