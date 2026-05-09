@@ -493,3 +493,104 @@
   opacity: 1 !important;
 }
 
+
+/* -- Authorization Portal -- */
+.authContainer {
+  min-height: calc(100vh - 160px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.authCard {
+  max-width: 440px;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(40px);
+  border: 1px solid rgba(0, 242, 255, 0.2);
+  border-radius: 32px;
+  padding: 48px;
+  text-align: center;
+  box-shadow: 0 0 80px rgba(0, 242, 255, 0.1);
+}
+
+.authHeader h2 {
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #fff, #00f2ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -1px;
+}
+
+.authSubtitle {
+  font-size: 14px;
+  opacity: 0.5;
+  margin-bottom: 40px;
+}
+
+.authForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: left;
+}
+
+.authInputGroup label {
+  font-size: 10px;
+  font-weight: 900;
+  color: #00f2ff;
+  display: block;
+  margin-bottom: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.authInput {
+  width: 100%;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 16px;
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.authInput:focus {
+  border-color: #00f2ff;
+  background: rgba(0,0,0,0.5);
+  outline: none;
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+}
+
+.authBtn {
+  margin-top: 20px;
+  padding: 18px;
+  background: linear-gradient(90deg, #00f2ff, #0066ff);
+  border: none;
+  border-radius: 12px;
+  color: #000;
+  font-weight: 900;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 10px 30px rgba(0, 242, 255, 0.3);
+}
+
+.authBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(0, 242, 255, 0.5);
+}
+
+.authError {
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 16px;
+  text-align: center;
+}
+

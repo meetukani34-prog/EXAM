@@ -17,6 +17,10 @@ const ROUNDS = [
 
 export default function PyHuntView() {
   const [hasStarted, setHasStarted] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authForm, setAuthForm] = useState({ usn: "", missionCode: "" });
+  const [authError, setAuthError] = useState("");
+  
   const [currentRound, setCurrentRound] = useState(1);
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
@@ -34,6 +38,7 @@ export default function PyHuntView() {
     if (!raw) return;
     const info = JSON.parse(raw);
     setStudent(info);
+    setAuthForm(prev => ({ ...prev, usn: info.usn || "" }));
 
     async function syncProgress() {
       const { data } = await supabase
@@ -74,6 +79,15 @@ export default function PyHuntView() {
     }
     syncProgress();
   }, []);
+
+  const handleAuthorize = () => {
+    if (authForm.missionCode.toUpperCase() === "PYHUNT67") {
+      setIsAuthorized(true);
+      setAuthError("");
+    } else {
+      setAuthError("Invalid Mission Authorization Code.");
+    }
+  };
 
   const handleExecute = async () => {
     setOutput("Executing Logic...");
@@ -125,6 +139,53 @@ export default function PyHuntView() {
   };
 
   if (loading) return <div className={styles.levitate}>Igniting PyHunt Engines...</div>;
+
+  if (!isAuthorized) {
+    return (
+      <div className={styles.authContainer}>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={styles.authCard}
+        >
+          <header className={styles.authHeader}>
+            <div className={styles.lobbyIcon} style={{ transform: 'scale(0.8)', marginBottom: 12 }}>
+              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" strokeWidth="1.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            <h2>MISSION AUTHORIZATION</h2>
+            <p className={styles.authSubtitle}>Enter your credentials to access the PyHunt logic nodes.</p>
+          </header>
+
+          <div className={styles.authForm}>
+            <div className={styles.authInputGroup}>
+              <label>Candidate USN</label>
+              <input 
+                type="text" 
+                className={styles.authInput} 
+                value={authForm.usn}
+                readOnly
+              />
+            </div>
+            <div className={styles.authInputGroup}>
+              <label>Mission Start Code</label>
+              <input 
+                type="password" 
+                className={styles.authInput} 
+                placeholder="Enter authorized mission code"
+                value={authForm.missionCode}
+                onChange={(e) => setAuthForm(prev => ({ ...prev, missionCode: e.target.value }))}
+                onKeyDown={(e) => e.key === 'Enter' && handleAuthorize()}
+              />
+            </div>
+            <button className={styles.authBtn} onClick={handleAuthorize}>AUTHORIZE MISSION</button>
+            {authError && <div className={styles.authError}>{authError}</div>}
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (!hasStarted) {
     return (
