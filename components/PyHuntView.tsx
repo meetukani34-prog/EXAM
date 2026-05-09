@@ -47,6 +47,29 @@ export default function PyHuntView() {
       } else {
         await supabase.from('odyssey_progress').insert([{ student_id: info.id, current_round: 1 }]);
       }
+
+      // ── Initialize exam_status for AntiCheat Sync ─────────
+      try {
+        const { data: statusData } = await supabase
+          .from('exam_status')
+          .select('*')
+          .eq('student_id', info.id)
+          .eq('exam_name', 'PyHunt')
+          .single();
+
+        if (!statusData) {
+          await supabase.from('exam_status').insert([{
+            student_id: info.id,
+            exam_name: 'PyHunt',
+            status: 'active',
+            started_at: new Date().toISOString(),
+            warnings: 0
+          }]);
+        }
+      } catch (err) {
+        console.error("Failed to sync exam_status for PyHunt:", err);
+      }
+
       setLoading(false);
     }
     syncProgress();

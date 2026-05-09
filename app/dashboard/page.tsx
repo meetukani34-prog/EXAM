@@ -187,63 +187,67 @@ export default function DashboardPage() {
   return (
     <div className={styles.shell}>
       {/* ── Top Navigation ── */}
-      <nav className={styles.topNav}>
-        <div className={styles.topNavLeft}>
-          <button 
-            className={styles.menuToggle} 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-            ) : (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
-            )}
-          </button>
-          <div className={styles.logoTitle}>
-            <AtomIcon />
-            NEXUS <span className={styles.candidatePortalLabel}>Candidate Portal</span>
-          </div>
-        </div>
-
-        <div className={styles.topNavRight}>
-          <div className={styles.userPanel} onClick={() => setShowUserDropdown(!showUserDropdown)}>
-            <img src={student.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=0D8ABC&color=fff`} className={styles.userAvatar} alt="" />
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                {student.usn || student.name.split(' ')[0].toLowerCase() + '67'} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-              </div>
-              <div style={{ fontSize: 11, opacity: 0.6 }}>Candidate</div>
+      {activeTab !== "pyhunt" && (
+        <nav className={styles.topNav}>
+          <div className={styles.topNavLeft}>
+            <button 
+              className={styles.menuToggle} 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+              )}
+            </button>
+            <div className={styles.logoTitle}>
+              <AtomIcon />
+              NEXUS <span className={styles.candidatePortalLabel}>Candidate Portal</span>
             </div>
           </div>
 
-          <div className={styles.notificationBell} onClick={() => setShowNotifications(!showNotifications)} style={{ cursor: 'pointer' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-            <div className={styles.notifBadge}>3</div>
-          </div>
-        </div>
-      </nav>
+          <div className={styles.topNavRight}>
+            <div className={styles.userPanel} onClick={() => setShowUserDropdown(!showUserDropdown)}>
+              <img src={student.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=0D8ABC&color=fff`} className={styles.userAvatar} alt="" />
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {student.usn || student.name.split(' ')[0].toLowerCase() + '67'} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                </div>
+                <div style={{ fontSize: 11, opacity: 0.6 }}>Candidate</div>
+              </div>
+            </div>
 
-      <div className={styles.bodyLayout}>
+            <div className={styles.notificationBell} onClick={() => setShowNotifications(!showNotifications)} style={{ cursor: 'pointer' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <div className={styles.notifBadge}>3</div>
+            </div>
+          </div>
+        </nav>
+      )}
+
+      <div className={styles.bodyLayout} style={{ marginTop: activeTab === "pyhunt" ? 0 : 24 }}>
         {/* ── Sidebar: The Shield ── */}
-        <aside className={`${styles.sidebar} ${isMenuOpen ? styles.sidebarOpen : ""}`}>
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              className={`${styles.sidebarItem} ${activeTab === tab.id ? styles.sidebarItemActive : ""}`}
-              onClick={() => { setActiveTab(tab.id); setIsMenuOpen(false); }}
-            >
-              {tab.icon}
-              {tab.label}
-              {activeTab === tab.id && <svg style={{ marginLeft: 'auto', opacity: 0.3 }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>}
-            </button>
-          ))}
+        {activeTab !== "pyhunt" && (
+          <aside className={`${styles.sidebar} ${isMenuOpen ? styles.sidebarOpen : ""}`}>
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                className={`${styles.sidebarItem} ${activeTab === tab.id ? styles.sidebarItemActive : ""}`}
+                onClick={() => { setActiveTab(tab.id); setIsMenuOpen(false); }}
+              >
+                {tab.icon}
+                {tab.label}
+                {activeTab === tab.id && <svg style={{ marginLeft: 'auto', opacity: 0.3 }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>}
+              </button>
+            ))}
 
-          <div className={styles.atomContainer}>
-            <AtomIcon big />
-          </div>
-        </aside>
+            <div className={styles.atomContainer}>
+              <AtomIcon big />
+            </div>
+          </aside>
+        )}
 
         {/* ── Main Content ── */}
         <main className={styles.mainContent}>
