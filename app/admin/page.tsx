@@ -109,19 +109,23 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     fetchOdyssey();
   };
 
-  // Merge students with their odyssey progress
-  const participants = students.map(s => {
-    const progress = odysseyData.find(p => p.student_id === s.student_id);
-    return {
-      ...s,
-      pyhunt: progress || null
-    };
-  }).sort((a, b) => {
-    // Sort by active hunt first, then by name
-    if (a.pyhunt && !b.pyhunt) return -1;
-    if (!a.pyhunt && b.pyhunt) return 1;
-    return a.name.localeCompare(b.name);
-  });
+  // Merge students with their odyssey progress and filter for active participants
+  const participants = students
+    .map(s => {
+      const progress = odysseyData.find(p => p.student_id === s.student_id);
+      return {
+        ...s,
+        pyhunt: progress || null
+      };
+    })
+    .filter(p => p.pyhunt !== null) // Only show students who have given/started the pyhunt exam
+    .sort((a, b) => {
+      // Sort by progress (highest round first)
+      const roundA = a.pyhunt?.current_round || 0;
+      const roundB = b.pyhunt?.current_round || 0;
+      if (roundB !== roundA) return roundB - roundA;
+      return a.name.localeCompare(b.name);
+    });
 
   return (
     <div className={adminStyles.pyhuntShell}>
