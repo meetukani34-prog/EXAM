@@ -113,7 +113,6 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
 
   // Merge students with their odyssey progress and filter for PyHunt participants
   const participants = students
-    .filter(s => s.exam_name === "PyHunt") // Only show students who are explicitly in a PyHunt session
     .map(s => {
       const progress = odysseyData.find(p => p.student_id === s.student_id);
       return {
@@ -121,6 +120,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
         pyhunt: progress || null
       };
     })
+    .filter(s => s.exam_name === "PyHunt" || s.pyhunt !== null) // Show if in PyHunt session OR has odyssey progress
     .sort((a, b) => {
       // Sort by progress (highest round first) if available
       const roundA = a.pyhunt?.current_round || 0;
