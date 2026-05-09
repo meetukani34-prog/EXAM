@@ -430,13 +430,90 @@
   opacity: 1;
 }
 
+.menuToggle {
+  display: none;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+}
+
+.candidatePortalLabel {
+  opacity: 0.5;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  margin-left: 10px;
+}
+
 /* ── Mobile ── */
 @media (max-width: 1024px) {
-  .bodyLayout { flex-direction: column; }
-  .sidebar { width: 100%; min-height: auto; padding-bottom: 60px; }
+  .shell { padding: 12px; }
+  
+  .topNav { 
+    padding: 0 16px; 
+    height: 70px; 
+    margin-bottom: 16px;
+    border-radius: 12px;
+  }
+
+  .logoTitle { font-size: 20px; }
+  .candidatePortalLabel { display: none; }
+  
+  .menuToggle { display: flex; }
+
+  .bodyLayout { flex-direction: column; gap: 16px; position: relative; }
+  
+  .sidebar { 
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 260px;
+    height: 100vh;
+    z-index: 10001;
+    margin: 0;
+    border-radius: 0 20px 20px 0;
+    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+  }
+
+  .sidebarOpen {
+    left: 0;
+  }
+
   .sidebar::after { display: none; }
-  .examsSection { grid-template-columns: 1fr; }
-  .insightsRow { flex-direction: column; align-items: stretch; }
+  
+  .atomContainer { padding: 30px 0 40px; }
+  .atomIcon { width: 50px; height: 50px; }
+
+  .mainContent { width: 100%; gap: 16px; }
+  .sectionWrapper { padding: 20px; border-radius: 16px; }
+  
+  .examsSection { 
+    grid-template-columns: 1fr; 
+    gap: 16px;
+  }
+
+  .examCard { padding: 20px; }
+  .examTitle { font-size: 18px; }
+
+  .insightsRow { flex-direction: column; align-items: stretch; gap: 16px; }
+  .hologramPanel { padding: 20px; min-height: auto; }
+  
+  .topNavRight { gap: 12px; }
+  .userPanel { padding: 6px 12px; gap: 10px; }
+  .userAvatar { width: 32px; height: 32px; }
+  .notificationBell { width: 36px; height: 36px; }
+}
+
+@media (max-width: 480px) {
+  .logoTitle { font-size: 18px; gap: 8px; }
+  .atomIcon { display: none; }
+  .userPanel span { display: none; }
 }
 
 /* ── Profile Specifics (Nexus Theme) ── */
@@ -616,4 +693,28 @@
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+}
+
+.insightsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+.radarContainer {
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .insightsGrid {
+    grid-template-columns: 1fr;
+  }
+  .radarContainer {
+    height: auto;
+    overflow-x: auto;
+    padding: 20px 0;
+  }
 }

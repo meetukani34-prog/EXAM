@@ -187,9 +187,19 @@ export default function DashboardPage() {
       {/* ── Top Navigation ── */}
       <nav className={styles.topNav}>
         <div className={styles.topNavLeft}>
+          <button 
+            className={styles.menuToggle} 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+            )}
+          </button>
           <div className={styles.logoTitle}>
             <AtomIcon />
-            NEXUS <span style={{ opacity: 0.5, fontSize: 14, fontWeight: 500, letterSpacing: 1, marginLeft: 10 }}>Candidate Portal</span>
+            NEXUS <span className={styles.candidatePortalLabel}>Candidate Portal</span>
           </div>
         </div>
 
@@ -215,12 +225,12 @@ export default function DashboardPage() {
 
       <div className={styles.bodyLayout}>
         {/* ── Sidebar: The Shield ── */}
-        <aside className={styles.sidebar}>
+        <aside className={`${styles.sidebar} ${isMenuOpen ? styles.sidebarOpen : ""}`}>
           {tabs.map(tab => (
             <button
               key={tab.id}
               className={`${styles.sidebarItem} ${activeTab === tab.id ? styles.sidebarItemActive : ""}`}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => { setActiveTab(tab.id); setIsMenuOpen(false); }}
             >
               {tab.icon}
               {tab.label}
@@ -706,11 +716,11 @@ function InsightsTab({ exams }: { exams: ExamNode[] }) {
        <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Skills Insights</h1>
        <p style={{ opacity: 0.6, fontSize: 14, marginBottom: 32, color: 'rgba(255,255,255,0.7)' }}>Analytical breakdown of your performance</p>
        
-       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}>
+       <div className={styles.insightsGrid}>
           {/* Performance Radar Chart */}
           <div className={styles.hologramPanel} style={{ padding: 32 }}>
              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 24, color: '#fff' }}>Competency Map</h3>
-             <div style={{ height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+             <div className={styles.radarContainer}>
                 {completed.length >= 3 ? <RadarChart data={completed} /> : (
                   <div style={{ textAlign: 'center', opacity: 0.6, color: '#fff' }}>
                     <div style={{ color: 'var(--nexus-cyan)' }}><InsightsIcon /></div>
