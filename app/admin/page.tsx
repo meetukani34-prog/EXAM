@@ -179,13 +179,13 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
             <tbody>
               {participants.map(p => (
                 <tr key={p.student_id} style={{ 
-                  opacity: p.pyhunt ? 1 : 0.85,
-                  background: p.pyhunt ? 'rgba(0, 242, 255, 0.03)' : 'rgba(255, 255, 255, 0.02)',
+                  background: p.pyhunt ? 'rgba(0, 242, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
                   transition: 'all 0.3s ease'
                 }}>
-                  <td>
+                  <td style={{ opacity: p.pyhunt ? 1 : 0.7 }}>
                     <div style={{ fontWeight: 800, fontSize: 15, color: '#fff' }}>{p.name}</div>
-                    <div style={{ fontSize: 12, opacity: 0.5, color: '#00f2ff', fontWeight: 600 }}>{p.usn}</div>
+                    <div style={{ fontSize: 12, opacity: 0.9, color: '#00f2ff', fontWeight: 600 }}>{p.usn}</div>
                   </td>
                   <td>
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>{p.branch}</span>
@@ -208,7 +208,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                         ORBIT {p.pyhunt.current_round}
                       </span>
                     ) : (
-                      <span style={{ fontSize: 11, opacity: 0.6, fontWeight: 700, letterSpacing: '0.05em' }}>NOT STARTED</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 800, letterSpacing: '0.05em' }}>NOT STARTED</span>
                     )}
                   </td>
                   <td>
@@ -217,11 +217,11 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                         {p.pyhunt.error_entropy} Bits
                       </span>
                     ) : (
-                      <span style={{ fontSize: 11, opacity: 0.6 }}>—</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 800 }}>—</span>
                     )}
                   </td>
                   <td>
-                    <div style={{ fontSize: 13, opacity: 0.8, fontWeight: 500 }}>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
                       {p.pyhunt ? new Date(p.pyhunt.last_ping).toLocaleTimeString() : "—"}
                     </div>
                   </td>
