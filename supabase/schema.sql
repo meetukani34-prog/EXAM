@@ -50,6 +50,7 @@ CREATE INDEX IF NOT EXISTS idx_questions_order ON questions(order_index);
 CREATE TABLE IF NOT EXISTS exam_status (
   id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   student_id   UUID UNIQUE NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  exam_name    TEXT DEFAULT 'Initial Assessment', -- TRACKS ACTIVE EXAM SESSION
   status       TEXT DEFAULT 'not_started' CHECK (status IN ('not_started', 'active', 'submitted')),
   warnings     INTEGER DEFAULT 0,
   last_active  TIMESTAMPTZ DEFAULT NOW(),

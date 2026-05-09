@@ -71,15 +71,25 @@ async def report_violation(
             }).execute()
         except: pass
 
-        # 3. Upsert status
-        db.table("exam_status").upsert({
+        # 3. Upsert status with fallback for missing column
+        status_data = {
             "student_id": student_id,
-            "exam_name": exam_title,
             "warnings": new_warnings,
             "status": "submitted" if new_warnings >= AUTO_SUBMIT_THRESHOLD else "active",
             "last_active": datetime.now(timezone.utc).isoformat(),
             "submitted_at": datetime.now(timezone.utc).isoformat() if new_warnings >= AUTO_SUBMIT_THRESHOLD else None
-        }, on_conflict="student_id").execute()
+        }
+        
+        try:
+            # Try with exam_name first
+            db.table("exam_status").upsert({
+                **status_data,
+                "exam_name": exam_title
+            }, on_conflict="student_id").execute()
+        except Exception as e:
+            # Fallback for old schema without exam_name column
+            print(f"[VIOLATIONS] exam_name column likely missing, falling back: {e}")
+            db.table("exam_status").upsert(status_data, on_conflict="student_id").execute()
 
         # 4. Response
         auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
