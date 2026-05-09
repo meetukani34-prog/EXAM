@@ -73,12 +73,113 @@ function isStale(lastActive: string | null): boolean {
 
 const BRANCHES = BRANCH_IDS;
 const ALL_BRANCH_DATA = BRANCH_LIST;
-type Tab = "monitor" | "questions" | "students" | "leaderboard" | "ingest" | "control" | "support";
+type Tab = "monitor" | "questions" | "students" | "leaderboard" | "ingest" | "control" | "support" | "odyssey";
 const ADMIN_AUTH_KEY = "examguard_admin_auth";
 
 function getStoredAuth(): boolean {
   if (typeof window === "undefined") return false;
   try { return localStorage.getItem(ADMIN_AUTH_KEY) === "true"; } catch { return false; }
+}
+
+// ── Odyssey Observer Component ─────────────────────────────────
+function OdysseyObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], setOdysseyData: (d: any[]) => void }) {
+  const fetchOdyssey = useCallback(async () => {
+    const { data } = await supabase
+      .from('odyssey_progress')
+      .select('*, students(name, usn)')
+      .order('current_round', { ascending: false });
+    setOdysseyData(data || []);
+  }, [setOdysseyData]);
+
+  useEffect(() => {
+    fetchOdyssey();
+    const sub = supabase.channel('odyssey_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'odyssey_progress' }, () => fetchOdyssey()).subscribe();
+    return () => { supabase.removeChannel(sub); };
+  }, [fetchOdyssey]);
+
+  const handleForceUnlock = async (studentId: string, nextRound: number) => {
+    await supabase.rpc('force_unlock_round', { target_student_id: studentId, next_round: nextRound });
+    fetchOdyssey();
+  };
+
+  const getFrictionStats = () => {
+    const rounds = [1, 2, 3, 4, 5];
+    return rounds.map(r => ({
+      round: r,
+      count: (odysseyData || []).filter(d => d.current_round === r).length
+    }));
+  };
+
+  return (
+    <div style={{ padding: 24 }}>
+      <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>🌌 Odyssey Observer</h2>
+          <p style={{ opacity: 0.6, fontSize: 13 }}>Master Command Center for Cognitive Odyssey Orbits</p>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          {getFrictionStats().map(s => (
+            <div key={s.round} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px 16px', borderRadius: 12, textAlign: 'center' }}>
+              <div style={{ fontSize: 10, opacity: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>Orbit {s.round}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#00f2ff' }}>{s.count}</div>
+            </div>
+          ))}
+        </div>
+      </header>
+
+      <div className={styles.tableWrapper}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Student Node</th>
+              <th>Current Orbit</th>
+              <th>Entropy (Errors)</th>
+              <th>Last Signal</th>
+              <th>Intervention</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(odysseyData || []).map(d => (
+              <tr key={d.id}>
+                <td>
+                  <div style={{ fontWeight: 700 }}>{d.students?.name}</div>
+                  <div style={{ fontSize: 11, opacity: 0.6 }}>{d.students?.usn}</div>
+                </td>
+                <td>
+                  <span style={{ 
+                    padding: '4px 12px', 
+                    borderRadius: 20, 
+                    background: `rgba(0, 242, 255, ${d.current_round * 0.15})`, 
+                    color: d.current_round === 5 ? '#000' : '#00f2ff',
+                    fontWeight: 800,
+                    fontSize: 12
+                  }}>
+                    ORBIT {d.current_round}
+                  </span>
+                </td>
+                <td>
+                  <div style={{ color: (d.error_entropy || 0) > 5 ? '#ef4444' : 'inherit' }}>
+                    {d.error_entropy || 0} Bits
+                  </div>
+                </td>
+                <td>{timeAgo(d.last_ping)}</td>
+                <td>
+                  <button 
+                    className="btn btn-primary"
+                    style={{ fontSize: 11, padding: '4px 10px' }}
+                    onClick={() => handleForceUnlock(d.student_id, d.current_round + 1)}
+                    disabled={d.current_round >= 5}
+                  >
+                    Force Levitation
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 // ── Data-Stream Export Animation ──────────────────────────────
@@ -235,6 +336,7 @@ export default function AdminPage() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<Tab>("monitor");
   const [liveStats, setLiveStats] = useState({ answers: 0, violations: 0, submittals: 0 });
+  const [odysseyData, setOdysseyData] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<BranchExamSummary[]>([]);
   const [quizFilter, setQuizFilter] = useState<string>("all");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -435,13 +537,14 @@ export default function AdminPage() {
   }
 
   const TAB_CONFIG: { id: Tab; label: string; icon: string }[] = [
-    { id: "monitor",     label: "Monitor",     icon: "📡" },
-    { id: "support",     label: "SOS",         icon: "🆘" },
-    { id: "leaderboard", label: "Leaderboard", icon: "⚡" },
-    { id: "questions",   label: "Questions",   icon: "📋" },
-    { id: "students",    label: "Students",    icon: "👥" },
-    { id: "ingest",      label: "Harvester",   icon: "🌌" },
-    { id: "control",     label: "Control",     icon: "🛸" },
+    {id: "monitor",     label: "Monitor",     icon: "📡"},
+    {id: "odyssey",     label: "Odyssey",     icon: "🌌"},
+    {id: "support",     label: "SOS",         icon: "🆘"},
+    {id: "leaderboard", label: "Leaderboard", icon: "⚡"},
+    {id: "questions",   label: "Questions",   icon: "📋"},
+    {id: "students",    label: "Students",    icon: "👥"},
+    {id: "ingest",      label: "Harvester",   icon: "🌌"},
+    {id: "control",     label: "Control",     icon: "🛸"},
   ];
 
   return (
@@ -560,7 +663,10 @@ export default function AdminPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Monitor Tab ── */}
+      {/* ── Odyssey Observer Node ── */}
+      {activeTab === "odyssey" && (
+        <OdysseyObserver odysseyData={odysseyData} setOdysseyData={setOdysseyData} />
+      )}
       {activeTab === "monitor" && (
         <>
           {/* ── Canva-Style 3 Hero Stat Cards ── */}
