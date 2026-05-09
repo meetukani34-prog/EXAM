@@ -35,24 +35,26 @@ async def report_violation(
     exam_title = request.exam_name or "General Assessment"
     
     try:
-        # 1. Fetch all records for this student (paranoid check for duplicates)
+        # 1. Fetch current status (using most recent record for this student)
         status_res = db.table("exam_status").select("*").eq("student_id", student_id).order("updated_at", desc=True).execute()
         
         current_warnings = 0
-        active_row = None
-        
         if status_res.data:
-            # Try to find a row matching this exact exam first
-            for row in status_res.data:
-                if row.get("exam_name") == exam_title:
-                    active_row = row
-                    current_warnings = row.get("warnings") or 0
-                    break
+            # Try to find an exact session match
+            match = next((r for r in status_res.data if r.get("exam_name") == exam_title), None)
             
-            # If no exact match, use the most recent row as baseline but reset count (SAFETY RESET)
-            if not active_row:
-                active_row = status_res.data[0]
-                current_warnings = 0 # New exam = Fresh start
+            if match:
+                current_warnings = match.get("warnings") or 0
+            else:
+                # ── CRITICAL FIX: Fallback for Legacy/Missing Column ──
+                # If no match found, check if the most recent record is "generic" (column missing or null)
+                # This prevents resetting to 0 every time if the database column isn't tracking the name yet.
+                latest = status_res.data[0]
+                if latest.get("exam_name") is None:
+                    current_warnings = latest.get("warnings") or 0
+                else:
+                    # Definitely a different exam session, reset to 0 for the NEW session
+                    current_warnings = 0
         
         # Increment
         new_warnings = current_warnings + 1
