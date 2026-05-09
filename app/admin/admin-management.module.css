@@ -89,7 +89,7 @@
   background: transparent;
   border: none;
   border-radius: 10px;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.7);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -128,7 +128,7 @@
   font-size: 11px;
   font-weight: 800;
   color: #fff;
-  opacity: 0.6;
+  opacity: 0.9;
   margin-bottom: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -136,10 +136,10 @@
 
 .configInput, .configTextarea {
   width: 100%;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(0, 242, 255, 0.2);
   border-radius: 12px;
-  color: #00f2ff;
+  color: #ffffff; /* Pure white for maximum visibility */
   padding: 14px 18px;
   font-size: 15px;
   font-family: 'JetBrains Mono', monospace;
@@ -149,8 +149,8 @@
 
 .configInput:focus, .configTextarea:focus {
   border-color: #00f2ff;
-  background: rgba(0,0,0,0.5);
-  box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+  background: rgba(0,0,0,0.6);
+  box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
 }
 
 .configTextarea {
