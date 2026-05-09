@@ -132,7 +132,7 @@ function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], s
       </header>
 
       {view === 'observer' ? (
-        <div className={styles.tableWrapper}>
+        <div className={adminStyles.tableWrapper}>
           <table className={styles.table}>
             <thead>
               <tr>
