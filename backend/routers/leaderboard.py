@@ -15,72 +15,58 @@ router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
 def _compute_leaderboard() -> LeaderboardResponse:
     db = get_supabase()
 
-    # Fetch all submitted results with student info
+    # Fetch all submitted results
+    # We now use the exam_name column directly from exam_results
     results = (
         db.table("exam_results")
-        .select("student_id, score, total_marks, submitted_at, answers")
+        .select("student_id, exam_name, score, total_marks, submitted_at, answers")
         .execute()
     )
 
-    # Fetch exam status for started_at (velocity)
+    # Fetch all exam statuses to match sessions
     statuses = (
         db.table("exam_status")
-        .select("student_id, started_at, status")
+        .select("student_id, exam_name, started_at, status")
         .execute()
     )
-    status_map = {s["student_id"]: s for s in (statuses.data or [])}
+    # Map statuses by (student_id, exam_name)
+    status_map = {(s["student_id"], s["exam_name"]): s for s in (statuses.data or [])}
 
     # Fetch student profiles
     students = db.table("students").select("id, usn, name, branch").execute()
     student_map = {s["id"]: s for s in (students.data or [])}
 
-    # Fetch question IDs to map results to exams (Virtual Folder Logic)
-    all_question_ids = []
-    for r in (results.data or []):
-        ans = r.get("answers") or {}
-        if ans:
-            all_question_ids.extend(list(ans.keys()))
-    
-    q_map = {}
-    if all_question_ids:
-        unique_q_ids = list(set(all_question_ids))
-        qs = db.table("questions").select("id, exam_name").in_("id", unique_q_ids[:500]).execute()
-        q_map = {q["id"]: q["exam_name"] for q in (qs.data or [])}
-
     entries: list[LeaderboardEntry] = []
 
     for r in (results.data or []):
         sid = r["student_id"]
+        ename = r.get("exam_name") or "Initial Assessment"
         student = student_map.get(sid)
         if not student:
             continue
 
-        exam_status = status_map.get(sid, {})
-        # Only include submitted students
-        if exam_status.get("status") != "submitted":
-            continue
-
+        # Match status for THIS specific student + exam session
+        exam_status = status_map.get((sid, ename), {})
+        
+        # If no explicit session status found, we still check the result
+        # but velocity might be missing.
+        
         score = r.get("score") or 0
         total_marks = r.get("total_marks") or 0
         pct = round(score / total_marks * 100, 1) if total_marks else 0.0
 
-        # Calculate velocity
+        # Calculate velocity (time taken)
         time_taken: int | None = None
-        if r.get("submitted_at") and exam_status.get("started_at"):
+        start_time = exam_status.get("started_at")
+        end_time = r.get("submitted_at")
+        
+        if start_time and end_time:
             try:
-                t_start = datetime.fromisoformat(exam_status["started_at"].replace("Z", "+00:00"))
-                t_end = datetime.fromisoformat(r["submitted_at"].replace("Z", "+00:00"))
+                t_start = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+                t_end = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
                 time_taken = int((t_end - t_start).total_seconds())
             except Exception:
                 pass
-
-        # Resolve exam name from answers
-        ans = r.get("answers") or {}
-        resolved_exam_name = "Initial Assessment"
-        for qid in ans.keys():
-            if qid in q_map:
-                resolved_exam_name = q_map[qid]
-                break
 
         entries.append(
             LeaderboardEntry(
@@ -88,13 +74,13 @@ def _compute_leaderboard() -> LeaderboardResponse:
                 student_id=sid,
                 usn=student.get("usn", ""),
                 name=student.get("name", ""),
-                branch=student.get("branch", "CS"),
+                branch=student.get("branch", student.get("branch", "CS")),
                 score=score,
                 total_marks=total_marks,
                 percentage=pct,
                 time_taken_seconds=time_taken,
-                submitted_at=r.get("submitted_at"),
-                exam_name=resolved_exam_name
+                submitted_at=end_time,
+                exam_name=ename
             )
         )
 
