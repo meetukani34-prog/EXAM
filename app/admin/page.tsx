@@ -221,15 +221,18 @@ function PyHuntConfig() {
     ];
   });
 
-  const [jumbles, setJumbles] = useState(() => {
+  const [globalAuth, setGlobalAuth] = useState(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("pyhunt_jumbles_local");
+      const saved = localStorage.getItem("pyhunt_global_auth");
       if (saved) return JSON.parse(saved);
     }
-    return [
-      { id: 1, blocks: ["def hello():", "  print('world')", "hello()"], target: "def hello():\n  print('world')\nhello()" },
-    ];
+    return { startCode: "PYHUNT67", authorizedUsns: "" };
   });
+
+  const saveGlobalAuth = (newAuth: any) => {
+    setGlobalAuth(newAuth);
+    localStorage.setItem("pyhunt_global_auth", JSON.stringify(newAuth));
+  };
 
   const saveConfig = (newConfigs: any) => {
     setConfigs(newConfigs);
@@ -291,6 +294,35 @@ function PyHuntConfig() {
        <div className={adminStyles.configContent}>
           {activeTab === "clues" && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {/* ── Global Mission Parameters ── */}
+              <div className={adminStyles.configCard} style={{ border: '1px solid rgba(139, 92, 246, 0.4)', background: 'rgba(139, 92, 246, 0.05)' }}>
+                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                    <h4 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 800 }}>🔓 Mission Authorization</h4>
+                    <div className={adminStyles.codeBadge} style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' }}>GLOBAL CONTROL</div>
+                 </div>
+                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                    <div className={adminStyles.inputGroup}>
+                       <label className={adminStyles.inputLabel}>MISSION START CODE</label>
+                       <input 
+                         type="text"
+                         className={adminStyles.configInput}
+                         value={globalAuth.startCode}
+                         onChange={(e) => saveGlobalAuth({ ...globalAuth, startCode: e.target.value.toUpperCase() })}
+                         placeholder="e.g. PYHUNT_2024"
+                       />
+                    </div>
+                    <div className={adminStyles.inputGroup}>
+                       <label className={adminStyles.inputLabel}>AUTHORIZED USN(S) (COMMA SEPARATED, OPTIONAL)</label>
+                       <input 
+                         type="text"
+                         className={adminStyles.configInput}
+                         value={globalAuth.authorizedUsns}
+                         onChange={(e) => saveGlobalAuth({ ...globalAuth, authorizedUsns: e.target.value })}
+                         placeholder="e.g. 1RV21CS001, 1RV21CS002"
+                       />
+                    </div>
+                 </div>
+              </div>
               {configs.map((c: any) => (
                 <div key={c.round} className={adminStyles.configCard}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>

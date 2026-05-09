@@ -41,6 +41,19 @@ export default function PyHuntView() {
     setAuthForm(prev => ({ ...prev, usn: info.usn || "" }));
 
     async function syncProgress() {
+      // ── Fetch Global Config (Start Code & USNs) ──────────
+      const globalAuthRaw = localStorage.getItem("pyhunt_global_auth");
+      if (globalAuthRaw) {
+        const ga = JSON.parse(globalAuthRaw);
+        // If authorized USNs are listed, check if this student is allowed
+        if (ga.authorizedUsns && ga.authorizedUsns.trim()) {
+           const allowedList = ga.authorizedUsns.split(',').map((u: string) => u.trim().toUpperCase());
+           if (!allowedList.includes(info.usn?.toUpperCase())) {
+              setAuthError("CRITICAL: Your USN is not authorized for this logic session.");
+           }
+        }
+      }
+
       const { data } = await supabase
         .from('odyssey_progress')
         .select('*')
@@ -81,7 +94,14 @@ export default function PyHuntView() {
   }, []);
 
   const handleAuthorize = () => {
-    if (authForm.missionCode.toUpperCase() === "PYHUNT67") {
+    const globalAuthRaw = localStorage.getItem("pyhunt_global_auth");
+    let targetCode = "PYHUNT67"; // Fallback
+    if (globalAuthRaw) {
+      targetCode = JSON.parse(globalAuthRaw).startCode || "PYHUNT67";
+    }
+
+    if (authForm.missionCode.toUpperCase() === targetCode.toUpperCase()) {
+      if (authError.startsWith("CRITICAL")) return; // Don't allow if USN blocked
       setIsAuthorized(true);
       setAuthError("");
     } else {
