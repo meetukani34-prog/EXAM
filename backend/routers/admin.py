@@ -9,7 +9,8 @@ from models.schemas import (
     QuestionCreate, QuestionUpdate,
     StudentStatus, StudentCreate, StudentUpdate,
     ExamConfig, ExamConfigUpdate, FolderRenameRequest,
-    FolderEditBranchRequest, SupportRequestResponse
+    FolderEditBranchRequest, SupportRequestResponse,
+    ViolationHistoryOut
 )
 from datetime import datetime, timezone
 import io
@@ -796,12 +797,31 @@ async def export_results(
 
 # ── Support Requests Management ───────────────────────────────
 
-@router.get("/support-requests", response_model=list[SupportRequestResponse])
-async def get_support_requests(_: bool = Depends(verify_admin)):
-    """Retrieve all student help tickets."""
+@router.get("/violations", response_model=list[ViolationHistoryOut])
+async def get_violation_history(_: bool = Depends(verify_admin)):
+    """Fetch all recorded violations for the live monitor."""
     db = get_supabase()
-    result = db.table("support_requests").select("*").order("created_at", desc=True).execute()
-    return result.data or []
+    # Fetch recent violations with student names
+    res = db.table("violations")\
+        .select("*, students(name, usn)")\
+        .order("created_at", desc=True)\
+        .limit(100)\
+        .execute()
+    
+    rows = []
+    for r in (res.data or []):
+        student = r.get("students", {})
+        rows.append(ViolationHistoryOut(
+            id=r["id"],
+            student_id=r["student_id"],
+            student_name=student.get("name", "Unknown"),
+            usn=student.get("usn", "Unknown"),
+            type=r["type"],
+            exam_name=r.get("exam_name", "General"),
+            created_at=r["created_at"],
+            metadata=r.get("metadata")
+        ))
+    return rows
 
 @router.patch("/support-requests/{request_id}/status")
 async def update_support_status(request_id: str, request: dict, _: bool = Depends(verify_admin)):

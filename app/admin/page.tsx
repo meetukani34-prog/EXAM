@@ -31,6 +31,8 @@ import {
   cleanupStaleSessions,
   fetchSupportRequests,
   updateSupportRequestStatus,
+  fetchViolationHistory,
+  ViolationHistory,
   SupportRequest,
   ExamConfig,
   updateExamConfig,
@@ -1138,7 +1140,7 @@ export default function AdminPage() {
           </div>
 
           {/* ── Violation Alerts Feed ── */}
-          <ViolationAlertsFeed students={students} />
+          <ViolationAlertsFeed />
 
           {/* Controls */}
           <div className={styles.controls}>
@@ -1237,24 +1239,26 @@ export default function AdminPage() {
 }
 
 // ── Violation Alerts Feed ─────────────────────────────────────
-const VIOLATION_TYPES = ["Tab switched", "Window focus lost", "Copy/paste detected", "Fullscreen exit"];
+function ViolationAlertsFeed() {
+  const [alerts, setAlerts] = useState<ViolationHistory[]>([]);
+  const [loading, setLoading] = useState(true);
 
-function ViolationAlertsFeed({ students }: { students: AdminStudent[] }) {
-  // Build a flat list of synthetic violation events from warnings count
-  const alerts: { name: string; usn: string; type: string; badge: number }[] = [];
-  students
-    .filter(s => s.warnings > 0)
-    .sort((a, b) => (b.warnings || 0) - (a.warnings || 0))
-    .forEach(s => {
-      for (let i = 0; i < s.warnings; i++) {
-        alerts.push({
-          name: s.name,
-          usn: s.usn,
-          type: VIOLATION_TYPES[i % VIOLATION_TYPES.length],
-          badge: alerts.length + 1,
-        });
-      }
-    });
+  const loadAlerts = useCallback(async () => {
+    try {
+      const data = await fetchViolationHistory();
+      setAlerts(data);
+    } catch (err) {
+      console.error("Failed to fetch violations:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAlerts();
+    const interval = setInterval(loadAlerts, 5000); // 5s polling for live monitor
+    return () => clearInterval(interval);
+  }, [loadAlerts]);
 
   return (
     <div style={{ padding: "20px 24px" }}>
@@ -1275,72 +1279,74 @@ function ViolationAlertsFeed({ students }: { students: AdminStudent[] }) {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 16 }}>⚠️</span>
-            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>Violation Alerts</span>
+            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>Real-time Security Stream</span>
           </div>
           <span style={{
             fontSize: 12, fontWeight: 600,
             padding: "2px 10px",
             borderRadius: 999,
-            background: alerts.length > 0 ? "var(--danger-bg)" : "var(--bg-secondary)",
-            color: alerts.length > 0 ? "var(--danger)" : "var(--text-muted)",
-            border: alerts.length > 0 ? "1px solid rgba(211,47,47,0.2)" : "1px solid var(--border)",
+            background: alerts.length > 0 ? "rgba(239, 68, 68, 0.1)" : "var(--bg-secondary)",
+            color: alerts.length > 0 ? "#f87171" : "var(--text-muted)",
+            border: alerts.length > 0 ? "1px solid rgba(239, 68, 68, 0.2)" : "1px solid var(--border)",
           }}>
-            {alerts.length} events
+            {alerts.length} events logged
           </span>
         </div>
 
         {/* Alert list */}
-        <div style={{ maxHeight: 320, overflowY: "auto" }}>
-          {alerts.length === 0 ? (
+        <div style={{ maxHeight: 400, overflowY: "auto" }}>
+          {loading && alerts.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
+          ) : alerts.length === 0 ? (
             <div style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>
-              ✅ No violations recorded
+              ✅ No violations recorded in this session
             </div>
           ) : (
-            alerts.reverse().map((alert, i) => (
+            alerts.map((alert, i) => (
               <div
-                key={i}
+                key={alert.id}
                 style={{
                   display: "flex",
                   alignItems: "flex-start",
                   gap: 14,
                   padding: "14px 20px",
                   borderBottom: i < alerts.length - 1 ? "1px solid var(--border)" : "none",
-                  background: i % 2 === 0 ? "var(--bg-card)" : "var(--bg-secondary)",
+                  background: i % 2 === 0 ? "var(--bg-card)" : "rgba(255,255,255,0.02)",
                   transition: "background 0.2s",
                 }}
               >
-                {/* Triangle warning icon */}
+                {/* Status dot */}
                 <div style={{
                   width: 34, height: 34, borderRadius: 10,
-                  background: "rgba(211,47,47,0.08)",
-                  border: "1px solid rgba(211,47,47,0.18)",
+                  background: "rgba(239, 68, 68, 0.08)",
+                  border: "1px solid rgba(239, 68, 68, 0.18)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 16, flexShrink: 0, marginTop: 2,
-                }}>⚠</div>
+                }}>
+                  {alert.type.includes("Face") ? "👤" : "⚡"}
+                </div>
 
                 {/* Content */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)", marginBottom: 2 }}>
-                    {alert.name}
+                  <div style={{ fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 2 }}>
+                    {alert.student_name}
                     <span style={{ fontWeight: 400, fontSize: 12, color: "var(--text-muted)", marginLeft: 8 }}>{alert.usn}</span>
                   </div>
-                  <div style={{ fontSize: 13, color: "var(--danger)", fontWeight: 500, marginBottom: 2 }}>
-                    {alert.type}
+                  <div style={{ fontSize: 13, color: "#f87171", fontWeight: 600, marginBottom: 2 }}>
+                    {alert.type.replace(/_/g, ' ').toUpperCase()}
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Recorded during active session</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
+                    Mission: {alert.exam_name} • {new Date(alert.created_at).toLocaleTimeString()}
+                  </div>
                 </div>
 
-                {/* Badge number */}
+                {/* Counter index (descending) */}
                 <div style={{
-                  minWidth: 28, height: 28,
-                  borderRadius: 8,
-                  background: "rgba(211,47,47,0.1)",
-                  border: "1px solid rgba(211,47,47,0.2)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 11, fontWeight: 700,
-                  color: "var(--danger)",
-                  flexShrink: 0,
-                }}>#{alert.badge}</div>
+                  fontSize: 10, fontWeight: 800, color: "rgba(255,255,255,0.2)",
+                  fontFamily: "monospace"
+                }}>
+                  #{alerts.length - i}
+                </div>
               </div>
             ))
           )}

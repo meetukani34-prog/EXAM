@@ -216,6 +216,17 @@ export interface AdminStudent {
   is_blocked: boolean;
 }
 
+export interface ViolationHistory {
+  id: string;
+  student_id: string;
+  student_name: string;
+  usn: string;
+  type: string;
+  exam_name: string;
+  created_at: string;
+  metadata?: any;
+}
+
 const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET || process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin@examguard2024";
 
 
@@ -531,5 +542,9 @@ export async function updateSupportRequestStatus(id: string, status: string): Pr
     method: "PATCH",
     body: JSON.stringify({ status }),
   });
+}
+
+export async function fetchViolationHistory(): Promise<ViolationHistory[]> {
+  return adminFetch<ViolationHistory[]>("/admin/violations");
 }
 

@@ -253,3 +253,13 @@ class SupportRequestResponse(BaseModel):
     problem: str
     status: str
     created_at: str
+
+class ViolationHistoryOut(BaseModel):
+    id: str
+    student_id: str
+    student_name: str
+    usn: str
+    type: str
+    exam_name: str
+    created_at: str
+    metadata: Optional[Dict[str, Any]] = None
