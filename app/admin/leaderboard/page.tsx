@@ -19,6 +19,7 @@ interface LeaderboardEntry {
   percentage: number;
   time_taken_seconds: number | null;
   submitted_at: string | null;
+  exam_name: string;
 }
 
 function formatTime(secs: number | null): string {
@@ -89,7 +90,7 @@ export default function LeaderboardPage() {
 
   // Filter and RE-RANK
   const filteredEntries = entries
-    .filter(e => (selectedExam === "ALL" || (e as any).exam_name === selectedExam))
+    .filter(e => (selectedExam === "ALL" || e.exam_name === selectedExam))
     .filter(e => (selectedBranch === "ALL" || e.branch === selectedBranch))
     .map((e, index) => ({ ...e, rank: index + 1 }));
 
@@ -159,7 +160,10 @@ export default function LeaderboardPage() {
                 >
                   <div className={styles.podiumRank}>{entry.rank}</div>
                   <div className={styles.podiumCrown}>{CROWNS[i]}</div>
-                  <div className={styles.podiumBranch}>{entry.branch}</div>
+                  <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 4 }}>
+                    <div className={styles.podiumBranch}>{entry.branch}</div>
+                    <div className={styles.podiumBranch} style={{ background: 'rgba(0,242,255,0.1)', color: '#00f2ff' }}>{entry.exam_name}</div>
+                  </div>
                   <div className={styles.podiumName}>{entry.name}</div>
                   <div className={styles.podiumUsn}>{entry.usn}</div>
                   <div className={styles.podiumScore}>{entry.percentage.toFixed(1)}%</div>
@@ -186,6 +190,7 @@ export default function LeaderboardPage() {
                     <div className={styles.rankMeta}>
                       <span className="mono" style={{ fontSize: 11 }}>{entry.usn}</span>
                       <span className="badge badge-neutral" style={{ fontSize: 10, padding: "2px 6px" }}>{entry.branch}</span>
+                      <span className="badge" style={{ fontSize: 10, padding: "2px 6px", background: 'rgba(0,242,255,0.05)', color: '#00f2ff', border: '1px solid rgba(0,242,255,0.1)' }}>{entry.exam_name}</span>
                       <span>⏱ {formatTime(entry.time_taken_seconds)}</span>
                     </div>
                   </div>
