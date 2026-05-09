@@ -19,9 +19,16 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
   const { enter: enterFullscreen } = useFullscreen();
 
   const isReporting = useRef(false);
+  const lastViolationTime = useRef(0);
+
   const triggerViolation = useCallback(
     async (type: string, metadata?: Record<string, unknown>) => {
       if (isSubmitted || isReporting.current) return;
+      
+      const now = Date.now();
+      if (now - lastViolationTime.current < 3000) return; // Prevent rapid-fire reporting
+      lastViolationTime.current = now;
+      
       isReporting.current = true;
 
       try {

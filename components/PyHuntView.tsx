@@ -72,7 +72,6 @@ export default function PyHuntView() {
           .from('exam_status')
           .select('*')
           .eq('student_id', info.id)
-          .eq('exam_name', 'PyHunt')
           .single();
 
         if (!statusData) {
@@ -83,6 +82,14 @@ export default function PyHuntView() {
             started_at: new Date().toISOString(),
             warnings: 0
           }]);
+        } else if (statusData.exam_name !== 'PyHunt') {
+          // If a record exists but for a different exam, reset for PyHunt
+          await supabase.from('exam_status').update({
+            exam_name: 'PyHunt',
+            status: 'active',
+            started_at: new Date().toISOString(),
+            warnings: 0
+          }).eq('student_id', info.id);
         }
       } catch (err) {
         console.error("Failed to sync exam_status for PyHunt:", err);

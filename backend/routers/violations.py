@@ -46,25 +46,31 @@ async def report_violation(
         if request.type not in VALID_VIOLATION_TYPES:
              return ReportViolationResponse(warning_count=1, auto_submitted=False, message="⚠️ Stay focused on the exam.")
 
-        # 1. Fetch current status safely for this specific exam
+        # 1. Fetch current status safely (per-student, then check exam_name)
         exam_title = request.exam_name or "General Assessment"
         current_warnings = 0
         try:
-            status_res = db.table("exam_status").select("status, warnings").eq("student_id", student_id).eq("exam_name", exam_title).execute()
+            # We fetch by student_id since it's UNIQUE in the schema
+            status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
             if status_res.data:
                 row = status_res.data[0]
-                if row["status"] == "submitted":
-                    return ReportViolationResponse(warning_count=row.get("warnings", 0), auto_submitted=False, message="Exam already submitted.")
-                current_warnings = row.get("warnings") or 0
+                
+                # If the record is for a DIFFERENT exam, we treat it as a fresh start for the new exam
+                if row.get("exam_name") != exam_title:
+                    current_warnings = 0
+                else:
+                    if row["status"] == "submitted":
+                        return ReportViolationResponse(warning_count=row.get("warnings", 0), auto_submitted=False, message="Exam already submitted.")
+                    current_warnings = row.get("warnings") or 0
         except Exception as e:
-            print(f"[VIOLATIONS] Status fetch failed for {exam_title}: {e}")
+            print(f"[VIOLATIONS] Status fetch failed: {e}")
 
         new_warnings = current_warnings + 1
 
-        # 2. Log violation safely (Mapping types to valid DB constraints)
+        # 2. Log violation safely
         db_type = request.type
         if db_type not in ["tab_switch", "window_blur", "fullscreen_exit", "no_face_detected", "face_not_front", "multiple_faces"]:
-             db_type = "tab_switch" # Fallback for DB constraint
+             db_type = "tab_switch"
              
         try:
             db.table("violations").insert({
@@ -78,13 +84,14 @@ async def report_violation(
 
         # 3. Update warning count on exam_status (MANDATORY UPSERT)
         try:
+            # Use student_id as the ONLY conflict target since it's the unique key in schema
             db.table("exam_status").upsert({
                 "student_id": student_id,
                 "exam_name": exam_title,
                 "warnings": new_warnings,
                 "status": "active",
                 "last_active": datetime.now(timezone.utc).isoformat(),
-            }, on_conflict="student_id,exam_name").execute()
+            }, on_conflict="student_id").execute()
         except Exception as e:
             print(f"[VIOLATIONS] Status upsert failed: {e}")
 
