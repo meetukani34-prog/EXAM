@@ -34,64 +34,55 @@ async def report_violation(
     student_id = current["student_id"]
     exam_title = request.exam_name or "General Assessment"
     
+    print(f"[VIOLATION] Reporting {request.type} for {student_id} on {exam_title}")
+
     try:
-        # 1. Fetch current status (using most recent record for this student)
-        status_res = db.table("exam_status").select("*").eq("student_id", student_id).order("updated_at", desc=True).execute()
+        # 1. Fetch current warnings (Direct query by student_id)
+        status_res = db.table("exam_status").select("warnings, id").eq("student_id", student_id).execute()
         
         current_warnings = 0
         if status_res.data:
-            # Try to find an exact session match
-            match = next((r for r in status_res.data if r.get("exam_name") == exam_title), None)
-            
-            if match:
-                current_warnings = match.get("warnings") or 0
-            else:
-                # ── CRITICAL FIX: Fallback for Legacy/Missing Column ──
-                # If no match found, check if the most recent record is "generic" (column missing or null)
-                # This prevents resetting to 0 every time if the database column isn't tracking the name yet.
-                latest = status_res.data[0]
-                if latest.get("exam_name") is None:
-                    current_warnings = latest.get("warnings") or 0
-                else:
-                    # Definitely a different exam session, reset to 0 for the NEW session
-                    current_warnings = 0
-        
+            current_warnings = status_res.data[0].get("warnings", 0)
+            print(f"[VIOLATION] Found record. Current warnings: {current_warnings}")
+        else:
+            print(f"[VIOLATION] No record found for student {student_id}")
+
         # Increment
         new_warnings = current_warnings + 1
+        print(f"[VIOLATION] New warnings: {new_warnings}")
 
-        # 2. Log violation
-        db_type = request.type if request.type in VALID_VIOLATION_TYPES else "tab_switch"
+        # 2. Log violation in history
         try:
+            db_type = request.type if request.type in VALID_VIOLATION_TYPES else "tab_switch"
             db.table("violations").insert({
                 "student_id": student_id,
                 "type": db_type,
                 "exam_name": exam_title,
                 "metadata": request.metadata
             }).execute()
-        except: pass
+        except Exception as e:
+            print(f"[VIOLATION] History log failed: {e}")
 
-        # 3. Upsert status with fallback for missing column
-        status_data = {
-            "student_id": student_id,
+        # 3. Update exam_status
+        auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
+        update_data = {
             "warnings": new_warnings,
-            "status": "submitted" if new_warnings >= AUTO_SUBMIT_THRESHOLD else "active",
-            "last_active": datetime.now(timezone.utc).isoformat(),
-            "submitted_at": datetime.now(timezone.utc).isoformat() if new_warnings >= AUTO_SUBMIT_THRESHOLD else None
+            "status": "submitted" if auto_submitted else "active",
+            "last_active": "now()",
+            "exam_name": exam_title # Ensure title is synced
         }
         
+        if auto_submitted:
+            update_data["submitted_at"] = "now()"
+
         try:
-            # Try with exam_name first
-            db.table("exam_status").upsert({
-                **status_data,
-                "exam_name": exam_title
-            }, on_conflict="student_id").execute()
+            # Perform a simple update since we know the student exists (from login/start)
+            db.table("exam_status").update(update_data).eq("student_id", student_id).execute()
+            print(f"[VIOLATION] DB updated for {student_id}")
         except Exception as e:
-            # Fallback for old schema without exam_name column
-            print(f"[VIOLATIONS] exam_name column likely missing, falling back: {e}")
-            db.table("exam_status").upsert(status_data, on_conflict="student_id").execute()
+            print(f"[VIOLATION] DB update failed: {e}")
 
         # 4. Response
-        auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
         if auto_submitted:
             message = WARNING_3
         elif new_warnings == 2:

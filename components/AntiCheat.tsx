@@ -165,7 +165,7 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
 
   return (
     <>
-      <FaceMonitor onViolation={triggerViolation} isSubmitted={isSubmitted} />
+      {/* <FaceMonitor onViolation={triggerViolation} isSubmitted={isSubmitted} /> */}
       {showModal && (
         <WarningModal
           warningCount={warningCount}
