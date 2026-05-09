@@ -166,25 +166,29 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
         <div className={adminStyles.tableWrapper}>
           <table className={styles.table}>
             <thead>
-              <tr>
-                <th>Student Node</th>
-                <th>Branch</th>
-                <th>Warnings</th>
-                <th>Current Orbit</th>
-                <th>Entropy (Errors)</th>
-                <th>Last Signal</th>
-                <th>Intervention</th>
+              <tr style={{ borderBottom: '2px solid rgba(255,255,255,0.1)' }}>
+                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>STUDENT NODE</th>
+                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>BRANCH</th>
+                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>WARNINGS</th>
+                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>CURRENT ORBIT</th>
+                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>ENTROPY (ERRORS)</th>
+                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>LAST SIGNAL</th>
+                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>INTERVENTION</th>
               </tr>
             </thead>
             <tbody>
               {participants.map(p => (
-                <tr key={p.student_id} style={{ opacity: p.pyhunt ? 1 : 0.4 }}>
+                <tr key={p.student_id} style={{ 
+                  opacity: p.pyhunt ? 1 : 0.85,
+                  background: p.pyhunt ? 'rgba(0, 242, 255, 0.03)' : 'rgba(255, 255, 255, 0.02)',
+                  transition: 'all 0.3s ease'
+                }}>
                   <td>
                     <div style={{ fontWeight: 800, fontSize: 15, color: '#fff' }}>{p.name}</div>
                     <div style={{ fontSize: 12, opacity: 0.5, color: '#00f2ff', fontWeight: 600 }}>{p.usn}</div>
                   </td>
                   <td>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>{p.branch}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>{p.branch}</span>
                   </td>
                   <td>
                     <WarningBadge count={p.warnings} />
@@ -204,7 +208,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                         ORBIT {p.pyhunt.current_round}
                       </span>
                     ) : (
-                      <span style={{ fontSize: 11, opacity: 0.3 }}>NOT STARTED</span>
+                      <span style={{ fontSize: 11, opacity: 0.6, fontWeight: 700, letterSpacing: '0.05em' }}>NOT STARTED</span>
                     )}
                   </td>
                   <td>
@@ -213,11 +217,11 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                         {p.pyhunt.error_entropy} Bits
                       </span>
                     ) : (
-                      <span style={{ fontSize: 11, opacity: 0.3 }}>—</span>
+                      <span style={{ fontSize: 11, opacity: 0.6 }}>—</span>
                     )}
                   </td>
                   <td>
-                    <div style={{ fontSize: 13, opacity: 0.6 }}>
+                    <div style={{ fontSize: 13, opacity: 0.8, fontWeight: 500 }}>
                       {p.pyhunt ? new Date(p.pyhunt.last_ping).toLocaleTimeString() : "—"}
                     </div>
                   </td>
