@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePyodide } from '@/hooks/usePyodide';
 import { supabase } from '@/lib/supabase';
+import { startExam } from '@/lib/api';
 import styles from './PyHuntView.module.css';
 import AntiCheat from './AntiCheat';
 
@@ -69,33 +70,8 @@ export default function PyHuntView() {
 
       // ── Initialize exam_status for AntiCheat Sync ─────────
       try {
-        const { data: statusList } = await supabase
-          .from('exam_status')
-          .select('*')
-          .eq('student_id', info.id)
-          .eq('exam_name', 'PyHunt');
-
-        if (!statusList || statusList.length === 0) {
-          // If no record exists for PyHunt, create one
-          await supabase.from('exam_status').insert([{
-            student_id: info.id,
-            exam_name: 'PyHunt',
-            status: 'active',
-            started_at: new Date().toISOString(),
-            warnings: 0
-          }]);
-        } else {
-          // If a record exists, ensure it's active but KEEP warnings if it's already active
-          // This prevents "lost warnings" on reload, but we only reset if it's not started
-          const existing = statusList[0];
-          if (existing.status === 'not_started') {
-            await supabase.from('exam_status').update({
-              status: 'active',
-              started_at: new Date().toISOString(),
-              warnings: 0
-            }).eq('id', existing.id);
-          }
-        }
+        await startExam("PyHunt");
+        console.log("[PYHUNT] Logic engine ignited via API.");
       } catch (err) {
         console.error("Failed to sync exam_status for PyHunt:", err);
       }
