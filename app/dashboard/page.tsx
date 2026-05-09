@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { fetchPublicExamConfig, type ExamConfig, updateProfile, getExamStatus } from "@/lib/api";
 import { CldUploadWidget } from 'next-cloudinary';
 import styles from "./dashboard.module.css";
+import OdysseyView from "@/components/OdysseyView";
 
 // ── Types ──────────────────────────────────────────────────────
 interface ExamNode {
@@ -38,7 +39,7 @@ interface StudentInfo {
   examDurationMinutes: number;
 }
 
-type TabId = "home" | "profile" | "aptitude" | "programming" | "other" | "learning" | "insights";
+type TabId = "home" | "profile" | "aptitude" | "programming" | "other" | "learning" | "insights" | "odyssey";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -172,6 +173,7 @@ export default function DashboardPage() {
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: "home", label: "Home", icon: <HomeIcon /> },
+    { id: "odyssey", label: "Cognitive Odyssey", icon: <OdysseyIcon /> },
     { id: "aptitude", label: "Aptitude Test", icon: <AptitudeIcon /> },
     { id: "programming", label: "Programming", icon: <CodeIcon /> },
     { id: "other", label: "Other Quiz", icon: <OtherIcon /> },
@@ -279,6 +281,22 @@ export default function DashboardPage() {
                            <span style={{ fontSize: 12, fontWeight: 700, color: '#34d399' }}>SYSTEM LIVE</span>
                         </div>
                       </div>
+
+                      {/* ── Odyssey Event Spotlight ── */}
+                      <div className={styles.eventSpotlight} onClick={() => setActiveTab("odyssey")}>
+                        <div className={styles.eventGlow} />
+                        <div className={styles.eventContent}>
+                           <div className={styles.eventTag}>SPECIAL EVENT</div>
+                           <h3 className={styles.eventTitle}>🌌 Cognitive Odyssey: Treasure Hunt</h3>
+                           <p className={styles.eventSubtitle}>Master the orbital logic nodes to unlock the sacred geometry. Zero-latency crystalline execution.</p>
+                           <button className={styles.eventBtn}>JOIN ODYSSEY</button>
+                        </div>
+                        <div className={styles.eventVisual}>
+                           <div className={styles.orbitRing} />
+                           <div className={styles.orbitRing} style={{ animationDelay: '-1s', opacity: 0.2 }} />
+                        </div>
+                      </div>
+
                       <div className={styles.examsSection} style={{ marginTop: 24 }}>
                         {active.length > 0 ? active.map(exam => (
                           <ExamCard key={exam.id} exam={exam} onLaunch={handleLaunchExam} />
@@ -383,6 +401,7 @@ export default function DashboardPage() {
           {activeTab === "insights" && <InsightsTab exams={studentExams} />}
 
           {activeTab === "profile" && student && <ProfileTab student={student} />}
+          {activeTab === "odyssey" && <OdysseyView />}
         </main>
       </div>
 
@@ -413,13 +432,19 @@ export default function DashboardPage() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
             </div>
           ))}
-          <div className={styles.notificationFooter}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-            <span>Options</span>
-          </div>
         </div>
       )}
     </div>
+  );
+}
+
+function OdysseyIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
+      <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" />
+    </svg>
   );
 }
 
