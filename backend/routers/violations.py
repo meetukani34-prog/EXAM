@@ -21,8 +21,8 @@ VALID_VIOLATION_TYPES = {
     "multiple_faces",
 }
 AUTO_SUBMIT_THRESHOLD = 3
-WARNING_1 = "⚠️ Warning 1: Please return to the exam and stay focused."
-WARNING_2 = "🚨 Final warning! One more violation and your exam will be auto-submitted."
+WARNING_1 = "⚠️ Stay focused on the exam."
+WARNING_2 = "⚠️ Your exam will be auto-submitted on the next violation."
 WARNING_3 = "⚠️ 3rd violation detected. Your exam has been auto-submitted."
 
 @router.post("/report-violation", response_model=ReportViolationResponse)
