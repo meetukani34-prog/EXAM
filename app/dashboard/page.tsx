@@ -389,7 +389,7 @@ export default function DashboardPage() {
             </>
           )}
 
-          {activeTab !== "home" && activeTab !== "profile" && activeTab !== "insights" && (
+          {activeTab !== "home" && activeTab !== "profile" && activeTab !== "insights" && activeTab !== "pyhunt" && (
             <CategoryTab
               title={activeTab === "other" ? "General Assessments" : tabs.find(t => t.id === activeTab)?.label || ""}
               subtitle={activeTab === "other" ? "Diverse quizzes and surveys" : "System ready for authorization"}
