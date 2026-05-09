@@ -35,30 +35,27 @@ async def report_violation(
     exam_title = request.exam_name or "General Assessment"
     
     try:
-        # 1. Fetch current status
-        current_warnings = 0
-        status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
+        # 1. Fetch all records for this student (paranoid check for duplicates)
+        status_res = db.table("exam_status").select("*").eq("student_id", student_id).order("updated_at", desc=True).execute()
         
-        existing_row = None
+        current_warnings = 0
+        active_row = None
+        
         if status_res.data:
-            existing_row = status_res.data[0]
-            # If same exam, use existing warnings. Otherwise, it's a fresh start.
-            if existing_row.get("exam_name") == exam_title:
-                if existing_row.get("status") == "submitted":
-                     return ReportViolationResponse(
-                         warning_count=existing_row.get("warnings", 3),
-                         auto_submitted=True,
-                         message="Exam already submitted."
-                     )
-                current_warnings = existing_row.get("warnings") or 0
+            # Try to find a row matching this exact exam first
+            for row in status_res.data:
+                if row.get("exam_name") == exam_title:
+                    active_row = row
+                    current_warnings = row.get("warnings") or 0
+                    break
+            
+            # If no exact match, use the most recent row as baseline but reset count (SAFETY RESET)
+            if not active_row:
+                active_row = status_res.data[0]
+                current_warnings = 0 # New exam = Fresh start
         
         # Increment
         new_warnings = current_warnings + 1
-        
-        # ── SAFETY RESET ──
-        # If we transitioned to a new exam title, FORCE the first violation to be 1.
-        if existing_row and existing_row.get("exam_name") != exam_title:
-            new_warnings = 1
 
         # 2. Log violation
         db_type = request.type if request.type in VALID_VIOLATION_TYPES else "tab_switch"
