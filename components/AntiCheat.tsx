@@ -21,6 +21,29 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
   const isReporting = useRef(false);
   const lastViolationTime = useRef(0);
 
+  // ── Sync initial warning state from DB ──────────────────
+  useEffect(() => {
+    async function syncInitialWarnings() {
+      try {
+        const { fetchMyStatus } = await import("@/lib/api");
+        const statusList = await fetchMyStatus();
+        const myExam = statusList.find((s: any) => s.exam_name === examName);
+        if (myExam) {
+          const count = myExam.warnings || 0;
+          setWarningCount(count);
+          if (count >= 3) {
+            setModalMessage("💀 SESSION DEAUTHORIZED: 3rd violation. Logic engine has been auto-submitted.");
+            setShowModal(true);
+            onAutoSubmit();
+          }
+        }
+      } catch (err) {
+        console.error("Initial warning sync failed:", err);
+      }
+    }
+    syncInitialWarnings();
+  }, [examName, onAutoSubmit]);
+
   const triggerViolation = useCallback(
     async (type: string, metadata?: Record<string, unknown>) => {
       if (isSubmitted || isReporting.current) return;

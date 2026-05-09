@@ -147,6 +147,10 @@ export interface SubmitResponse {
   submitted_at: string;
 }
 
+export async function fetchMyStatus(): Promise<any[]> {
+  return apiFetch<any[]>("/exam/status");
+}
+
 export async function submitExam(
   answers: Record<string, string>,
   title: string

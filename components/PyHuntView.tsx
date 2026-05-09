@@ -69,13 +69,14 @@ export default function PyHuntView() {
 
       // ── Initialize exam_status for AntiCheat Sync ─────────
       try {
-        const { data: statusData } = await supabase
+        const { data: statusList } = await supabase
           .from('exam_status')
           .select('*')
           .eq('student_id', info.id)
-          .single();
+          .eq('exam_name', 'PyHunt');
 
-        if (!statusData) {
+        if (!statusList || statusList.length === 0) {
+          // If no record exists for PyHunt, create one
           await supabase.from('exam_status').insert([{
             student_id: info.id,
             exam_name: 'PyHunt',
@@ -83,14 +84,17 @@ export default function PyHuntView() {
             started_at: new Date().toISOString(),
             warnings: 0
           }]);
-        } else if (statusData.exam_name !== 'PyHunt') {
-          // If a record exists but for a different exam, reset for PyHunt
-          await supabase.from('exam_status').update({
-            exam_name: 'PyHunt',
-            status: 'active',
-            started_at: new Date().toISOString(),
-            warnings: 0
-          }).eq('student_id', info.id);
+        } else {
+          // If a record exists, ensure it's active but KEEP warnings if it's already active
+          // This prevents "lost warnings" on reload, but we only reset if it's not started
+          const existing = statusList[0];
+          if (existing.status === 'not_started') {
+            await supabase.from('exam_status').update({
+              status: 'active',
+              started_at: new Date().toISOString(),
+              warnings: 0
+            }).eq('id', existing.id);
+          }
         }
       } catch (err) {
         console.error("Failed to sync exam_status for PyHunt:", err);
