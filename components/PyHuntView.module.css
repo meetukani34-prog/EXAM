@@ -111,11 +111,12 @@
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.1em;
-  color: #00f2ff;
+  color: #fff;
   padding: 8px 16px;
-  background: rgba(0, 242, 255, 0.05);
-  border: 1px solid rgba(0, 242, 255, 0.2);
+  background: rgba(0, 242, 255, 0.15);
+  border: 1px solid rgba(0, 242, 255, 0.4);
   border-radius: 20px;
+  text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
 }
 
 .pulseDot {
@@ -143,9 +144,10 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   padding: 30px;
-  color: #00f2ff;
+  color: #ffffff;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 500;
   resize: none;
   outline: none;
   backdrop-filter: blur(20px);
