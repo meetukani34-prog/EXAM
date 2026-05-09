@@ -528,3 +528,129 @@ select.input option {
 .card:hover .cardThumbnail {
   transform: scale(1.08);
 }
+
+/* ── Responsive Design ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .orbGrid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .managementPage {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .headerTitle {
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .tabs {
+    justify-content: center;
+  }
+
+  .tab {
+    padding: 6px 12px;
+    font-size: 12px;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .orbGrid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    padding: 20px 0;
+  }
+
+  .orbCircle {
+    width: 120px;
+    height: 120px;
+  }
+
+  .orbInsideIcon {
+    font-size: 36px;
+  }
+
+  .isolationView {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .nodeManagementHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .nodeActions {
+    flex-direction: column;
+  }
+
+  .modal {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .modal h3 {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .formRow {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .modalActions button {
+    width: 100%;
+  }
+
+  .actionButtons {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .table td, .table th {
+    padding: 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .orbGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .orbCircle {
+    width: 100px;
+    height: 100px;
+  }
+
+  .orbInsideIcon {
+    font-size: 32px;
+  }
+
+  .orbTitle {
+    font-size: 13px;
+  }
+
+  .orbSubtitle {
+    font-size: 10px;
+  }
+}
