@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { fetchPublicExamConfig, type ExamConfig, updateProfile, getExamStatus } from "@/lib/api";
 import { CldUploadWidget } from 'next-cloudinary';
 import styles from "./dashboard.module.css";
-import OdysseyView from "@/components/OdysseyView";
+import PyHuntView from "@/components/PyHuntView";
 
 // ── Types ──────────────────────────────────────────────────────
 interface ExamNode {
@@ -39,7 +39,7 @@ interface StudentInfo {
   examDurationMinutes: number;
 }
 
-type TabId = "home" | "profile" | "aptitude" | "programming" | "other" | "learning" | "insights" | "odyssey";
+type TabId = "home" | "profile" | "aptitude" | "programming" | "other" | "learning" | "insights" | "pyhunt";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -173,7 +173,7 @@ export default function DashboardPage() {
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: "home", label: "Home", icon: <HomeIcon /> },
-    { id: "odyssey", label: "Cognitive Odyssey", icon: <OdysseyIcon /> },
+    { id: "pyhunt", label: "PyHunt", icon: <PyHuntIcon /> },
     { id: "aptitude", label: "Aptitude Test", icon: <AptitudeIcon /> },
     { id: "programming", label: "Programming", icon: <CodeIcon /> },
     { id: "other", label: "Other Quiz", icon: <OtherIcon /> },
@@ -282,14 +282,14 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      {/* ── Odyssey Event Spotlight ── */}
-                      <div className={styles.eventSpotlight} onClick={() => setActiveTab("odyssey")}>
+                      {/* ── PyHunt Event Spotlight ── */}
+                      <div className={styles.eventSpotlight} onClick={() => setActiveTab("pyhunt")}>
                         <div className={styles.eventGlow} />
                         <div className={styles.eventContent}>
                            <div className={styles.eventTag}>SPECIAL EVENT</div>
-                           <h3 className={styles.eventTitle}>🌌 Cognitive Odyssey: Treasure Hunt</h3>
+                           <h3 className={styles.eventTitle}>🐍 PyHunt: Logic Treasure Hunt</h3>
                            <p className={styles.eventSubtitle}>Master the orbital logic nodes to unlock the sacred geometry. Zero-latency crystalline execution.</p>
-                           <button className={styles.eventBtn}>JOIN ODYSSEY</button>
+                           <button className={styles.eventBtn}>JOIN PYHUNT</button>
                         </div>
                         <div className={styles.eventVisual}>
                            <div className={styles.orbitRing} />
@@ -401,7 +401,7 @@ export default function DashboardPage() {
           {activeTab === "insights" && <InsightsTab exams={studentExams} />}
 
           {activeTab === "profile" && student && <ProfileTab student={student} />}
-          {activeTab === "odyssey" && <OdysseyView />}
+          {activeTab === "pyhunt" && <PyHuntView />}
         </main>
       </div>
 
@@ -438,12 +438,13 @@ export default function DashboardPage() {
   );
 }
 
-function OdysseyIcon() {
+function PyHuntIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
-      <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" />
+      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM12 20c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z" />
+      <path d="M12 6v6l4 2" />
+      <path d="M7 12h10" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" />
     </svg>
   );
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePyodide } from '@/hooks/usePyodide';
 import { supabase } from '@/lib/supabase';
-import styles from './OdysseyView.module.css';
+import styles from './PyHuntView.module.css';
 
 const ROUNDS = [
   { id: 1, name: "Syntax Rectification", description: "Correct the high-entropy Python snippet to manifest the first key.", target: "syntax" },
@@ -14,7 +14,7 @@ const ROUNDS = [
   { id: 5, name: "Visual Manifestation", description: "Use the Turtle Logic to draw the Golden Spiral.", target: "visual" },
 ];
 
-export default function OdysseyView() {
+export default function PyHuntView() {
   const [currentRound, setCurrentRound] = useState(1);
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
@@ -79,10 +79,10 @@ export default function OdysseyView() {
       .eq('student_id', student.id);
   };
 
-  if (loading) return <div className={styles.levitate}>Igniting Odyssey Engines...</div>;
+  if (loading) return <div className={styles.levitate}>Igniting PyHunt Engines...</div>;
 
   return (
-    <div className={styles.odysseyShell}>
+    <div className={styles.pyhuntShell}>
       <aside className={styles.timeline}>
         {ROUNDS.map(r => (
           <div key={r.id} className={`${styles.orbitNode} ${currentRound >= r.id ? styles.active : ""} ${currentRound === r.id ? styles.pulsing : ""}`}>

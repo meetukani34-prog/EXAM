@@ -73,7 +73,7 @@ function isStale(lastActive: string | null): boolean {
 
 const BRANCHES = BRANCH_IDS;
 const ALL_BRANCH_DATA = BRANCH_LIST;
-type Tab = "monitor" | "questions" | "students" | "leaderboard" | "ingest" | "control" | "support" | "odyssey";
+type Tab = "monitor" | "questions" | "students" | "leaderboard" | "ingest" | "control" | "support" | "pyhunt";
 const ADMIN_AUTH_KEY = "examguard_admin_auth";
 
 function getStoredAuth(): boolean {
@@ -81,8 +81,8 @@ function getStoredAuth(): boolean {
   try { return localStorage.getItem(ADMIN_AUTH_KEY) === "true"; } catch { return false; }
 }
 
-// ── Odyssey Observer Component ─────────────────────────────────
-function OdysseyObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], setOdysseyData: (d: any[]) => void }) {
+// ── PyHunt Observer Component ──────────────────────────────────
+function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], setOdysseyData: (d: any[]) => void }) {
   const fetchOdyssey = useCallback(async () => {
     const { data } = await supabase
       .from('odyssey_progress')
@@ -114,8 +114,8 @@ function OdysseyObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], 
     <div style={{ padding: 24 }}>
       <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>🌌 Odyssey Observer</h2>
-          <p style={{ opacity: 0.6, fontSize: 13 }}>Master Command Center for Cognitive Odyssey Orbits</p>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>🐍 PyHunt Observer</h2>
+          <p style={{ opacity: 0.6, fontSize: 13 }}>Master Command Center for PyHunt Logic Orbits</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           {getFrictionStats().map(s => (
@@ -538,7 +538,7 @@ export default function AdminPage() {
 
   const TAB_CONFIG: { id: Tab; label: string; icon: string }[] = [
     {id: "monitor",     label: "Monitor",     icon: "📡"},
-    {id: "odyssey",     label: "Odyssey",     icon: "🌌"},
+    {id: "pyhunt",      label: "PyHunt",      icon: "🐍"},
     {id: "support",     label: "SOS",         icon: "🆘"},
     {id: "leaderboard", label: "Leaderboard", icon: "⚡"},
     {id: "questions",   label: "Questions",   icon: "📋"},
@@ -663,9 +663,9 @@ export default function AdminPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Odyssey Observer Node ── */}
-      {activeTab === "odyssey" && (
-        <OdysseyObserver odysseyData={odysseyData} setOdysseyData={setOdysseyData} />
+      {/* ── PyHunt Observer Node ── */}
+      {activeTab === "pyhunt" && (
+        <PyHuntObserver odysseyData={odysseyData} setOdysseyData={setOdysseyData} />
       )}
       {activeTab === "monitor" && (
         <>
