@@ -166,14 +166,17 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
         <div className={adminStyles.tableWrapper}>
           <table className={styles.table}>
             <thead>
-              <tr style={{ borderBottom: '2px solid rgba(255,255,255,0.1)' }}>
-                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>STUDENT NODE</th>
-                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>BRANCH</th>
-                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>WARNINGS</th>
-                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>CURRENT ORBIT</th>
-                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>ENTROPY (ERRORS)</th>
-                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>LAST SIGNAL</th>
-                <th style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800 }}>INTERVENTION</th>
+              <tr style={{ 
+                borderBottom: '2px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255, 255, 255, 0.05)' // Darker but consistent with shell
+              }}>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>STUDENT NODE</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>BRANCH</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>WARNINGS</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>CURRENT ORBIT</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>ENTROPY (ERRORS)</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>LAST SIGNAL</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>INTERVENTION</th>
               </tr>
             </thead>
             <tbody>
