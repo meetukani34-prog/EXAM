@@ -82,15 +82,21 @@ function getStoredAuth(): boolean {
 }
 
 // ── PyHunt Observer Component ──────────────────────────────────
-function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], setOdysseyData: (d: any[]) => void }) {
+// ── PyHunt Observer Component ──────────────────────────────────
+function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStudent[], fetchStudentsGlobal: () => void }) {
   const [view, setView] = useState<'observer' | 'config'>('observer');
+  const [odysseyData, setOdysseyData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
   const fetchOdyssey = useCallback(async () => {
+    setLoading(true);
     const { data } = await supabase
       .from('odyssey_progress')
-      .select('*, students(name, usn)')
-      .order('current_round', { ascending: false });
+      .select('*')
+      .order('last_ping', { ascending: false });
     setOdysseyData(data || []);
-  }, [setOdysseyData]);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     fetchOdyssey();
@@ -103,6 +109,20 @@ function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], s
     fetchOdyssey();
   };
 
+  // Merge students with their odyssey progress
+  const participants = students.map(s => {
+    const progress = odysseyData.find(p => p.student_id === s.student_id);
+    return {
+      ...s,
+      pyhunt: progress || null
+    };
+  }).sort((a, b) => {
+    // Sort by active hunt first, then by name
+    if (a.pyhunt && !b.pyhunt) return -1;
+    if (!a.pyhunt && b.pyhunt) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
   return (
     <div className={adminStyles.pyhuntShell}>
       <header style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -111,7 +131,7 @@ function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], s
             <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.03em' }}>🐍 PyHunt Observer</h2>
             <div className={adminStyles.statusIndicator} />
           </div>
-          <p style={{ opacity: 0.5, fontSize: 14, margin: 0 }}>Master Command Center for Logic Orbits</p>
+          <p style={{ opacity: 0.5, fontSize: 14, margin: 0 }}>Master Command Center for Logic Orbits ({participants.length} total participants)</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button 
@@ -137,6 +157,8 @@ function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], s
             <thead>
               <tr>
                 <th>Student Node</th>
+                <th>Branch</th>
+                <th>Warnings</th>
                 <th>Current Orbit</th>
                 <th>Entropy (Errors)</th>
                 <th>Last Signal</th>
@@ -144,49 +166,67 @@ function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], s
               </tr>
             </thead>
             <tbody>
-              {(odysseyData || []).map(d => (
-                <tr key={d.id}>
+              {participants.map(p => (
+                <tr key={p.student_id} style={{ opacity: p.pyhunt ? 1 : 0.4 }}>
                   <td>
-                    <div style={{ fontWeight: 800, fontSize: 15, color: '#fff' }}>{d.students?.name}</div>
-                    <div style={{ fontSize: 12, opacity: 0.5, color: '#00f2ff', fontWeight: 600 }}>{d.students?.usn}</div>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: '#fff' }}>{p.name}</div>
+                    <div style={{ fontSize: 12, opacity: 0.5, color: '#00f2ff', fontWeight: 600 }}>{p.usn}</div>
                   </td>
                   <td>
-                    <span style={{ 
-                      padding: '6px 16px', 
-                      borderRadius: 30, 
-                      fontSize: 11, 
-                      fontWeight: 900,
-                      letterSpacing: '0.05em',
-                      background: d.current_round === 5 ? 'rgba(52, 211, 153, 0.15)' : 'rgba(0, 242, 255, 0.1)',
-                      color: d.current_round === 5 ? '#34d399' : '#00f2ff',
-                      border: `1px solid ${d.current_round === 5 ? 'rgba(52, 211, 153, 0.3)' : 'rgba(0, 242, 255, 0.2)'}`
-                    }}>
-                      ORBIT {d.current_round}
-                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>{p.branch}</span>
                   </td>
                   <td>
-                    <span style={{ color: d.error_entropy > 5 ? '#ef4444' : '#fff', fontWeight: 700 }}>
-                      {d.error_entropy} Bits
-                    </span>
+                    <WarningBadge count={p.warnings} />
                   </td>
                   <td>
-                    <div style={{ fontSize: 13, opacity: 0.6 }}>{new Date(d.last_ping).toLocaleTimeString()}</div>
+                    {p.pyhunt ? (
+                      <span style={{ 
+                        padding: '6px 16px', 
+                        borderRadius: 30, 
+                        fontSize: 11, 
+                        fontWeight: 900,
+                        letterSpacing: '0.05em',
+                        background: p.pyhunt.current_round === 5 ? 'rgba(52, 211, 153, 0.15)' : 'rgba(0, 242, 255, 0.1)',
+                        color: p.pyhunt.current_round === 5 ? '#34d399' : '#00f2ff',
+                        border: `1px solid ${p.pyhunt.current_round === 5 ? 'rgba(52, 211, 153, 0.3)' : 'rgba(0, 242, 255, 0.2)'}`
+                      }}>
+                        ORBIT {p.pyhunt.current_round}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 11, opacity: 0.3 }}>NOT STARTED</span>
+                    )}
                   </td>
                   <td>
-                    <button 
-                      className="btn btn-outline" 
-                      style={{ fontSize: 11, padding: '6px 12px', borderRadius: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                      onClick={() => handleForceUnlock(d.student_id, d.current_round + 1)}
-                    >
-                      Levite Next
-                    </button>
+                    {p.pyhunt ? (
+                      <span style={{ color: p.pyhunt.error_entropy > 5 ? '#ef4444' : '#fff', fontWeight: 700 }}>
+                        {p.pyhunt.error_entropy} Bits
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 11, opacity: 0.3 }}>—</span>
+                    )}
+                  </td>
+                  <td>
+                    <div style={{ fontSize: 13, opacity: 0.6 }}>
+                      {p.pyhunt ? new Date(p.pyhunt.last_ping).toLocaleTimeString() : "—"}
+                    </div>
+                  </td>
+                  <td>
+                    {p.pyhunt && (
+                      <button 
+                        className="btn btn-outline" 
+                        style={{ fontSize: 11, padding: '6px 12px', borderRadius: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                        onClick={() => handleForceUnlock(p.student_id, p.pyhunt.current_round + 1)}
+                      >
+                        Levite Next
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {(odysseyData || []).length === 0 && (
-            <div style={{ padding: 100, textAlign: 'center', opacity: 0.3, fontSize: 16 }}>No active student nodes detected in logical orbit.</div>
+          {participants.length === 0 && (
+            <div style={{ padding: 100, textAlign: 'center', opacity: 0.3, fontSize: 16 }}>No registered students detected in database.</div>
           )}
         </div>
       ) : (
@@ -932,7 +972,7 @@ export default function AdminPage() {
 
       {/* ── PyHunt Observer Node ── */}
       {activeTab === "pyhunt" && (
-        <PyHuntObserver odysseyData={odysseyData} setOdysseyData={setOdysseyData} />
+        <PyHuntObserver students={students} fetchStudentsGlobal={fetchStudents} />
       )}
       {activeTab === "monitor" && (
         <>
