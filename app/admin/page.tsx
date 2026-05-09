@@ -802,7 +802,7 @@ export default function AdminPage() {
 
   const visible = students
     .filter((s) => filter === "all" || s.status === filter)
-    .filter((s) => quizFilter === "all" || quizzes.some(q => q.exam_name === quizFilter && q.branch === s.branch))
+    .filter((s) => quizFilter === "all" || s.exam_name === quizFilter)
     .filter((s) => !search.trim() || s.usn.toLowerCase().includes(search.toLowerCase()) || s.name.toLowerCase().includes(search.toLowerCase()));
 
   if (!initialized) {
@@ -1161,8 +1161,11 @@ export default function AdminPage() {
               onChange={(e) => setQuizFilter(e.target.value)}
             >
               <option value="all">All Quizzes</option>
-              {Array.from(new Set(quizzes.filter(q => q.question_count > 0).map(q => q.exam_name))).map(name => (
-                <option key={name} value={name}>{name}</option>
+              {Array.from(new Set([
+                ...quizzes.map(q => q.exam_name),
+                ...students.map(s => s.exam_name).filter(Boolean)
+              ])).sort().map(name => (
+                <option key={name as string} value={name as string}>{name as string}</option>
               ))}
             </select>
 
