@@ -7,14 +7,15 @@ import { supabase } from '@/lib/supabase';
 import styles from './PyHuntView.module.css';
 
 const ROUNDS = [
-  { id: 1, name: "Syntax Rectification", description: "Correct the high-entropy Python snippet to manifest the first key.", target: "syntax" },
-  { id: 2, name: "Structural Alignment", description: "Rearrange the logical blocks to achieve the target state.", target: "structural" },
-  { id: 3, name: "Linguistic Logic", description: "Master the strings. Implement a palindrome verifier.", target: "linguistic" },
-  { id: 4, name: "Algorithmic Velocity", description: "Implement the FizzBuzz pattern (1-100) with maximum precision.", target: "algorithmic" },
-  { id: 5, name: "Visual Manifestation", description: "Use the Turtle Logic to draw the Golden Spiral.", target: "visual" },
+  { id: 1, name: "MCQ", description: "Identify the correct Python syntax and logic from the given options.", target: "syntax" },
+  { id: 2, name: "Code Jumble", description: "Rearrange the logical blocks to achieve the target state.", target: "structural" },
+  { id: 3, name: "Palindrome", description: "Master the strings. Implement a palindrome verifier.", target: "linguistic" },
+  { id: 4, name: "FizzBuzz", description: "Implement the FizzBuzz pattern (1-100) with maximum precision.", target: "algorithmic" },
+  { id: 5, name: "Turtle Art", description: "Use the Turtle Logic to draw specific sacred geometry.", target: "visual" },
 ];
 
 export default function PyHuntView() {
+  const [hasStarted, setHasStarted] = useState(false);
   const [currentRound, setCurrentRound] = useState(1);
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
@@ -80,6 +81,39 @@ export default function PyHuntView() {
   };
 
   if (loading) return <div className={styles.levitate}>Igniting PyHunt Engines...</div>;
+
+  if (!hasStarted) {
+    return (
+      <div className={styles.lobbyContainer}>
+        <div className={styles.lobbyContent}>
+          <div className={styles.lobbyIcon}>
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="var(--nexus-cyan)" strokeWidth="1.5">
+              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM12 20c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z" />
+              <path d="M12 6v6l4 2" />
+              <path d="M7 12h10" />
+            </svg>
+          </div>
+          <h1 className={styles.lobbyTitle}>PyHunt</h1>
+          <p className={styles.lobbySubtitle}>
+            Python Treasure Hunt — Solve 5 rounds of challenges to find hidden clues across campus!
+          </p>
+          
+          <div className={styles.roundList}>
+            {ROUNDS.map(r => (
+              <div key={r.id} className={styles.roundListItem}>
+                <div className={styles.roundBadge}>{r.id}</div>
+                <div className={styles.roundText}>Round {r.id}: {r.name}</div>
+              </div>
+            ))}
+          </div>
+
+          <button className={styles.startBtn} onClick={() => setHasStarted(true)}>
+            🚀 Start PyHunt
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.pyhuntShell}>
