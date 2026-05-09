@@ -104,22 +104,27 @@ function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], s
   };
 
   return (
-    <div style={{ padding: 24, background: '#020617', borderRadius: 24, border: '1px solid rgba(0, 242, 255, 0.1)', color: '#fff', minHeight: '80vh' }}>
-      <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+    <div className={adminStyles.pyhuntShell}>
+      <header style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>🐍 PyHunt Observer</h2>
-          <p style={{ opacity: 0.6, fontSize: 13 }}>Master Command Center for PyHunt Logic Orbits</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.03em' }}>🐍 PyHunt Observer</h2>
+            <div className={adminStyles.statusIndicator} />
+          </div>
+          <p style={{ opacity: 0.5, fontSize: 14, margin: 0 }}>Master Command Center for Logic Orbits</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button 
             className={`btn ${view === 'observer' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setView('observer')}
+            style={{ borderRadius: 12, padding: '10px 24px', fontWeight: 700 }}
           >
             📡 Observer
           </button>
           <button 
             className={`btn ${view === 'config' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setView('config')}
+            style={{ borderRadius: 12, padding: '10px 24px', fontWeight: 700 }}
           >
             ⚙️ Configuration
           </button>
@@ -142,35 +147,38 @@ function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], s
               {(odysseyData || []).map(d => (
                 <tr key={d.id}>
                   <td>
-                    <div style={{ fontWeight: 700 }}>{d.students?.name}</div>
-                    <div style={{ fontSize: 11, opacity: 0.6 }}>{d.students?.usn}</div>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: '#fff' }}>{d.students?.name}</div>
+                    <div style={{ fontSize: 12, opacity: 0.5, color: '#00f2ff', fontWeight: 600 }}>{d.students?.usn}</div>
                   </td>
                   <td>
                     <span style={{ 
-                      padding: '4px 12px', 
-                      borderRadius: 20, 
-                      fontSize: 12, 
-                      fontWeight: 800,
-                      background: d.current_round === 5 ? 'rgba(52, 211, 153, 0.1)' : 'rgba(255,255,255,0.05)',
-                      color: d.current_round === 5 ? '#34d399' : '#fff',
-                      border: `1px solid ${d.current_round === 5 ? 'rgba(52, 211, 153, 0.2)' : 'rgba(255,255,255,0.1)'}`
+                      padding: '6px 16px', 
+                      borderRadius: 30, 
+                      fontSize: 11, 
+                      fontWeight: 900,
+                      letterSpacing: '0.05em',
+                      background: d.current_round === 5 ? 'rgba(52, 211, 153, 0.15)' : 'rgba(0, 242, 255, 0.1)',
+                      color: d.current_round === 5 ? '#34d399' : '#00f2ff',
+                      border: `1px solid ${d.current_round === 5 ? 'rgba(52, 211, 153, 0.3)' : 'rgba(0, 242, 255, 0.2)'}`
                     }}>
-                      Orbit {d.current_round}
+                      ORBIT {d.current_round}
                     </span>
                   </td>
                   <td>
-                    <span style={{ color: d.error_entropy > 5 ? '#ef4444' : 'inherit' }}>
+                    <span style={{ color: d.error_entropy > 5 ? '#ef4444' : '#fff', fontWeight: 700 }}>
                       {d.error_entropy} Bits
                     </span>
                   </td>
-                  <td>{new Date(d.last_ping).toLocaleTimeString()}</td>
+                  <td>
+                    <div style={{ fontSize: 13, opacity: 0.6 }}>{new Date(d.last_ping).toLocaleTimeString()}</div>
+                  </td>
                   <td>
                     <button 
                       className="btn btn-outline" 
-                      style={{ fontSize: 11, padding: '4px 10px' }}
+                      style={{ fontSize: 11, padding: '6px 12px', borderRadius: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}
                       onClick={() => handleForceUnlock(d.student_id, d.current_round + 1)}
                     >
-                      LEVITE NEXT
+                      Levite Next
                     </button>
                   </td>
                 </tr>
@@ -178,7 +186,7 @@ function PyHuntObserver({ odysseyData, setOdysseyData }: { odysseyData: any[], s
             </tbody>
           </table>
           {(odysseyData || []).length === 0 && (
-            <div style={{ padding: 60, textAlign: 'center', opacity: 0.4 }}>No student nodes currently in orbit.</div>
+            <div style={{ padding: 100, textAlign: 'center', opacity: 0.3, fontSize: 16 }}>No active student nodes detected in logical orbit.</div>
           )}
         </div>
       ) : (
@@ -215,66 +223,70 @@ function PyHuntConfig() {
 
   return (
     <div>
-       <div style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>⚙️ PyHunt Configuration</h2>
-          <p style={{ opacity: 0.6, fontSize: 13 }}>Configure clues, unlock codes, and logic parameters for the mission.</p>
+       <div style={{ marginBottom: 32 }}>
+          <h3 style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginBottom: 8 }}>⚙️ Mission Parameters</h3>
+          <p style={{ opacity: 0.5, fontSize: 14 }}>Configure clues and logic gates for active hunting nodes.</p>
        </div>
 
-       <div className={styles.configTabs}>
-          {["clues", "mcq", "jumble", "r3", "r4"].map(t => (
+       <div className={adminStyles.configTabs}>
+          {[
+            { id: "clues", label: "🔑 Clues & Codes" },
+            { id: "mcq", label: "📄 MCQ Logic" },
+            { id: "jumble", label: "🧩 Code Jumble" },
+            { id: "r3", label: "🐍 Orbit 3" },
+            { id: "r4", label: "📊 Orbit 4" },
+          ].map(t => (
             <button 
-              key={t}
-              className={`${styles.configTab} ${activeTab === t ? styles.configTabActive : ""}`}
-              onClick={() => setActiveTab(t)}
+              key={t.id}
+              className={`${adminStyles.configTab} ${activeTab === t.id ? adminStyles.configTabActive : ""}`}
+              onClick={() => setActiveTab(t.id)}
             >
-              {t === "clues" && "🔑 Clues & Codes"}
-              {t === "mcq" && "📄 MCQ Questions"}
-              {t === "jumble" && "🧩 Code Jumble"}
-              {t === "r3" && "🐍 Round 3 Code"}
-              {t === "r4" && "📊 Round 4 Code"}
+              {t.label}
             </button>
           ))}
        </div>
 
-       <div className={styles.configContent}>
+       <div className={adminStyles.configContent}>
           {activeTab === "clues" && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {configs.map((c: any) => (
-                <div key={c.round} className={styles.configCard}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                      <h4 style={{ margin: 0, color: '#00f2ff' }}>After Round {c.round} ({c.name})</h4>
-                      <div className={styles.codeBadge}>🔒 CODE: {c.code || "PENDING"}</div>
+                <div key={c.round} className={adminStyles.configCard}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                      <h4 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 800 }}>Phase {c.round}: {c.name}</h4>
+                      <div className={adminStyles.codeBadge}>🔒 GATE KEY: {c.code || "PENDING"}</div>
                    </div>
                    
-                   <div className={styles.inputGroup}>
-                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, opacity: 0.4, marginBottom: 8, textTransform: 'uppercase' }}>CLUE TEXT (SHOWN TO STUDENT AFTER ROUND)</label>
+                   <div className={adminStyles.inputGroup}>
+                      <label className={adminStyles.inputLabel}>TRANSMISSION HINT (VISIBLE AFTER ROUND)</label>
                       <textarea 
-                        style={{ width: '100%', padding: 16, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 14, minHeight: 80, resize: 'none' }}
+                        className={adminStyles.configTextarea}
                         value={c.clue}
                         onChange={(e) => updateConfig(c.round, 'clue', e.target.value)}
-                        placeholder="Enter location hint..."
+                        placeholder="Manifest location hint here..."
                       />
                    </div>
 
-                   <div style={{ marginTop: 16 }}>
-                      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, opacity: 0.4, marginBottom: 8, textTransform: 'uppercase' }}>UNLOCK CODE (STUDENT MUST TYPE THIS TO PROCEED)</label>
+                   <div className={adminStyles.inputGroup}>
+                      <label className={adminStyles.inputLabel}>ORBITAL UNLOCK CODE</label>
                       <input 
                         type="text"
-                        style={{ width: '100%', padding: 12, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 14 }}
+                        className={adminStyles.configInput}
                         value={c.code}
                         onChange={(e) => updateConfig(c.round, 'code', e.target.value)}
-                        placeholder="e.g. LIBRARY42"
+                        placeholder="e.g. ALPHA_NINER"
                       />
                    </div>
-                   <p style={{ fontSize: 11, opacity: 0.5, margin: '8px 0 0' }}>💡 Tip: Use a short memorable word. Students enter it case-insensitively.</p>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.4 }}>
+                      <span style={{ fontSize: 12 }}>💡 Recommendation: Use unique identifiers for each geographic node.</span>
+                   </div>
                 </div>
               ))}
             </div>
           )}
           {activeTab !== "clues" && (
-             <div style={{ padding: 60, textAlign: 'center', opacity: 0.5 }}>
-                <h3 style={{ fontSize: 24, fontWeight: 800 }}>Coming Soon</h3>
-                <p>Specific parameter configuration for this round is being calibrated.</p>
+             <div style={{ padding: 100, textAlign: 'center', opacity: 0.3 }}>
+                <h3 style={{ fontSize: 24, fontWeight: 900 }}>Module Calibrating</h3>
+                <p>Specific parameter configuration for this logic orbit is being integrated.</p>
              </div>
           )}
        </div>
