@@ -508,6 +508,49 @@
   .userPanel { padding: 6px 12px; gap: 10px; }
   .userAvatar { width: 32px; height: 32px; }
   .notificationBell { width: 36px; height: 36px; }
+
+  .profileHeaderCard {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    padding: 24px;
+  }
+
+  .profileHeaderCard > div:first-child {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .profileHeaderCard div div:first-child {
+    word-break: break-word;
+    font-size: 20px !important;
+  }
+
+  .profileHeaderCard div div:last-child {
+    justify-content: center;
+    font-size: 12px !important;
+    word-break: break-all;
+  }
+
+  .editBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .profileInfoCard {
+    padding: 24px;
+  }
+
+  .profileGrid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .profileFieldValue {
+    word-break: break-all;
+  }
 }
 
 @media (max-width: 480px) {
@@ -693,6 +736,16 @@
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+}
+
+.profileContainer {
+  padding: 32px;
+}
+
+@media (max-width: 768px) {
+  .profileContainer {
+    padding: 16px;
+  }
 }
 
 .insightsGrid {

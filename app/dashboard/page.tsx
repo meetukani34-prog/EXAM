@@ -578,7 +578,7 @@ function ProfileTab({ student }: { student: StudentInfo }) {
     };
 
   return (
-    <div style={{ padding: '32px' }}>
+    <div className={styles.profileContainer}>
       <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Profile</h1>
       <p style={{ opacity: 0.6, fontSize: 14, marginBottom: 32, color: 'rgba(255,255,255,0.7)' }}>View your candidate information</p>
 
