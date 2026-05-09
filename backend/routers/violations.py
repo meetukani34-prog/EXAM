@@ -21,9 +21,15 @@ VALID_VIOLATION_TYPES = {
     "multiple_faces",
 }
 AUTO_SUBMIT_THRESHOLD = 3
-WARNING_1 = "⚠️ Stay focused on the exam."
-WARNING_2 = "⚠️ Your exam will be auto-submitted on the next violation."
+# Standard Messages
+WARNING_1 = "⚠️ Warning 1: Please return to the exam and stay focused."
+WARNING_2 = "🚨 Final warning! One more violation and your exam will be auto-submitted."
 WARNING_3 = "⚠️ 3rd violation detected. Your exam has been auto-submitted."
+
+# PyHunt Specific (Immersive Theme)
+WARNING_1_PYHUNT = "🧬 LOGIC DESYNC: Warning 1. Maintain crystalline focus on the nodes."
+WARNING_2_PYHUNT = "☣️ CRITICAL INSTABILITY: Warning 2. One more desync will terminate the mission."
+WARNING_3_PYHUNT = "💀 SESSION DEAUTHORIZED: 3rd violation. Logic engine has been auto-submitted."
 
 @router.post("/report-violation", response_model=ReportViolationResponse)
 async def report_violation(
@@ -83,12 +89,13 @@ async def report_violation(
             print(f"[VIOLATION] DB update failed: {e}")
 
         # 4. Response
+        is_pyhunt = exam_title.lower() == "pyhunt"
         if auto_submitted:
-            message = WARNING_3
+            message = WARNING_3_PYHUNT if is_pyhunt else WARNING_3
         elif new_warnings == 2:
-            message = WARNING_2
+            message = WARNING_2_PYHUNT if is_pyhunt else WARNING_2
         else:
-            message = WARNING_1
+            message = WARNING_1_PYHUNT if is_pyhunt else WARNING_1
 
         return ReportViolationResponse(
             warning_count=new_warnings,
