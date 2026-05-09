@@ -145,14 +145,14 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
           </p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button 
+          <button
             className={`btn ${view === 'observer' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setView('observer')}
             style={{ borderRadius: 12, padding: '10px 24px', fontWeight: 700 }}
           >
             📡 Observer
           </button>
-          <button 
+          <button
             className={`btn ${view === 'config' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setView('config')}
             style={{ borderRadius: 12, padding: '10px 24px', fontWeight: 700 }}
@@ -166,22 +166,22 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
         <div className={adminStyles.tableWrapper}>
           <table className={styles.table}>
             <thead>
-              <tr style={{ 
+              <tr style={{
                 borderBottom: '2px solid rgba(255,255,255,0.1)',
                 background: 'rgba(255, 255, 255, 0.05)' // Darker but consistent with shell
               }}>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>STUDENT NODE</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>BRANCH</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>WARNINGS</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>CURRENT ORBIT</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>ENTROPY (ERRORS)</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>LAST SIGNAL</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>INTERVENTION</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>STUDENT NODE</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>BRANCH</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>WARNINGS</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>CURRENT ORBIT</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>ENTROPY (ERRORS)</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>LAST SIGNAL</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>INTERVENTION</th>
               </tr>
             </thead>
             <tbody>
               {participants.map(p => (
-                <tr key={p.student_id} style={{ 
+                <tr key={p.student_id} style={{
                   background: p.pyhunt ? 'rgba(0, 242, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)',
                   borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
                   transition: 'all 0.3s ease'
@@ -198,10 +198,10 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                   </td>
                   <td>
                     {p.pyhunt ? (
-                      <span style={{ 
-                        padding: '6px 16px', 
-                        borderRadius: 30, 
-                        fontSize: 11, 
+                      <span style={{
+                        padding: '6px 16px',
+                        borderRadius: 30,
+                        fontSize: 11,
                         fontWeight: 900,
                         letterSpacing: '0.05em',
                         background: p.pyhunt.current_round === 5 ? 'rgba(52, 211, 153, 0.15)' : 'rgba(0, 242, 255, 0.1)',
@@ -230,8 +230,8 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                   </td>
                   <td>
                     {p.pyhunt && (
-                      <button 
-                        className="btn btn-outline" 
+                      <button
+                        className="btn btn-outline"
                         style={{ fontSize: 11, padding: '6px 12px', borderRadius: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}
                         onClick={() => handleForceUnlock(p.student_id, p.pyhunt.current_round + 1)}
                       >
@@ -336,173 +336,173 @@ function PyHuntConfig() {
 
   return (
     <div>
-       <div style={{ marginBottom: 32 }}>
-          <h3 style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginBottom: 8 }}>⚙️ Mission Parameters</h3>
-          <p style={{ opacity: 0.5, fontSize: 14 }}>Configure clues and logic gates for active hunting nodes.</p>
-       </div>
+      <div style={{ marginBottom: 32 }}>
+        <h3 style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginBottom: 8 }}>⚙️ Mission Parameters</h3>
+        <p style={{ opacity: 0.5, fontSize: 14 }}>Configure clues and logic gates for active hunting nodes.</p>
+      </div>
 
-       <div className={adminStyles.configTabs}>
-          {[
-            { id: "clues", label: "🔑 Clues & Codes" },
-            { id: "mcq", label: "📄 MCQ Logic" },
-            { id: "jumble", label: "🧩 Code Jumble" },
-            { id: "r3", label: "🐍 Orbit 3" },
-            { id: "r4", label: "📊 Orbit 4" },
-          ].map(t => (
-            <button 
-              key={t.id}
-              className={`${adminStyles.configTab} ${activeTab === t.id ? adminStyles.configTabActive : ""}`}
-              onClick={() => setActiveTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-       </div>
+      <div className={adminStyles.configTabs}>
+        {[
+          { id: "clues", label: "🔑 Clues & Codes" },
+          { id: "mcq", label: "📄 MCQ Logic" },
+          { id: "jumble", label: "🧩 Code Jumble" },
+          { id: "r3", label: "🐍 Orbit 3" },
+          { id: "r4", label: "📊 Orbit 4" },
+        ].map(t => (
+          <button
+            key={t.id}
+            className={`${adminStyles.configTab} ${activeTab === t.id ? adminStyles.configTabActive : ""}`}
+            onClick={() => setActiveTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-       <div className={adminStyles.configContent}>
-          {activeTab === "clues" && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {/* ── Global Mission Parameters ── */}
-              <div className={adminStyles.configCard} style={{ border: '1px solid rgba(139, 92, 246, 0.4)', background: 'rgba(139, 92, 246, 0.05)' }}>
-                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                    <h4 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 800 }}>🔓 Mission Authorization</h4>
-                    <div className={adminStyles.codeBadge} style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' }}>GLOBAL CONTROL</div>
-                 </div>
-                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                    <div className={adminStyles.inputGroup}>
-                       <label className={adminStyles.inputLabel}>MISSION START CODE</label>
-                       <input 
-                         type="text"
-                         className={adminStyles.configInput}
-                         value={globalAuth.startCode}
-                         onChange={(e) => saveGlobalAuth({ ...globalAuth, startCode: e.target.value.toUpperCase() })}
-                         placeholder="e.g. PYHUNT_2024"
-                       />
-                    </div>
-                    <div className={adminStyles.inputGroup}>
-                       <label className={adminStyles.inputLabel}>AUTHORIZED USN(S) (COMMA SEPARATED, OPTIONAL)</label>
-                       <input 
-                         type="text"
-                         className={adminStyles.configInput}
-                         value={globalAuth.authorizedUsns}
-                         onChange={(e) => saveGlobalAuth({ ...globalAuth, authorizedUsns: e.target.value })}
-                         placeholder="e.g. 1RV21CS001, 1RV21CS002"
-                       />
-                    </div>
-                 </div>
+      <div className={adminStyles.configContent}>
+        {activeTab === "clues" && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {/* ── Global Mission Parameters ── */}
+            <div className={adminStyles.configCard} style={{ border: '1px solid rgba(139, 92, 246, 0.4)', background: 'rgba(139, 92, 246, 0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h4 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 800 }}>🔓 Mission Authorization</h4>
+                <div className={adminStyles.codeBadge} style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' }}>GLOBAL CONTROL</div>
               </div>
-              {configs.map((c: any) => (
-                <div key={c.round} className={adminStyles.configCard}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                      <h4 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 800 }}>Phase {c.round}: {c.name}</h4>
-                      <div className={adminStyles.codeBadge}>🔒 GATE KEY: {c.code || "PENDING"}</div>
-                   </div>
-                   
-                   <div className={adminStyles.inputGroup}>
-                      <label className={adminStyles.inputLabel}>TRANSMISSION HINT (VISIBLE AFTER ROUND)</label>
-                      <textarea 
-                        className={adminStyles.configTextarea}
-                        value={c.clue}
-                        onChange={(e) => updateConfig(c.round, 'clue', e.target.value)}
-                        placeholder="Manifest location hint here..."
-                      />
-                   </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>MISSION START CODE</label>
+                  <input
+                    type="text"
+                    className={adminStyles.configInput}
+                    value={globalAuth.startCode}
+                    onChange={(e) => saveGlobalAuth({ ...globalAuth, startCode: e.target.value.toUpperCase() })}
+                    placeholder="e.g. PYHUNT_2024"
+                  />
+                </div>
+                <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>AUTHORIZED USN(S) (COMMA SEPARATED, OPTIONAL)</label>
+                  <input
+                    type="text"
+                    className={adminStyles.configInput}
+                    value={globalAuth.authorizedUsns}
+                    onChange={(e) => saveGlobalAuth({ ...globalAuth, authorizedUsns: e.target.value })}
+                    placeholder="e.g. 1RV21CS001, 1RV21CS002"
+                  />
+                </div>
+              </div>
+            </div>
+            {configs.map((c: any) => (
+              <div key={c.round} className={adminStyles.configCard}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                  <h4 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 800 }}>Phase {c.round}: {c.name}</h4>
+                  <div className={adminStyles.codeBadge}>🔒 GATE KEY: {c.code || "PENDING"}</div>
+                </div>
 
-                   <div className={adminStyles.inputGroup}>
-                      <label className={adminStyles.inputLabel}>ORBITAL UNLOCK CODE</label>
-                      <input 
-                        type="text"
+                <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>TRANSMISSION HINT (VISIBLE AFTER ROUND)</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={c.clue}
+                    onChange={(e) => updateConfig(c.round, 'clue', e.target.value)}
+                    placeholder="Manifest location hint here..."
+                  />
+                </div>
+
+                <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>ORBITAL UNLOCK CODE</label>
+                  <input
+                    type="text"
+                    className={adminStyles.configInput}
+                    value={c.code}
+                    onChange={(e) => updateConfig(c.round, 'code', e.target.value)}
+                    placeholder="e.g. ALPHA_NINER"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "mcq" && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ color: '#fff', margin: 0 }}>Active MCQ Set (Round 1)</h4>
+              <button className="btn btn-primary" onClick={addMcq} style={{ fontSize: 12, padding: '8px 16px' }}>+ Add Question</button>
+            </div>
+            {mcqs.map((q: any, idx: number) => (
+              <div key={q.id} className={adminStyles.configCard}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <span className={adminStyles.codeBadge}>QUESTION {idx + 1}</span>
+                  <button onClick={() => removeMcq(q.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
+                </div>
+                <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>QUESTION TEXT</label>
+                  <input
+                    className={adminStyles.configInput}
+                    value={q.question}
+                    onChange={(e) => updateMcq(q.id, 'question', e.target.value)}
+                    placeholder="Enter the python question..."
+                  />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  {q.options.map((opt: string, optIdx: number) => (
+                    <div key={optIdx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input
+                        type="radio"
+                        name={`ans-${q.id}`}
+                        checked={q.answer === optIdx}
+                        onChange={() => updateMcq(q.id, 'answer', optIdx)}
+                      />
+                      <input
                         className={adminStyles.configInput}
-                        value={c.code}
-                        onChange={(e) => updateConfig(c.round, 'code', e.target.value)}
-                        placeholder="e.g. ALPHA_NINER"
-                      />
-                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === "mcq" && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4 style={{ color: '#fff', margin: 0 }}>Active MCQ Set (Round 1)</h4>
-                <button className="btn btn-primary" onClick={addMcq} style={{ fontSize: 12, padding: '8px 16px' }}>+ Add Question</button>
-              </div>
-              {mcqs.map((q: any, idx: number) => (
-                <div key={q.id} className={adminStyles.configCard}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                    <span className={adminStyles.codeBadge}>QUESTION {idx + 1}</span>
-                    <button onClick={() => removeMcq(q.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
-                  </div>
-                  <div className={adminStyles.inputGroup}>
-                    <label className={adminStyles.inputLabel}>QUESTION TEXT</label>
-                    <input 
-                      className={adminStyles.configInput}
-                      value={q.question}
-                      onChange={(e) => updateMcq(q.id, 'question', e.target.value)}
-                      placeholder="Enter the python question..."
-                    />
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    {q.options.map((opt: string, optIdx: number) => (
-                      <div key={optIdx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input 
-                          type="radio" 
-                          name={`ans-${q.id}`} 
-                          checked={q.answer === optIdx} 
-                          onChange={() => updateMcq(q.id, 'answer', optIdx)}
-                        />
-                        <input 
-                          className={adminStyles.configInput}
-                          value={opt}
-                          onChange={(e) => {
-                            const newOpts = [...q.options];
-                            newOpts[optIdx] = e.target.value;
-                            updateMcq(q.id, 'options', newOpts);
-                          }}
-                          placeholder={`Option ${optIdx + 1}`}
-                          style={{ padding: '8px 12px', fontSize: 13 }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === "jumble" && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <h4 style={{ color: '#fff', margin: 0 }}>Code Jumble Parameters (Round 2)</h4>
-              {jumbles.map((j: any) => (
-                <div key={j.id} className={adminStyles.configCard}>
-                   <div className={adminStyles.inputGroup}>
-                      <label className={adminStyles.inputLabel}>TARGET CODE STRUCTURE (USE NEWLINES)</label>
-                      <textarea 
-                        className={adminStyles.configTextarea}
-                        value={j.target}
+                        value={opt}
                         onChange={(e) => {
-                           const val = e.target.value;
-                           saveJumbles(jumbles.map((item: any) => item.id === j.id ? { ...item, target: val, blocks: val.split('\n').filter((l: string) => l.trim()) } : item));
+                          const newOpts = [...q.options];
+                          newOpts[optIdx] = e.target.value;
+                          updateMcq(q.id, 'options', newOpts);
                         }}
-                        placeholder="def hello():\n  print('world')"
-                        style={{ height: 200 }}
+                        placeholder={`Option ${optIdx + 1}`}
+                        style={{ padding: '8px 12px', fontSize: 13 }}
                       />
-                      <p style={{ fontSize: 11, opacity: 0.5, marginTop: 8 }}>The system will automatically split this into blocks for the student to rearrange.</p>
-                   </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
+        )}
 
-          {["r3", "r4"].includes(activeTab) && (
-             <div style={{ padding: 100, textAlign: 'center', opacity: 0.3 }}>
-                <h3 style={{ fontSize: 24, fontWeight: 900 }}>Module Calibrating</h3>
-                <p>Specific parameter configuration for this logic orbit is being integrated.</p>
-             </div>
-          )}
-       </div>
+        {activeTab === "jumble" && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <h4 style={{ color: '#fff', margin: 0 }}>Code Jumble Parameters (Round 2)</h4>
+            {jumbles.map((j: any) => (
+              <div key={j.id} className={adminStyles.configCard}>
+                <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>TARGET CODE STRUCTURE (USE NEWLINES)</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={j.target}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      saveJumbles(jumbles.map((item: any) => item.id === j.id ? { ...item, target: val, blocks: val.split('\n').filter((l: string) => l.trim()) } : item));
+                    }}
+                    placeholder="def hello():\n  print('world')"
+                    style={{ height: 200 }}
+                  />
+                  <p style={{ fontSize: 11, opacity: 0.5, marginTop: 8 }}>The system will automatically split this into blocks for the student to rearrange.</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {["r3", "r4"].includes(activeTab) && (
+          <div style={{ padding: 100, textAlign: 'center', opacity: 0.3 }}>
+            <h3 style={{ fontSize: 24, fontWeight: 900 }}>Module Calibrating</h3>
+            <p>Specific parameter configuration for this logic orbit is being integrated.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -617,8 +617,8 @@ function ExportButton({ quizzes }: { quizzes: BranchExamSummary[] }) {
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", padding: "4px 8px 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Select Quiz to Download
             </div>
-            <button 
-              className={styles.menuItem} 
+            <button
+              className={styles.menuItem}
               onClick={() => doExport("all")}
               style={{ width: "100%", textAlign: "left", padding: "8px 12px", borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", gap: 8, alignItems: "center" }}
             >
@@ -630,7 +630,7 @@ function ExportButton({ quizzes }: { quizzes: BranchExamSummary[] }) {
               {quizNames.length === 0 ? (
                 <div style={{ padding: "12px", textAlign: "center", fontSize: 12, color: "var(--text-muted)" }}>No quizzes discovered</div>
               ) : quizNames.map(name => (
-                <button 
+                <button
                   key={name}
                   className={styles.menuItem}
                   onClick={() => doExport(name)}
@@ -677,7 +677,7 @@ export default function AdminPage() {
     try {
       if (authed) localStorage.setItem(ADMIN_AUTH_KEY, "true");
       else localStorage.removeItem(ADMIN_AUTH_KEY);
-    } catch {}
+    } catch { }
   }, [authed, initialized]);
 
   const handleAuth = (e: React.FormEvent) => {
@@ -704,12 +704,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!authed) return;
-    
+
     // 1. Fetch Students and Quizzes (Discovery)
     const syncEverything = async () => {
       try {
         fetchStudents();
-        
+
         const [qs, configs] = await Promise.all([
           fetchAdminQuestions(),
           fetchAllExamConfigs()
@@ -723,9 +723,9 @@ export default function AdminPage() {
           const key = `${q.branch}-${q.exam_name}`;
           if (!seen.has(key)) {
             const config = configs.find(c => c.exam_title === q.exam_name);
-            list.push({ 
-              branch: q.branch, 
-              exam_name: q.exam_name, 
+            list.push({
+              branch: q.branch,
+              exam_name: q.exam_name,
               question_count: qs.filter(x => x.branch === q.branch && x.exam_name === q.exam_name).length,
               is_active: config ? config.is_active : true
             } as any);
@@ -736,11 +736,11 @@ export default function AdminPage() {
         // 2. Add configs that might not have questions yet
         configs.forEach((c: any) => {
           if (!list.find(x => x.exam_name === (c.exam_title || c.exam_name))) {
-            list.push({ 
-              branch: "CS", 
-              exam_name: c.exam_title || c.exam_name, 
+            list.push({
+              branch: "CS",
+              exam_name: c.exam_title || c.exam_name,
               question_count: 0,
-              is_active: c.is_active 
+              is_active: c.is_active
             } as any);
           }
         });
@@ -761,9 +761,9 @@ export default function AdminPage() {
 
     const statusInterval = setInterval(fetchStudents, 5000);
     const discoveryInterval = setInterval(syncEverything, 30000);
-    
-    return () => { 
-      supabase.removeChannel(channel); 
+
+    return () => {
+      supabase.removeChannel(channel);
       clearInterval(statusInterval);
       clearInterval(discoveryInterval);
     };
@@ -793,12 +793,12 @@ export default function AdminPage() {
     }
   };
 
-  const total     = students.length;
-  const active    = students.filter((s) => s.status === "active" && !isStale(s.last_active)).length;
-  const idle      = students.filter((s) => s.status === "active" && isStale(s.last_active)).length;
+  const total = students.length;
+  const active = students.filter((s) => s.status === "active" && !isStale(s.last_active)).length;
+  const idle = students.filter((s) => s.status === "active" && isStale(s.last_active)).length;
   const submitted = students.filter((s) => s.status === "submitted").length;
   const notStarted = students.filter((s) => s.status === "not_started").length;
-  const flagged   = students.filter((s) => s.warnings >= 2).length;
+  const flagged = students.filter((s) => s.warnings >= 2).length;
 
   const visible = students
     .filter((s) => filter === "all" || s.status === filter)
@@ -845,10 +845,10 @@ export default function AdminPage() {
               value={pass}
               onChange={(e) => setPass(e.target.value)}
               autoFocus
-              style={{ 
-                background: "rgba(255,255,255,0.08) !important", 
-                border: "1px solid rgba(255,255,255,0.15)", 
-                color: "#ffffff !important" 
+              style={{
+                background: "rgba(255,255,255,0.08) !important",
+                border: "1px solid rgba(255,255,255,0.15)",
+                color: "#ffffff !important"
               }}
             />
             {passError && <p className="text-danger" style={{ fontSize: 13 }}>{passError}</p>}
@@ -862,14 +862,14 @@ export default function AdminPage() {
   }
 
   const TAB_CONFIG: { id: Tab; label: string; icon: string }[] = [
-    {id: "monitor",     label: "Monitor",     icon: "📡"},
-    {id: "pyhunt",      label: "PyHunt",      icon: "🐍"},
-    {id: "support",     label: "SOS",         icon: "🆘"},
-    {id: "leaderboard", label: "Leaderboard", icon: "⚡"},
-    {id: "questions",   label: "Questions",   icon: "📋"},
-    {id: "students",    label: "Students",    icon: "👥"},
-    {id: "ingest",      label: "Harvester",   icon: "🌌"},
-    {id: "control",     label: "Control",     icon: "🛸"},
+    { id: "monitor", label: "Monitor", icon: "📡" },
+    { id: "pyhunt", label: "PyHunt", icon: "🐍" },
+    { id: "support", label: "SOS", icon: "🆘" },
+    { id: "leaderboard", label: "Leaderboard", icon: "⚡" },
+    { id: "questions", label: "Questions", icon: "📋" },
+    { id: "students", label: "Students", icon: "👥" },
+    { id: "ingest", label: "Harvester", icon: "🌌" },
+    { id: "control", label: "Control", icon: "🛸" },
   ];
 
   return (
@@ -877,8 +877,8 @@ export default function AdminPage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <button 
-            className={styles.menuToggle} 
+          <button
+            className={styles.menuToggle}
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           >
             {isSidebarOpen ? (
@@ -935,14 +935,14 @@ export default function AdminPage() {
       <AnimatePresence>
         {isSidebarOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className={styles.sidebarOverlay}
               onClick={() => setIsSidebarOpen(false)}
             />
-            <motion.aside 
+            <motion.aside
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
@@ -1080,13 +1080,13 @@ export default function AdminPage() {
 
           {/* ── Live Quiz Channels (Global Status) ── */}
           <div style={{ padding: "20px 24px 0" }}>
-            <div style={{ 
-              background: "var(--bg-card)", 
-              border: "1px solid var(--border)", 
-              borderRadius: 16, 
-              padding: "20px", 
-              display: "flex", 
-              flexWrap: "wrap", 
+            <div style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: 16,
+              padding: "20px",
+              display: "flex",
+              flexWrap: "wrap",
               gap: 12,
               boxShadow: "var(--shadow-card)"
             }}>
@@ -1102,22 +1102,22 @@ export default function AdminPage() {
                 const q = quizzes.find(x => x.exam_name === name);
                 const isActive = (q as any)?.is_active;
                 return (
-                  <div key={name} style={{ 
-                    background: "rgba(255,255,255,0.02)", 
-                    border: `1px solid ${isActive ? "rgba(52,211,153,0.15)" : "rgba(239,68,68,0.15)"}`, 
-                    borderRadius: 12, 
-                    padding: "10px 16px", 
-                    display: "flex", 
-                    alignItems: "center", 
+                  <div key={name} style={{
+                    background: "rgba(255,255,255,0.02)",
+                    border: `1px solid ${isActive ? "rgba(52,211,153,0.15)" : "rgba(239,68,68,0.15)"}`,
+                    borderRadius: 12,
+                    padding: "10px 16px",
+                    display: "flex",
+                    alignItems: "center",
                     gap: 12,
                     transition: "all 0.3s ease"
                   }}>
-                    <div style={{ 
-                      width: 8, 
-                      height: 8, 
-                      borderRadius: "50%", 
-                      background: isActive ? "#34d399" : "#ef4444", 
-                      boxShadow: isActive ? "0 0 10px rgba(52,211,153,0.5)" : "none" 
+                    <div style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: isActive ? "#34d399" : "#ef4444",
+                      boxShadow: isActive ? "0 0 10px rgba(52,211,153,0.5)" : "none"
                     }} />
                     <div style={{ display: "flex", flexDirection: "column" }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: isActive ? "var(--text-primary)" : "var(--text-muted)" }}>
@@ -1125,9 +1125,9 @@ export default function AdminPage() {
                       </span>
                       <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 2 }}>
                         <span style={{ fontSize: 10, opacity: 0.6 }}>{q?.question_count || 0} Questions</span>
-                        <span style={{ 
-                          fontSize: 10, 
-                          color: isActive ? "#34d399" : "#ef4444", 
+                        <span style={{
+                          fontSize: 10,
+                          color: isActive ? "#34d399" : "#ef4444",
                           fontWeight: 800,
                           letterSpacing: "0.02em"
                         }}>
@@ -1153,9 +1153,9 @@ export default function AdminPage() {
           <div className={styles.controls}>
             <input type="text" className={adminStyles.input} placeholder="Search by name or USN…" value={search}
               onChange={(e) => setSearch(e.target.value)} style={{ maxWidth: 300 }} />
-            
-            <select 
-              className={adminStyles.input} 
+
+            <select
+              className={adminStyles.input}
               style={{ maxWidth: 200, padding: "8px 12px", cursor: "pointer" }}
               value={quizFilter}
               onChange={(e) => setQuizFilter(e.target.value)}
@@ -1206,10 +1206,10 @@ export default function AdminPage() {
                       <td><span className="mono" style={{ fontSize: 13 }}>{s.usn}</span></td>
                       <td>{s.name}</td>
                       <td>
-                        <span style={{ 
-                          fontSize: 10, 
-                          fontWeight: 800, 
-                          padding: '2px 8px', 
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          padding: '2px 8px',
                           borderRadius: 6,
                           background: s.exam_name === "PyHunt" ? "rgba(0, 242, 255, 0.1)" : "rgba(139, 92, 246, 0.1)",
                           color: s.exam_name === "PyHunt" ? "#00f2ff" : "#a78bfa",
@@ -1250,11 +1250,11 @@ export default function AdminPage() {
 
       {/* ── New Feature Tabs ── */}
       {activeTab === "leaderboard" && <LeaderboardPage />}
-      {activeTab === "ingest"      && <IngestPage />}
-      {activeTab === "control"     && <OrbitalControl />}
-      {activeTab === "questions"   && <QuestionsTab />}
-      {activeTab === "students"    && <StudentsTab students={students} load={fetchStudents} />}
-      {activeTab === "support"     && <SupportTab />}
+      {activeTab === "ingest" && <IngestPage />}
+      {activeTab === "control" && <OrbitalControl />}
+      {activeTab === "questions" && <QuestionsTab />}
+      {activeTab === "students" && <StudentsTab students={students} load={fetchStudents} />}
+      {activeTab === "support" && <SupportTab />}
     </div>
   );
 }
@@ -1403,13 +1403,13 @@ function QuestionsTab() {
   const [selectedBranch, setSelectedBranch] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState<"all" | "aptitude" | "programming" | "other">("all");
   const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "upcoming" | "inactive">("all");
-  const [formData, setFormData] = useState<Omit<AdminQuestion, "id">>({ 
-    text: "", 
-    options: ["", "", "", ""], 
-    branch: "CS", 
-    correct_answer: "", 
-    order_index: 0, 
-    marks: 1, 
+  const [formData, setFormData] = useState<Omit<AdminQuestion, "id">>({
+    text: "",
+    options: ["", "", "", ""],
+    branch: "CS",
+    correct_answer: "",
+    order_index: 0,
+    marks: 1,
     exam_name: "General Assessment",
     image_url: "",
     audio_url: ""
@@ -1420,12 +1420,12 @@ function QuestionsTab() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { 
+    try {
       const [qData, cData] = await Promise.all([
         fetchAdminQuestions(),
         fetchPublicExamConfig()
       ]);
-      setQuestions(qData); 
+      setQuestions(qData);
       setConfigs(cData);
     }
     catch (e) { console.error(e); }
@@ -1482,7 +1482,7 @@ function QuestionsTab() {
       setLoading(true);
       await renameAdminFolder(folderName, newName.trim());
       // Update local state: find and update all questions in this folder
-      setQuestions(questions.map(q => 
+      setQuestions(questions.map(q =>
         q.exam_name === folderName ? { ...q, exam_name: newName.trim() } : q
       ));
       setExpandedClusters(prev => {
@@ -1553,12 +1553,12 @@ function QuestionsTab() {
   const filteredQuestions = questions.filter((q) => {
     const branchMatch = selectedBranch === "All" || q.branch === selectedBranch;
     const categoryMatch = selectedCategory === "all" || getQCategory(q) === selectedCategory;
-    
+
     if (selectedStatus === "all") return branchMatch && categoryMatch;
 
     const conf = configs.find(c => c.exam_title === q.exam_name);
     const now = Date.now();
-    
+
     let statusMatch = false;
     if (selectedStatus === "active") {
       const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
@@ -1602,10 +1602,10 @@ function QuestionsTab() {
 
   // Palette for category cards — cycles through 4 colors
   const CARD_PALETTE = [
-    { bg: "rgba(25,118,210,0.06)",  border: "rgba(25,118,210,0.25)",  accent: "#1565c0",  icon: "📐", skillColor: "rgba(25,118,210,0.1)",  skillText: "#1565c0" },
-    { bg: "rgba(103,58,183,0.06)",  border: "rgba(103,58,183,0.25)",  accent: "#6a1b9a",  icon: "🧠", skillColor: "rgba(103,58,183,0.1)",  skillText: "#6a1b9a" },
-    { bg: "rgba(27,153,105,0.06)",  border: "rgba(27,153,105,0.25)",  accent: "#1b5e20",  icon: "📖", skillColor: "rgba(27,153,105,0.1)",  skillText: "#1b5e20" },
-    { bg: "rgba(230,119,14,0.06)",  border: "rgba(230,119,14,0.25)",  accent: "#e65100",  icon: "💻", skillColor: "rgba(230,119,14,0.1)",  skillText: "#e65100" },
+    { bg: "rgba(25,118,210,0.06)", border: "rgba(25,118,210,0.25)", accent: "#1565c0", icon: "📐", skillColor: "rgba(25,118,210,0.1)", skillText: "#1565c0" },
+    { bg: "rgba(103,58,183,0.06)", border: "rgba(103,58,183,0.25)", accent: "#6a1b9a", icon: "🧠", skillColor: "rgba(103,58,183,0.1)", skillText: "#6a1b9a" },
+    { bg: "rgba(27,153,105,0.06)", border: "rgba(27,153,105,0.25)", accent: "#1b5e20", icon: "📖", skillColor: "rgba(27,153,105,0.1)", skillText: "#1b5e20" },
+    { bg: "rgba(230,119,14,0.06)", border: "rgba(230,119,14,0.25)", accent: "#e65100", icon: "💻", skillColor: "rgba(230,119,14,0.1)", skillText: "#e65100" },
   ];
 
   function inferDifficulty(name: string): "Easy" | "Medium" | "Hard" {
@@ -1637,9 +1637,9 @@ function QuestionsTab() {
   }
 
   const DIFF_COLORS: Record<string, { bg: string; text: string }> = {
-    Easy:   { bg: "rgba(46,125,50,0.1)",  text: "#2e7d32" },
-    Medium: { bg: "rgba(237,108,2,0.1)",  text: "#e65100" },
-    Hard:   { bg: "rgba(211,47,47,0.1)",   text: "#c62828" },
+    Easy: { bg: "rgba(46,125,50,0.1)", text: "#2e7d32" },
+    Medium: { bg: "rgba(237,108,2,0.1)", text: "#e65100" },
+    Hard: { bg: "rgba(211,47,47,0.1)", text: "#c62828" },
   };
 
   return (
@@ -1765,94 +1765,94 @@ function QuestionsTab() {
                           {name} <small style={{ fontWeight: 400, opacity: 0.7 }}>({branch})</small>
                         </div>
                       </div>
-                      
+
                       {/* Activation & Status Indicators */}
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 12 }} onClick={e => e.stopPropagation()}>
                         {(() => {
-                           const conf = configs.find(c => c.exam_title === name);
-                           const isManualActive = conf ? conf.is_active : true;
-                           
-                           const now = Date.now();
-                           const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
-                           const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
-                           
-                           let statusLabel = "Active";
-                           let statusColor = "#34d399";
-                           let statusIcon = "🟢";
+                          const conf = configs.find(c => c.exam_title === name);
+                          const isManualActive = conf ? conf.is_active : true;
 
-                           if (!isManualActive) {
-                             statusLabel = "Inactive";
-                             statusColor = "#94a3b8";
-                             statusIcon = "🚫";
-                           } else if (now < start) {
-                             statusLabel = "Upcoming";
-                             statusColor = "#fbbf24";
-                             statusIcon = "🟡";
-                           } else if (now > end) {
-                             statusLabel = "Expired";
-                             statusColor = "#f87171";
-                             statusIcon = "⚪";
-                           }
+                          const now = Date.now();
+                          const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
+                          const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
 
-                           return (
-                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                               {/* Real-time Status Badge */}
-                               <div style={{ 
-                                 display: "flex", 
-                                 alignItems: "center", 
-                                 gap: 6,
-                                 padding: "4px 12px", 
-                                 borderRadius: "12px", 
-                                 background: `${statusColor}15`,
-                                 border: `1px solid ${statusColor}30`,
-                                 color: statusColor,
-                                 fontSize: "11px",
-                                 fontWeight: 700,
-                                 textTransform: "uppercase",
-                                 letterSpacing: "0.02em"
-                               }}>
-                                 {statusIcon} {statusLabel}
-                               </div>
+                          let statusLabel = "Active";
+                          let statusColor = "#34d399";
+                          let statusIcon = "🟢";
 
-                               {/* Manual Toggle Switch */}
-                               <div style={{ 
-                                 display: "flex", 
-                                 background: "rgba(0,0,0,0.04)", 
-                                 padding: "2px", 
-                                 borderRadius: "20px", 
-                                 border: "1px solid rgba(0,0,0,0.06)" 
-                               }}>
-                                 <button 
-                                   onClick={() => !isManualActive && toggleActivation(name, false)}
-                                   style={{
-                                     fontSize: "9px",
-                                     fontWeight: 800,
-                                     padding: "3px 8px",
-                                     borderRadius: "16px",
-                                     border: "none",
-                                     cursor: "pointer",
-                                     transition: "all 0.2s",
-                                     background: isManualActive ? "#10b981" : "transparent",
-                                     color: isManualActive ? "#fff" : "#64748b",
-                                   }}
-                                 >ON</button>
-                                 <button 
-                                   onClick={() => isManualActive && toggleActivation(name, true)}
-                                   style={{
-                                     fontSize: "9px",
-                                     fontWeight: 800,
-                                     padding: "3px 8px",
-                                     borderRadius: "16px",
-                                     border: "none",
-                                     cursor: "pointer",
-                                     transition: "all 0.2s",
-                                     background: !isManualActive ? "#f43f5e" : "transparent",
-                                     color: !isManualActive ? "#fff" : "#64748b",
-                                   }}
-                                 >OFF</button>
-                               </div>
-                             </div>
-                           );
+                          if (!isManualActive) {
+                            statusLabel = "Inactive";
+                            statusColor = "#94a3b8";
+                            statusIcon = "🚫";
+                          } else if (now < start) {
+                            statusLabel = "Upcoming";
+                            statusColor = "#fbbf24";
+                            statusIcon = "🟡";
+                          } else if (now > end) {
+                            statusLabel = "Expired";
+                            statusColor = "#f87171";
+                            statusIcon = "⚪";
+                          }
+
+                          return (
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              {/* Real-time Status Badge */}
+                              <div style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                                padding: "4px 12px",
+                                borderRadius: "12px",
+                                background: `${statusColor}15`,
+                                border: `1px solid ${statusColor}30`,
+                                color: statusColor,
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.02em"
+                              }}>
+                                {statusIcon} {statusLabel}
+                              </div>
+
+                              {/* Manual Toggle Switch */}
+                              <div style={{
+                                display: "flex",
+                                background: "rgba(0,0,0,0.04)",
+                                padding: "2px",
+                                borderRadius: "20px",
+                                border: "1px solid rgba(0,0,0,0.06)"
+                              }}>
+                                <button
+                                  onClick={() => !isManualActive && toggleActivation(name, false)}
+                                  style={{
+                                    fontSize: "9px",
+                                    fontWeight: 800,
+                                    padding: "3px 8px",
+                                    borderRadius: "16px",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s",
+                                    background: isManualActive ? "#10b981" : "transparent",
+                                    color: isManualActive ? "#fff" : "#64748b",
+                                  }}
+                                >ON</button>
+                                <button
+                                  onClick={() => isManualActive && toggleActivation(name, true)}
+                                  style={{
+                                    fontSize: "9px",
+                                    fontWeight: 800,
+                                    padding: "3px 8px",
+                                    borderRadius: "16px",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s",
+                                    background: !isManualActive ? "#f43f5e" : "transparent",
+                                    color: !isManualActive ? "#fff" : "#64748b",
+                                  }}
+                                >OFF</button>
+                              </div>
+                            </div>
+                          );
                         })()}
                       </div>
 
@@ -2016,7 +2016,7 @@ function QuestionsTab() {
               </div>
               <div className={adminStyles.formGroup}>
                 <label>Exam Identity (Anchor)</label>
-                <select 
+                <select
                   className={adminStyles.input}
                   value={Array.from(new Set(questions.map(q => q.exam_name))).includes(formData.exam_name) ? formData.exam_name : "NEW_IDENTITY"}
                   onChange={(e) => {
@@ -2055,9 +2055,9 @@ function QuestionsTab() {
                 <label>Category</label>
                 <select
                   className={adminStyles.input}
-                  style={{ 
-                    height: "44px", 
-                    fontSize: "15px", 
+                  style={{
+                    height: "44px",
+                    fontSize: "15px",
                     fontWeight: "600",
                     background: "rgba(139, 92, 246, 0.12) !important",
                     border: "1.5px solid rgba(139, 92, 246, 0.3)",
@@ -2080,7 +2080,7 @@ function QuestionsTab() {
                 {formData.image_url ? (
                   <div className={adminStyles.imagePreviewContainer}>
                     <img src={formData.image_url} alt="Question" className={adminStyles.imagePreview} />
-                    <button 
+                    <button
                       className={adminStyles.removeImageBtn}
                       onClick={() => setFormData({ ...formData, image_url: "" })}
                       title="Remove Image"
@@ -2091,9 +2091,9 @@ function QuestionsTab() {
                   </div>
                 ) : (
                   <div className={adminStyles.uploadZone}>
-                    <input 
-                      type="file" 
-                      id="question-image-upload" 
+                    <input
+                      type="file"
+                      id="question-image-upload"
                       style={{ display: "none" }}
                       accept="image/*"
                       onChange={async (e) => {
@@ -2121,7 +2121,7 @@ function QuestionsTab() {
                   <div className={adminStyles.imagePreviewContainer} style={{ background: "rgba(139, 92, 246, 0.05)", display: "flex", flexDirection: "column", gap: 8, padding: 12 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>🎧 Audio Attached</div>
                     <audio src={formData.audio_url} controls style={{ width: "100%", height: 32 }} />
-                    <button 
+                    <button
                       className={adminStyles.removeImageBtn}
                       onClick={() => setFormData({ ...formData, audio_url: "" })}
                       title="Remove Audio"
@@ -2132,9 +2132,9 @@ function QuestionsTab() {
                   </div>
                 ) : (
                   <div className={adminStyles.uploadZone}>
-                    <input 
-                      type="file" 
-                      id="question-audio-upload" 
+                    <input
+                      type="file"
+                      id="question-audio-upload"
                       style={{ display: "none" }}
                       accept="audio/*"
                       onChange={async (e) => {
@@ -2142,7 +2142,7 @@ function QuestionsTab() {
                         if (!file) return;
                         try {
                           // Using same upload logic for audio, Cloudinary handles it
-                          const url = await uploadQuestionImage(file); 
+                          const url = await uploadQuestionImage(file);
                           setFormData({ ...formData, audio_url: url });
                         } catch (err: any) {
                           alert(`Upload failed: ${err.message}`);
@@ -2172,12 +2172,12 @@ function QuestionsTab() {
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", marginBottom: 24, lineHeight: 1.5 }}>
               Select which departments should have access to <strong>{folderBranchModal.name}</strong>. Students in selected branches will see these questions.
             </p>
-            
+
             <div className={adminStyles.formGroup}>
               <label style={{ marginBottom: 14, display: "block", fontWeight: 700, color: "rgba(255,255,255,0.9)", fontSize: 13 }}>AVAILABLE DEPARTMENTS</label>
-              <div style={{ 
-                display: "grid", 
-                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", 
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
                 gap: "10px 20px",
                 background: "rgba(255,255,255,0.03)",
                 padding: "20px",
@@ -2189,10 +2189,10 @@ function QuestionsTab() {
                 {ALL_BRANCH_DATA.map((b) => {
                   const isChecked = folderBranchModal.branches.includes(b.id);
                   return (
-                    <label key={b.id} style={{ 
-                      display: "flex", 
-                      alignItems: "flex-start", 
-                      gap: 12, 
+                    <label key={b.id} style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 12,
                       cursor: "pointer",
                       padding: "10px 12px",
                       borderRadius: "10px",
@@ -2201,8 +2201,8 @@ function QuestionsTab() {
                       transition: "all 0.2s ease"
                     }}>
                       <div style={{ paddingTop: 2 }}>
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={isChecked}
                           onChange={(e) => {
                             const newBranches = e.target.checked
@@ -2213,8 +2213,8 @@ function QuestionsTab() {
                           style={{ width: 18, height: 18, cursor: "pointer", accentColor: "#8b5cf6" }}
                         />
                       </div>
-                      <span style={{ 
-                        color: isChecked ? "#ffffff" : "rgba(255,255,255,0.6)", 
+                      <span style={{
+                        color: isChecked ? "#ffffff" : "rgba(255,255,255,0.6)",
                         fontWeight: isChecked ? 600 : 400,
                         fontSize: 13,
                         lineHeight: 1.4,
@@ -2351,25 +2351,25 @@ function StudentsTab({ students, load }: { students: AdminStudent[], load: () =>
                   <td><WarningBadge count={s.warnings} /></td>
                   <td>
                     <div className={adminStyles.actionButtons}>
-                      <button className="btn btn-outline" onClick={() => { 
+                      <button className="btn btn-outline" onClick={() => {
                         let bID = s.branch || "CS";
                         // Normalize legacy full names to IDs if necessary
                         const match = ALL_BRANCH_DATA.find(b => b.name === bID || b.id === bID);
                         if (match) bID = match.id;
-                        
-                        setEditing(s as any); 
-                        setFormData({ usn: s.usn, name: s.name, email: s.email || "", branch: bID, password: "" }); 
-                        setShowModal(true); 
+
+                        setEditing(s as any);
+                        setFormData({ usn: s.usn, name: s.name, email: s.email || "", branch: bID, password: "" });
+                        setShowModal(true);
                       }}>Edit</button>
                       <button className="btn btn-outline" onClick={() => { const p = prompt("Enter new password:"); if (p) updateAdminStudent(s.student_id, { password: p }).then(() => alert("Password reset")); }}>Reset PW</button>
                       <button className="btn btn-outline" style={{ color: "var(--accent)", borderColor: "var(--accent)" }} onClick={() => handleResetExam(s.student_id)}>Re-Exam</button>
-                      <button 
-                        className="btn btn-outline" 
-                        style={{ 
-                          color: s.is_blocked ? "#4caf50" : "#ff5252", 
+                      <button
+                        className="btn btn-outline"
+                        style={{
+                          color: s.is_blocked ? "#4caf50" : "#ff5252",
                           borderColor: s.is_blocked ? "#4caf50" : "#ff5252",
                           fontWeight: "bold"
-                        }} 
+                        }}
                         onClick={() => handleToggleBlock(s)}
                       >
                         {s.is_blocked ? "Unblock" : "Block"}
@@ -2390,11 +2390,11 @@ function StudentsTab({ students, load }: { students: AdminStudent[], load: () =>
             <h3>{editing ? "Edit Student" : "Add Student"}</h3>
             <div className={adminStyles.formGroup}>
               <label>USN NO</label>
-              <input 
-                className={adminStyles.input} 
-                value={formData.usn} 
-                onChange={(e) => setFormData({ ...formData, usn: e.target.value.toUpperCase() })} 
-                placeholder="1MS21CS001" 
+              <input
+                className={adminStyles.input}
+                value={formData.usn}
+                onChange={(e) => setFormData({ ...formData, usn: e.target.value.toUpperCase() })}
+                placeholder="1MS21CS001"
               />
             </div>
             <div className={adminStyles.formGroup}>
@@ -2495,8 +2495,8 @@ function SupportTab() {
                 <td>
                   <div style={{ display: "flex", gap: 8 }}>
                     {r.status !== 'resolved' && (
-                      <button 
-                        className="btn btn-primary" 
+                      <button
+                        className="btn btn-primary"
                         style={{ fontSize: 11, padding: "4px 10px" }}
                         onClick={() => handleStatusUpdate(r.id, "resolved")}
                       >
@@ -2504,8 +2504,8 @@ function SupportTab() {
                       </button>
                     )}
                     {r.status !== 'closed' && (
-                      <button 
-                        className="btn btn-outline" 
+                      <button
+                        className="btn btn-outline"
                         style={{ fontSize: 11, padding: "4px 10px" }}
                         onClick={() => handleStatusUpdate(r.id, "closed")}
                       >
