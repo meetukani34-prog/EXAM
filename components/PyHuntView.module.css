@@ -144,10 +144,10 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   padding: 30px;
-  color: #ffffff;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 18px;
-  font-weight: 500;
+  color: #ffffff !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
   resize: none;
   outline: none;
   backdrop-filter: blur(20px);
@@ -485,5 +485,11 @@
 .unlockBtn:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 30px rgba(0, 242, 255, 0.4);
+}
+
+
+.codeArea::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+  opacity: 1 !important;
 }
 

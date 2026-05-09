@@ -229,6 +229,10 @@ export default function PyHuntView() {
                    value={code}
                    onChange={(e) => setCode(e.target.value)}
                    placeholder="# Manifest your Python logic here..."
+                   spellCheck={false}
+                   autoComplete="off"
+                   autoCorrect="off"
+                   autoCapitalize="off"
                  />
                  <div className={styles.editorGlow} />
               </div>
