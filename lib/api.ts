@@ -547,7 +547,8 @@ export async function updateSupportRequestStatus(id: string, status: string): Pr
   });
 }
 
-export async function fetchViolationHistory(): Promise<ViolationHistory[]> {
-  return adminFetch<ViolationHistory[]>("/admin/violations");
+export async function fetchViolationHistory(studentId?: string): Promise<ViolationHistory[]> {
+  const url = studentId ? `/admin/violations?student_id=${studentId}` : "/admin/violations";
+  return adminFetch<ViolationHistory[]>(url);
 }
 

@@ -806,15 +806,16 @@ async def export_results(
 # ── Support Requests Management ───────────────────────────────
 
 @router.get("/violations", response_model=list[ViolationHistoryOut])
-async def get_violation_history(_: bool = Depends(verify_admin)):
-    """Fetch all recorded violations for the live monitor."""
+async def get_violation_history(student_id: str | None = None, _: bool = Depends(verify_admin)):
+    """Fetch recorded violations, optionally filtered by student_id."""
     db = get_supabase()
-    # Fetch recent violations with student names
-    res = db.table("violations")\
-        .select("*, students(name, usn)")\
-        .order("created_at", desc=True)\
-        .limit(100)\
-        .execute()
+    
+    query = db.table("violations").select("*, students(name, usn)")
+    
+    if student_id:
+        query = query.eq("student_id", student_id)
+        
+    res = query.order("created_at", desc=True).limit(100).execute()
     
     rows = []
     for r in (res.data or []):
