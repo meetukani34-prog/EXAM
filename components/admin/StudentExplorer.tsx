@@ -32,6 +32,7 @@ export default function StudentExplorer() {
   const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // ── Initial Fetch ──────────────────────────────────────────────
   useEffect(() => {
@@ -55,39 +56,53 @@ export default function StudentExplorer() {
 
   async function loadStudentDetails(studentId: string) {
     setDetailsLoading(true);
+    setSyncError(null);
     try {
-      const { data: profile } = await supabase
+      // Robust select with explicit joins
+      const { data: profile, error } = await supabase
         .from('students')
         .select('*, exam_status(*), exam_results(*), odyssey_progress(*)')
         .eq('id', studentId)
-        .single();
+        .maybeSingle();
+
+      if (error) throw error;
 
       if (profile) {
+        // Defensive extraction for joined arrays/objects
+        const getFirst = (val: any) => Array.isArray(val) ? val[0] : val;
+        
+        const status = getFirst(profile.exam_status);
+        const results = getFirst(profile.exam_results);
+        const odyssey = getFirst(profile.odyssey_progress);
+
         const mapped: StudentFidelity = {
           student_id: profile.id,
-          name: profile.name,
-          usn: profile.usn,
-          email: profile.email,
-          branch: profile.branch,
-          status: profile.exam_status?.[0]?.status || "not_started",
-          warnings: profile.exam_status?.[0]?.warnings || 0,
-          score: profile.exam_results?.[0]?.score || 0,
-          total_marks: profile.exam_results?.[0]?.total_marks || 0,
-          last_active: profile.exam_status?.[0]?.last_active,
-          submitted_at: profile.exam_status?.[0]?.submitted_at,
-          started_at: profile.exam_status?.[0]?.started_at,
-          is_blocked: profile.exam_status?.[0]?.is_blocked || false,
-          exam_name: profile.exam_status?.[0]?.exam_name,
-          exam_results: profile.exam_results || [],
-          odyssey_progress: profile.odyssey_progress
+          name: profile.name || "Unknown Identity",
+          usn: profile.usn || "N/A",
+          email: profile.email || "No Email",
+          branch: profile.branch || "CS",
+          status: status?.status || "not_started",
+          warnings: status?.warnings || 0,
+          score: results?.score || 0,
+          total_marks: results?.total_marks || 0,
+          last_active: status?.last_active,
+          submitted_at: status?.submitted_at,
+          started_at: status?.started_at,
+          is_blocked: status?.is_blocked || profile.is_blocked || false,
+          exam_name: status?.exam_name || "General",
+          exam_results: Array.isArray(profile.exam_results) ? profile.exam_results : (results ? [results] : []),
+          odyssey_progress: odyssey || null
         };
-        setSelectedStudent(mapped);
         
+        setSelectedStudent(mapped);
         const vLogs = await fetchViolationHistory(studentId);
         setViolations(vLogs);
+      } else {
+        setSyncError("Identity node not found in registry.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Fidelity Pulse error:", err);
+      setSyncError(err.message || "Unknown synchronization failure.");
     } finally {
       setDetailsLoading(false);
     }
