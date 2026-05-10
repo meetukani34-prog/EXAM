@@ -383,19 +383,17 @@ export default function PyHuntView() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={styles.authCard}>
           <header className={styles.authHeader}>
             <div className={styles.lobbyIcon} style={{ marginBottom: 24 }}>
-              <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path 
-                  d="M20 70C20 70 30 85 50 85C70 85 85 70 85 50C85 30 70 15 50 15C30 15 15 30 15 50C15 65 25 75 35 75C45 75 55 65 55 50C55 35 45 25 35 25" 
+                  d="M40 85C40 85 20 85 20 60C20 35 40 20 60 20C80 20 100 35 100 60C100 85 80 100 60 100C40 100 35 85 45 75C55 65 75 65 75 45C75 25 55 25 45 35" 
                   stroke="url(#snake_grad_auth)" 
-                  strokeWidth="10" 
+                  strokeWidth="12" 
                   strokeLinecap="round" 
                   strokeLinejoin="round"
                 />
-                <circle cx="35" cy="40" r="4" fill="#00FFA3">
-                  <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite" />
-                </circle>
+                <circle cx="45" cy="45" r="4" fill="#00FFA3" />
                 <defs>
-                  <linearGradient id="snake_grad_auth" x1="15" y1="50" x2="85" y2="50" gradientUnits="userSpaceOnUse">
+                  <linearGradient id="snake_grad_auth" x1="20" y1="60" x2="100" y2="60" gradientUnits="userSpaceOnUse">
                     <stop stopColor="#00F0FF" />
                     <stop offset="1" stopColor="#00FFA3" />
                   </linearGradient>
@@ -425,19 +423,17 @@ export default function PyHuntView() {
           className={styles.lobbyContent}
         >
           <div className={styles.lobbyIcon}>
-            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path 
-                d="M20 70C20 70 30 85 50 85C70 85 85 70 85 50C85 30 70 15 50 15C30 15 15 30 15 50C15 65 25 75 35 75C45 75 55 65 55 50C55 35 45 25 35 25" 
-                stroke="url(#snake_grad)" 
-                strokeWidth="10" 
+                d="M40 85C40 85 20 85 20 60C20 35 40 20 60 20C80 20 100 35 100 60C100 85 80 100 60 100C40 100 35 85 45 75C55 65 75 65 75 45C75 25 55 25 45 35" 
+                stroke="url(#snake_grad_lobby)" 
+                strokeWidth="12" 
                 strokeLinecap="round" 
                 strokeLinejoin="round"
               />
-              <circle cx="35" cy="40" r="4" fill="#00FFA3">
-                <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite" />
-              </circle>
+              <circle cx="45" cy="45" r="4" fill="#00FFA3" />
               <defs>
-                <linearGradient id="snake_grad" x1="15" y1="50" x2="85" y2="50" gradientUnits="userSpaceOnUse">
+                <linearGradient id="snake_grad_lobby" x1="20" y1="60" x2="100" y2="60" gradientUnits="userSpaceOnUse">
                   <stop stopColor="#00F0FF" />
                   <stop offset="1" stopColor="#00FFA3" />
                 </linearGradient>
