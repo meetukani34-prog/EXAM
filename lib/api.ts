@@ -32,10 +32,11 @@ async function apiFetch<T>(
 
     if (res.status === 401) {
       console.error(`[API] 401 Unauthorized for ${url}. Clearing session.`);
-      sessionStorage.removeItem("exam_token");
-      sessionStorage.removeItem("exam_student");
-      // Use window.location for hard redirect to clear state
       if (typeof window !== "undefined") {
+        sessionStorage.removeItem("exam_token");
+        sessionStorage.removeItem("exam_student");
+        localStorage.removeItem("exam_token");
+        localStorage.removeItem("exam_student");
         window.location.href = "/login";
       }
       throw new Error("Unauthorized");
