@@ -9,12 +9,17 @@ declare global {
   }
 }
 
-export function usePyodide() {
+export function usePyodide(enabled: boolean = true) {
   const [pyodide, setPyodide] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+
     async function initPyodide() {
       if (window.pyodide) {
         setPyodide(window.pyodide);
@@ -41,7 +46,7 @@ export function usePyodide() {
     }
 
     initPyodide();
-  }, []);
+  }, [enabled]);
 
   const runCode = useCallback(async (code: string) => {
     if (!pyodide) return { error: "Logic Engine not ready." };

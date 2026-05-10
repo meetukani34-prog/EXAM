@@ -53,7 +53,7 @@ export default function PyHuntView() {
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(true);
-  const { runCode, loading: pyLoading } = usePyodide();
+  const { runCode, loading: pyLoading } = usePyodide(currentRound > 1);
   const { enter: enterFullscreen } = useFullscreen();
   const [student, setStudent] = useState<any>(null);
   
