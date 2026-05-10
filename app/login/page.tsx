@@ -4,6 +4,7 @@ import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { loginStudent, submitSupportRequest } from "@/lib/api";
+import { clearExamStorage } from "@/hooks/useExamState";
 import { BRANCHES } from "@/lib/constants";
 import styles from "./login.module.css";
 
@@ -51,6 +52,9 @@ export default function LoginPage() {
         email: email.trim() || undefined,
         branch: branch
       });
+
+      // Clear previous student's cached answers on new login
+      clearExamStorage();
 
       localStorage.setItem("exam_token", data.access_token);
       localStorage.setItem(

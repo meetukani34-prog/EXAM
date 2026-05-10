@@ -51,6 +51,8 @@ export default function ExamPage() {
 
   const { answers, dirtyIds, selectAnswer, clearDirty, getAnsweredCount } = useExamState();
   const saveIndicatorTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Stable start time ref — prevents timer from resetting on re-render
+  const stableStartTime = useRef<string | null>(null);
 
   const { flush } = useAutoSave({
     answers,
@@ -85,6 +87,11 @@ export default function ExamPage() {
     }
     
     setStudent(info);
+
+    // Lock in the start time ONCE — never regenerate on re-render
+    if (!stableStartTime.current) {
+      stableStartTime.current = info.examStartTime || new Date().toISOString();
+    }
 
     const quizTitle = localStorage.getItem("exam_selected_title") || info.examTitle || "Online Assessment";
     setExamTitle(quizTitle);
@@ -487,9 +494,9 @@ export default function ExamPage() {
              <h1 style={{ margin: 0, fontSize: "20px", color: "#1e293b", fontWeight: 700 }}>
                {examTitle}
              </h1>
-             {student && (
+             {student && stableStartTime.current && (
                <ExamTimer
-                 startTime={student.examStartTime || new Date().toISOString()}
+                 startTime={stableStartTime.current}
                  durationMinutes={student.examDurationMinutes}
                  onExpire={handleAutoSubmit}
                />

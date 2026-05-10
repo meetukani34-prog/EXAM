@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./instructions.module.css";
 import { startExam } from "@/lib/api";
+import { clearExamStorage } from "@/hooks/useExamState";
 import Skeleton from "@/components/Skeleton";
 import { useFullscreen } from "@/hooks/useFullscreen";
 
@@ -78,15 +79,18 @@ export default function InstructionsPage() {
     try {
       const res = await startExam(studentInfo?.examTitle || "Initial Assessment");
       
+      // Clear previous student's cached answers before starting new exam
+      clearExamStorage();
+      
       // Store the specific title being used for the exam page
-      sessionStorage.setItem("exam_selected_title", studentInfo?.examTitle || "Online Assessment");
+      localStorage.setItem("exam_selected_title", studentInfo?.examTitle || "Online Assessment");
 
-      // Update session storage with the real start time
-      const studentData = sessionStorage.getItem("exam_student");
+      // Update localStorage with the real start time (exam page reads from localStorage!)
+      const studentData = localStorage.getItem("exam_student");
       if (studentData) {
         const parsed = JSON.parse(studentData);
         parsed.examStartTime = res.started_at;
-        sessionStorage.setItem("exam_student", JSON.stringify(parsed));
+        localStorage.setItem("exam_student", JSON.stringify(parsed));
       }
 
       router.push("/exam");
@@ -110,9 +114,11 @@ export default function InstructionsPage() {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem("exam_token");
-    sessionStorage.removeItem("exam_student");
-    sessionStorage.removeItem("exam_selected_title");
+    localStorage.removeItem("exam_token");
+    localStorage.removeItem("exam_student");
+    localStorage.removeItem("exam_selected_title");
+    localStorage.removeItem("exam_selected_duration");
+    clearExamStorage();
     router.replace("/login");
   };
 
