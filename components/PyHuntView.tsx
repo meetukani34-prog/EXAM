@@ -145,14 +145,16 @@ export default function PyHuntView() {
 
           const mcqs = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
           if (mcqs) {
-             const mapped = mcqs.map((m: any) => ({
-                id: m.id,
-                question: m.question,
-                options: m.options,
-                correct: m.answer,
-                output: "Key: Manifested"
-             }));
-             setMcqSet(mapped);
+              const mapped = mcqs.map((m: any) => ({
+                 id: m.id,
+                 question: m.question,
+                 options: m.options,
+                 correct: m.answer,
+                 posMarks: m.positive_marks ?? 1,
+                 negMarks: Math.abs(m.negative_marks ?? 0),
+                 output: "Key: Manifested"
+              }));
+              setMcqSet(mapped);
           }
           const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
           if (j && j.length > 0) {
@@ -518,7 +520,7 @@ export default function PyHuntView() {
                   <div className={styles.mcqWrapper}>
                     <div className={styles.mcqHeader}>
                       <span className={styles.mcqProgress}>Node {currentMcqIndex + 1} of {mcqSet.length}</span>
-                      <span className={styles.scoringBadge}>+1.0 / -0.25</span>
+                      <span className={styles.scoringBadge}>+{mcqSet[currentMcqIndex].posMarks} / -{mcqSet[currentMcqIndex].negMarks}</span>
                     </div>
                     
                     <div className={styles.mcqQuestionSection}>
