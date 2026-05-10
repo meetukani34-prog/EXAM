@@ -152,7 +152,7 @@ def get_questions(
     questions = [
         QuestionOut(
             id=q["id"],
-            text=q["text"].replace(f"⟦EXAM:{title}⟧", "").strip(),
+            text=(q["text"] or "").replace(f"⟦EXAM:{title}⟧", "").strip(),
             options=q["options"],
             branch=q.get("branch", branch),
             order_index=q["order_index"],
@@ -436,7 +436,7 @@ async def start_exam(
             data = status_res.data[0]
             record_id = data.get("id")
             attempts_count = data.get("attempts_count", 0) or 0
-            record_exam = data.get("exam_name", "")
+            record_exam = data.get("exam_name") or ""
             # Only use status/started_at from the same exam
             if record_exam == title:
                 status_str = data.get("status", "not_started")
@@ -459,7 +459,7 @@ async def start_exam(
 
     # 4. Block restart if already submitted OR reached max attempts for the same exam
     # This prevents bypassing auto-submission by refreshing.
-    if record_exam.strip().lower() == title.lower():
+    if (record_exam or "").strip().lower() == title.lower():
         if status_str == "submitted":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
