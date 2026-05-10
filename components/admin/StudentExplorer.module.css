@@ -1,0 +1,257 @@
+.page {
+  min-height: calc(100vh - 120px);
+  background: #0a0a0c;
+  color: #fff;
+  display: flex;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ── Registry Node (Sidebar) ── */
+.registryNode {
+  width: 340px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  z-index: 10;
+}
+
+.registryHeader {
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+}
+
+.searchContainer {
+  position: relative;
+  margin-top: 16px;
+}
+
+.searchField {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px 16px 10px 40px;
+  color: #fff;
+  font-size: 13px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.searchField:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #00f2ff;
+  box-shadow: 0 0 20px rgba(0, 242, 255, 0.15);
+}
+
+.registryList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.studentCard {
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.studentCard:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.studentCardActive {
+  background: rgba(0, 242, 255, 0.1) !important;
+  border-color: rgba(0, 242, 255, 0.3);
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00f2ff, #0066ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+}
+
+/* ── Fidelity Vista (Main Content) ── */
+.fidelityVista {
+  flex: 1;
+  position: relative;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.03) 0%, transparent 70%);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.vistaHeader {
+  padding: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.profileHero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.largeAvatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #00f2ff, #0066ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 900;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 0 32px 32px;
+}
+
+.orbCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.orbCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #00f2ff;
+  opacity: 0.5;
+}
+
+.orbTitle {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+}
+
+.orbValue {
+  font-size: 28px;
+  font-weight: 900;
+  color: #fff;
+}
+
+/* ── Tabs ── */
+.tabPulse {
+  display: flex;
+  gap: 8px;
+  padding: 0 32px;
+  margin-bottom: 20px;
+}
+
+.tabButton {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 20px;
+  border-radius: 100px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tabButtonActive {
+  background: #fff !important;
+  color: #000 !important;
+  border-color: #fff;
+}
+
+/* ── Timeline ── */
+.timeline {
+  padding: 0 32px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timelineNode {
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 3px solid #00f2ff;
+  padding: 16px;
+  border-radius: 0 12px 12px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── Commands ── */
+.commandZone {
+  position: sticky;
+  bottom: 0;
+  padding: 20px 32px;
+  background: linear-gradient(0deg, #0a0a0c 0%, transparent 100%);
+  display: flex;
+  gap: 12px;
+  z-index: 5;
+}
+
+.crystallizeBtn {
+  background: linear-gradient(135deg, #00f2ff, #0066ff);
+  border: none;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(0, 242, 255, 0.2);
+}
+
+.lockdownBtn {
+  background: rgba(255, 77, 77, 0.1);
+  border: 1px solid rgba(255, 77, 77, 0.3);
+  color: #ff4d4d;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.resetBtn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
