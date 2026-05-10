@@ -184,15 +184,19 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
   const [globalAuth, setGlobalAuth] = useState<any>({ startCode: "PYHUNT67", authorizedUsns: "" });
 
   const fetchAllConfigs = useCallback(async () => {
-    const { data } = await supabase.from('pyhunt_global_config').select('*');
+    const { data, error } = await supabase.from('pyhunt_global_config').select('*');
+    if (error) {
+      console.error("Fetch error:", error);
+      return;
+    }
     if (data) {
-      const rounds = data.find(c => c.config_key === 'rounds_config')?.config_value;
+      const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
       if (rounds) setConfigs(rounds);
-      const m = data.find(c => c.config_key === 'mcqs')?.config_value;
+      const m = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
       if (m) setMcqs(m);
-      const a = data.find(c => c.config_key === 'auth')?.config_value;
+      const a = data.find((c: any) => c.config_key === 'auth')?.config_value;
       if (a) setGlobalAuth(a);
-      const j = data.find(c => c.config_key === 'jumbles')?.config_value;
+      const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
       if (j) setJumbles(j);
     }
   }, []);
@@ -201,33 +205,37 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     fetchAllConfigs();
   }, [fetchAllConfigs]);
 
-  const updateConfig = (round: number, field: string, val: string) => {
+  const updateConfig = async (round: number, field: string, val: string) => {
     const updated = configs.map((c: any) => c.round === round ? { ...c, [field]: val } : c);
     setConfigs(updated);
-    supabase.from('pyhunt_global_config').upsert({ config_key: 'rounds_config', config_value: updated }).then();
+    const { error } = await supabase.from('pyhunt_global_config').upsert({ config_key: 'rounds_config', config_value: updated }, { onConflict: 'config_key' });
+    if (error) alert("Failed to save config: " + error.message);
   };
-  const updateMcq = (id: number, field: string, val: any) => {
+  const updateMcq = async (id: number, field: string, val: any) => {
     const updated = mcqs.map((q: any) => q.id === id ? { ...q, [field]: val } : q);
     setMcqs(updated);
-    supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }).then();
+    const { error } = await supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }, { onConflict: 'config_key' });
+    if (error) alert("Failed to save MCQ: " + error.message);
   };
-  const addMcq = () => {
+  const addMcq = async () => {
     const updated = [...mcqs, { id: Date.now(), question: "", options: ["", "", "", ""], answer: 0 }];
     setMcqs(updated);
-    supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }).then();
+    await supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }, { onConflict: 'config_key' });
   };
-  const removeMcq = (id: number) => {
+  const removeMcq = async (id: number) => {
     const updated = mcqs.filter((q: any) => q.id !== id);
     setMcqs(updated);
-    supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }).then();
+    await supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }, { onConflict: 'config_key' });
   };
-  const saveGlobalAuth = (newAuth: any) => {
+  const saveGlobalAuth = async (newAuth: any) => {
     setGlobalAuth(newAuth);
-    supabase.from('pyhunt_global_config').upsert({ config_key: 'auth', config_value: newAuth }).then();
+    const { error } = await supabase.from('pyhunt_global_config').upsert({ config_key: 'auth', config_value: newAuth }, { onConflict: 'config_key' });
+    if (error) alert("Failed to save Auth: " + error.message);
   };
-  const saveJumbles = (newJumbles: any) => {
+  const saveJumbles = async (newJumbles: any) => {
     setJumbles(newJumbles);
-    supabase.from('pyhunt_global_config').upsert({ config_key: 'jumbles', config_value: newJumbles }).then();
+    const { error } = await supabase.from('pyhunt_global_config').upsert({ config_key: 'jumbles', config_value: newJumbles }, { onConflict: 'config_key' });
+    if (error) alert("Failed to save Jumble: " + error.message);
   };
 
   const participants = students
@@ -278,10 +286,10 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
             
             // Re-sync all current local states to Supabase just in case
             await Promise.all([
-               supabase.from('pyhunt_global_config').upsert({ config_key: 'rounds_config', config_value: configs }),
-               supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: mcqs }),
-               supabase.from('pyhunt_global_config').upsert({ config_key: 'auth', config_value: globalAuth }),
-               supabase.from('pyhunt_global_config').upsert({ config_key: 'jumbles', config_value: jumbles })
+               supabase.from('pyhunt_global_config').upsert({ config_key: 'rounds_config', config_value: configs }, { onConflict: 'config_key' }),
+               supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: mcqs }, { onConflict: 'config_key' }),
+               supabase.from('pyhunt_global_config').upsert({ config_key: 'auth', config_value: globalAuth }, { onConflict: 'config_key' }),
+               supabase.from('pyhunt_global_config').upsert({ config_key: 'jumbles', config_value: jumbles }, { onConflict: 'config_key' })
             ]);
 
             btn.innerText = "✅ SYNCHRONIZED";
