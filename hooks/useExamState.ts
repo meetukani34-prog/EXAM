@@ -43,15 +43,33 @@ function saveToStorage(answers: Answers) {
 }
 
 export function clearExamStorage() {
-  if (typeof window !== "undefined") {
-    // Clear both the global key and any student-scoped keys
-    localStorage.removeItem(STORAGE_KEY);
-    // Also clear the student-specific key
-    const key = getStorageKey();
-    if (key !== STORAGE_KEY) {
-      localStorage.removeItem(key);
+  if (typeof window === "undefined") return;
+
+  // 1. Clear global keys
+  localStorage.removeItem("examguard_answers");
+  localStorage.removeItem("exam_selected_title");
+  localStorage.removeItem("exam_selected_duration");
+  localStorage.removeItem("pyhunt_config_local");
+  localStorage.removeItem("pyhunt_global_auth");
+
+  // 2. Clear ALL student-scoped answer keys to prevent leakage
+  // We iterate through all keys and remove ones starting with "examguard_answers_"
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (
+      key.startsWith("examguard_answers_") || 
+      key.startsWith("pyhunt_answers_") ||
+      key.startsWith("pyhunt_code_draft_") ||
+      key.startsWith("pyhunt_mcq_") ||
+      key.startsWith("pyhunt_progress_")
+    )) {
+      keysToRemove.push(key);
     }
   }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+
+  console.log("[Storage] Cleared all exam and student-scoped answer keys.");
 }
 
 export function useExamState() {

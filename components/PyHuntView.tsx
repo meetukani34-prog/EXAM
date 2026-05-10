@@ -58,30 +58,58 @@ export default function PyHuntView() {
         }
       }
 
-      const { data } = await supabase
+    async function syncProgress() {
+      const studentId = info.id;
+      // ── Fetch Global Config (Start Code & USNs) ──────────
+      const globalAuthRaw = localStorage.getItem("pyhunt_global_auth");
+      if (globalAuthRaw) {
+        const ga = JSON.parse(globalAuthRaw);
+        // If authorized USNs are listed, check if this student is allowed
+        if (ga.authorizedUsns && ga.authorizedUsns.trim()) {
+           const allowedList = ga.authorizedUsns.split(',').map((u: string) => u.trim().toUpperCase());
+           if (!allowedList.includes(info.usn?.toUpperCase())) {
+              setAuthError("CRITICAL: Your USN is not authorized for this logic session.");
+           }
+        }
+      }
+
+      // ── Fetch Student Progress ──
+      const { data, error } = await supabase
         .from('odyssey_progress')
         .select('*')
-        .eq('student_id', info.id)
-        .single();
+        .eq('student_id', studentId)
+        .maybeSingle();
 
       if (data) {
         setCurrentRound(data.current_round);
       } else {
-        await supabase.from('odyssey_progress').insert([{ student_id: info.id, current_round: 1 }]);
+        // Initialize for new student
+        await supabase.from('odyssey_progress').insert([{ student_id: studentId, current_round: 1 }]);
+        setCurrentRound(1);
       }
+
+      // Load draft code for this specific student
+      const savedCode = localStorage.getItem(`pyhunt_code_draft_${studentId}`);
+      if (savedCode) setCode(savedCode);
 
       // ── Initialize exam_status for AntiCheat Sync ─────────
       try {
         await startExam("PyHunt");
-        console.log("[PYHUNT] Logic engine ignited via API.");
       } catch (err) {
-        console.error("Failed to sync exam_status for PyHunt:", err);
+        console.error("PyHunt start sync failed:", err);
       }
 
       setLoading(false);
     }
     syncProgress();
   }, []);
+
+  // Save draft code periodically
+  useEffect(() => {
+    if (student?.id && code) {
+      localStorage.setItem(`pyhunt_code_draft_${student.id}`, code);
+    }
+  }, [code, student]);
 
   const handleAuthorize = () => {
     const globalAuthRaw = localStorage.getItem("pyhunt_global_auth");
@@ -91,32 +119,72 @@ export default function PyHuntView() {
     }
 
     if (authForm.missionCode.toUpperCase() === targetCode.toUpperCase()) {
-      if (authError.startsWith("CRITICAL")) return; // Don't allow if USN blocked
+      if (authError.startsWith("CRITICAL")) return;
       setIsAuthorized(true);
+      // Store authorization for THIS student session
+      if (student?.id) {
+        sessionStorage.setItem(`pyhunt_auth_${student.id}`, "true");
+      }
       setAuthError("");
     } else {
       setAuthError("Invalid Mission Authorization Code.");
     }
   };
 
-  const [mcqSelection, setMcqSelection] = useState<number | null>(null);
-  const ROUND_1_QUESTIONS = [
-    {
-      id: 1,
-      question: "Which of the following is the correct way to manifest a string in Python?",
-      options: ["str = 'Manifested'", "string str = 'Manifested'", "var str = 'Manifested'", "Manifested : str"],
-      correct: 0,
-      output: "Key: Manifested"
-    }
-  ];
+  const [mcqSet, setMcqSet] = useState<any[]>(ROUND_1_QUESTIONS);
+  const [mcqSelectionMap, setMcqSelectionMap] = useState<Record<number, number>>({});
+  const [currentMcqIndex, setCurrentMcqIndex] = useState(0);
+  
+  // Restore MCQ selection and load Admin MCQs
+  useEffect(() => {
+     if (typeof window !== "undefined") {
+        const savedMcqs = localStorage.getItem("pyhunt_mcqs_local");
+        if (savedMcqs) {
+           try {
+             const parsed = JSON.parse(savedMcqs);
+             if (parsed && parsed.length > 0) {
+                const mapped = parsed.map((m: any) => ({
+                   id: m.id,
+                   question: m.question,
+                   options: m.options,
+                   correct: m.answer,
+                   output: "Key: Manifested"
+                }));
+                setMcqSet(mapped);
+             }
+           } catch (e) {
+             console.error("Failed to parse admin mcqs:", e);
+           }
+        }
+     }
+
+     if (student?.id && currentRound === 1) {
+        const saved = localStorage.getItem(`pyhunt_mcq_map_${student.id}`);
+        if (saved) setMcqSelectionMap(JSON.parse(saved));
+     }
+  }, [student, currentRound]);
+
+  useEffect(() => {
+     if (student?.id && Object.keys(mcqSelectionMap).length > 0) {
+        localStorage.setItem(`pyhunt_mcq_map_${student.id}`, JSON.stringify(mcqSelectionMap));
+     }
+  }, [mcqSelectionMap, student]);
 
   const handleExecute = async () => {
     if (currentRound === 1) {
-      if (mcqSelection === ROUND_1_QUESTIONS[0].correct) {
-        setOutput("MATCH FOUND: Sequence Validated. Manifesting Key...");
+      // Check if ALL questions are answered correctly
+      const allCorrect = mcqSet.every((q, idx) => mcqSelectionMap[idx] === q.correct);
+      
+      if (allCorrect) {
+        setOutput("MATCH FOUND: Universal Logic Validated. Manifesting Key...");
         setTimeout(() => setIsAtGate(true), 1000);
       } else {
-        setOutput("ERROR: Logic mismatch. Transmission failed.");
+        const answeredCount = Object.keys(mcqSelectionMap).length;
+        if (answeredCount < mcqSet.length) {
+          setOutput(`ERROR: Incomplete logic chain. Answer all ${mcqSet.length} nodes.`);
+        } else {
+          setOutput("ERROR: Logic mismatch in sequence. Transmission failed.");
+        }
       }
       return;
     }
@@ -137,15 +205,20 @@ export default function PyHuntView() {
     }
   };
 
+  const handleMcqSelect = (idx: number, optIdx: number) => {
+    setMcqSelectionMap(prev => ({ ...prev, [idx]: optIdx }));
+  };
+
   const validateRound = (round: number, stdout: string) => {
     const out = stdout.trim();
-    if (round === 1) return true; // Handled in handleExecute
+    if (round === 1) return true;
     if (round === 3) return out.toLowerCase().includes("palindrome: true");
     if (round === 4) return out.includes("1, 2, Fizz, 4, Buzz");
     return false;
   };
 
   const handleGateUnlock = async () => {
+    const studentId = student.id;
     const savedConfigs = JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]");
     const currentConfig = savedConfigs.find((c: any) => c.round === currentRound);
     const targetCode = currentConfig?.code || (currentRound === 1 ? "LIBRARY42" : "ALPHA");
@@ -158,12 +231,16 @@ export default function PyHuntView() {
       setGateError(false);
       setCode("");
       setOutput("");
-      setMcqSelection(null); // Reset MCQ for next rounds if any
+      setMcqSelection(null);
+      
+      // Clear student-scoped drafts for previous round
+      localStorage.removeItem(`pyhunt_mcq_${studentId}`);
+      localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
 
       await supabase
         .from('odyssey_progress')
         .update({ current_round: next, last_ping: new Date().toISOString() })
-        .eq('student_id', student.id);
+        .eq('student_id', studentId);
     } else {
       setGateError(true);
       setTimeout(() => setGateError(false), 2000);
@@ -322,19 +399,44 @@ export default function PyHuntView() {
               <div className={styles.editorContainer}>
                 {currentRound === 1 ? (
                   <div className={styles.mcqWrapper}>
-                    <p className={styles.mcqQuestion}>{ROUND_1_QUESTIONS[0].question}</p>
+                    <div className={styles.mcqHeader}>
+                       <span className={styles.mcqProgress}>Node {currentMcqIndex + 1} of {mcqSet.length}</span>
+                       <p className={styles.mcqQuestion}>{mcqSet[currentMcqIndex].question}</p>
+                    </div>
                     <div className={styles.mcqOptions}>
-                      {ROUND_1_QUESTIONS[0].options.map((opt, i) => (
+                      {mcqSet[currentMcqIndex].options.map((opt: string, i: number) => (
                         <button
                           key={i}
-                          className={`${styles.mcqOption} ${mcqSelection === i ? styles.selected : ""}`}
-                          onClick={() => setMcqSelection(i)}
+                          className={`${styles.mcqOption} ${mcqSelectionMap[currentMcqIndex] === i ? styles.selected : ""}`}
+                          onClick={() => handleMcqSelect(currentMcqIndex, i)}
                         >
                           <span className={styles.optionLetter}>{String.fromCharCode(65 + i)}</span>
                           {opt}
                         </button>
                       ))}
                     </div>
+
+                    {mcqSet.length > 1 && (
+                      <div className={styles.mcqNav}>
+                         <button 
+                           disabled={currentMcqIndex === 0} 
+                           onClick={() => setCurrentMcqIndex(prev => prev - 1)}
+                           className={styles.navBtn}
+                         >
+                           ← Previous Node
+                         </button>
+                         
+                         {/* Only show next if an answer is selected for current question */}
+                         {mcqSelectionMap[currentMcqIndex] !== undefined && currentMcqIndex < mcqSet.length - 1 && (
+                           <button 
+                             onClick={() => setCurrentMcqIndex(prev => prev + 1)}
+                             className={styles.navBtn}
+                           >
+                             Next Node →
+                           </button>
+                         )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <>
@@ -354,15 +456,23 @@ export default function PyHuntView() {
               </div>
 
               <div className={styles.controlPanel}>
-                 <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>
-                   Execute Logic Protocol
-                 </button>
+                 {/* Only show Validate button on the last MCQ or during coding rounds */}
+                 {(currentRound > 1 || (currentRound === 1 && currentMcqIndex === mcqSet.length - 1)) && (
+                   <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>
+                     {currentRound === 1 
+                       ? (Object.keys(mcqSelectionMap).length === mcqSet.length ? "Validate Full Sequence" : "Initialize Logic Check") 
+                       : "Execute Logic Protocol"}
+                   </button>
+                 )}
               </div>
 
-              <div className={styles.terminal}>
-                 <div className={styles.terminalLabel}>TRANSMISSION OUTPUT</div>
-                 <pre>{output}</pre>
-              </div>
+              {/* Only show terminal if there is output or if it's a coding round */}
+              {(output || currentRound > 1) && (
+                <div className={styles.terminal}>
+                   <div className={styles.terminalLabel}>TRANSMISSION OUTPUT</div>
+                   <pre>{output}</pre>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

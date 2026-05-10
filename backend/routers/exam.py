@@ -133,20 +133,6 @@ def get_questions(
                 .execute()
             )
 
-        # ── Strategy 5: Final Branch-Only Fallback ──
-        # If an exam is active and there are questions for this branch, show them!
-        if not result.data:
-            result = (
-                db.table("questions")
-                .select("id, text, options, branch, order_index, marks, exam_name")
-                .eq("branch", branch)
-                .order("order_index")
-                .limit(100)
-                .execute()
-            )
-    except Exception as e:
-        print(f"[EXAM] DB Error during question fetch: {e}")
-        return QuestionsResponse(questions=[], total=0)
     except Exception as e:
         print(f"[EXAM] DB Error during question fetch: {e}")
         # Return empty list instead of 500 to keep UI stable
@@ -441,21 +427,23 @@ async def start_exam(
                 started_at = None
     except Exception: pass
 
-    # 3. If already active for this exam, we still want to reset warnings 
-    # to 0 to ensure the student starts this session fresh (avoid stale warnings).
-    # We keep the same started_at to maintain the timer.
+    # 3. If already active for this exam, KEEP existing warnings and started_at.
+    # This prevents students from resetting warnings by refreshing.
     if status_str == "active" and started_at:
         try:
             db.table("exam_status").update({
-                "warnings": 0,
                 "last_active": datetime.now(timezone.utc).isoformat()
-            }).eq("student_id", student_id).execute()
+            }).eq("id", record_id).execute()
         except Exception: pass
         return StartExamResponse(started_at=started_at, status="active")
 
-    # 4. If previously submitted for the same exam — allow restart
-    # (The student may have been auto-submitted due to violations or page crash)
-    # Don't block with max_attempts — students need to be able to retry
+    # 4. Block restart if already submitted for the same exam
+    # This prevents bypassing auto-submission by refreshing.
+    if status_str == "submitted" and record_exam == title:
+         raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Exam already submitted. You cannot restart."
+        )
 
     # 5. Otherwise, set the start time NOW and increment attempts
     new_start = datetime.now(timezone.utc).isoformat()
@@ -463,7 +451,7 @@ async def start_exam(
         "status": "active",
         "started_at": new_start,
         "last_active": new_start,
-        "warnings": 0,
+        "warnings": 0, # Fresh start only for brand new attempts
         "exam_name": title
     }
     

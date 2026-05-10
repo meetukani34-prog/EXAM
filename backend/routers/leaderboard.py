@@ -84,9 +84,58 @@ def _compute_leaderboard() -> LeaderboardResponse:
             )
         )
 
-    # Sort: highest score first, then fastest time first
+    # ── PyHunt (Odyssey) Integration ──
+    # Include students currently participating in PyHunt even if not 'submitted'
+    odyssey = db.table("odyssey_progress").select("*").execute()
+    for p in (odyssey.data or []):
+        sid = p["student_id"]
+        # Skip if already added via exam_results (though PyHunt usually uses odyssey_progress)
+        if any(e.student_id == sid and e.exam_name == "PyHunt" for e in entries):
+            continue
+            
+        student = student_map.get(sid)
+        if not student:
+            continue
+            
+        current_round = p.get("current_round") or 1
+        # Rounds completed = current_round - 1 (since current_round is the round they are ON)
+        rounds_comp = current_round - 1
+        
+        # Match session status for time
+        exam_status = status_map.get((sid, "PyHunt"), {})
+        start_time = exam_status.get("started_at")
+        # Use last_ping as the current 'finish line' for live leaderboard ranking
+        end_time = p.get("last_ping")
+        
+        time_taken = None
+        if start_time and end_time:
+            try:
+                t_start = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+                t_end = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
+                time_taken = int((t_end - t_start).total_seconds())
+            except Exception:
+                pass
+                
+        entries.append(
+            LeaderboardEntry(
+                rank=0,
+                student_id=sid,
+                usn=student.get("usn", ""),
+                name=student.get("name", ""),
+                branch=student.get("branch", "CS"),
+                score=rounds_comp,
+                total_marks=5, # Total PyHunt rounds
+                percentage=round(rounds_comp / 5 * 100, 1),
+                time_taken_seconds=time_taken,
+                submitted_at=end_time,
+                exam_name="PyHunt"
+            )
+        )
+
+    # Sort: Highest accuracy/progress first, then fastest time taken first
+    # Using percentage instead of raw score to normalize between PyHunt (5 pts) and Quizzes (100 pts)
     entries.sort(
-        key=lambda e: (-e.score, e.time_taken_seconds if e.time_taken_seconds is not None else 999999)
+        key=lambda e: (-e.percentage, e.time_taken_seconds if e.time_taken_seconds is not None else 9999999)
     )
 
     # Assign ranks

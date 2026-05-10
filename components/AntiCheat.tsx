@@ -25,6 +25,21 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
   const hasAutoSubmitted = useRef(false);
 
   useEffect(() => {
+    // ── Fetch Initial State ──
+    async function syncViolationState() {
+      try {
+        const { data } = await supabase
+          .from('exam_status')
+          .select('warnings')
+          .eq('student_id', (JSON.parse(localStorage.getItem("exam_student") || "{}")).id)
+          .single();
+        if (data) setWarningCount(data.warnings || 0);
+      } catch (err) {
+        console.warn("[ANTICHEAT] Failed to sync initial warnings:", err);
+      }
+    }
+    syncViolationState();
+
     // ── Fidelity Stabilization ──
     // Delay monitoring for 3s after mount to ensure backend state settled
     const stabilizationTimer = setTimeout(() => {

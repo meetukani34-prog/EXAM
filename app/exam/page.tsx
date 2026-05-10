@@ -88,51 +88,56 @@ export default function ExamPage() {
     
     setStudent(info);
 
-    // Lock in the start time ONCE — never regenerate on re-render
-    if (!stableStartTime.current) {
-      stableStartTime.current = info.examStartTime || new Date().toISOString();
-    }
-
     const quizTitle = localStorage.getItem("exam_selected_title") || info.examTitle || "Online Assessment";
     setExamTitle(quizTitle);
     
     // Pick random final theme on mount
     setFinalTheme(FINAL_THEMES[Math.floor(Math.random() * FINAL_THEMES.length)]);
 
-    // If examStartTime is null, the student landed here without going through
-    // /instructions (e.g. page reload). Call startExam to ensure backend status
-    // is 'active' and get a real start time.
+    // ── Lock stableStartTime ──
+    if (!stableStartTime.current) {
+      stableStartTime.current = info.examStartTime || new Date().toISOString();
+    }
+
     const ensureStarted = async () => {
+      // If we don't have a start time in localStorage, we must sync with backend
       if (!info.examStartTime && info.id !== "PREVIEW") {
         try {
           const res = await startExam(quizTitle);
           stableStartTime.current = res.started_at;
           info.examStartTime = res.started_at;
-          // Update localStorage so subsequent reloads have the start time
           localStorage.setItem("exam_student", JSON.stringify({
             ...info,
             examStartTime: res.started_at
           }));
-          setStudent({ ...info });
-        } catch (e) {
-          console.warn("[EXAM] Auto-start failed:", e);
+        } catch (err: any) {
+          console.error("Start exam error:", err);
+          if (err.status === 403 || (err.message && err.message.includes("submitted"))) {
+             setError("ALREADY_SUBMITTED");
+             setLoading(false);
+             return;
+          }
+          setError("Failed to sync exam session. Please refresh.");
         }
+      }
+      
+      // Load questions
+      try {
+        const qs = await fetchQuestions(quizTitle);
+        if (qs && qs.length > 0) {
+          setQuestions(qs);
+          enterFullscreen();
+        } else {
+          setError("No questions available for this exam.");
+        }
+      } catch (err) {
+        setError("Failed to load exam data. Please check your connection.");
+      } finally {
+        setLoading(false);
       }
     };
 
-    // Fetch questions for the specific exam title
-    fetchQuestions(quizTitle)
-      .then((qs) => {
-        setQuestions(qs);
-        setLoading(false);
-        enterFullscreen();
-        // Ensure exam is started in backend after questions load
-        ensureStarted();
-      })
-      .catch(() => {
-        setError("Failed to load exam questions. Please refresh.");
-        setLoading(false);
-      });
+    ensureStarted();
   }, [router, enterFullscreen]);
 
   // ── Exam config polling (inactive guard) ──────────────────
@@ -279,23 +284,45 @@ export default function ExamPage() {
   }
 
   if (error && !isSubmitted) {
+    if (error === "ALREADY_SUBMITTED") {
+      return (
+        <div className="page-center">
+          <div className={styles.errorBox} style={{ textAlign: 'center', maxWidth: 450 }}>
+            <h2 style={{ color: "var(--text-primary)", marginBottom: 12 }}>Exam Already Submitted</h2>
+            <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+              Our records show that you have already completed or submitted this exam. 
+              If you believe this is an error, please contact the proctor.
+            </p>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => router.push("/dashboard")}
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="page-center">
         <div className={styles.errorBox}>
           <p className="text-danger">{error}</p>
-          <button 
-            className="btn btn-primary" 
-            disabled={submitting}
-            onClick={() => {
-              if (error.includes("Failed to load") || error.includes("refresh")) {
-                window.location.reload();
-              } else {
-                handleSubmit(error.toLowerCase().includes("auto-submit"));
-              }
-            }}
-          >
-            {submitting ? "Retrying..." : "Retry"}
-          </button>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+            <button 
+              className="btn btn-primary" 
+              disabled={submitting}
+              onClick={() => window.location.reload()}
+            >
+              {submitting ? "Retrying..." : "Retry"}
+            </button>
+            <button 
+              className="btn" 
+              style={{ background: "rgba(255,255,255,0.1)", color: "var(--text-primary)" }}
+              onClick={() => router.push("/dashboard")}
+            >
+              Back to Home
+            </button>
+          </div>
         </div>
       </div>
     );

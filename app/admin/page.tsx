@@ -123,11 +123,22 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     })
     .filter(s => s.exam_name?.toLowerCase() === "pyhunt" || s.pyhunt !== null) // Show if in PyHunt session OR has odyssey progress
     .sort((a, b) => {
-      // Sort by progress (highest round first) if available
+      // Sort by progress (highest round first)
       const roundA = a.pyhunt?.current_round || 0;
       const roundB = b.pyhunt?.current_round || 0;
       if (roundB !== roundA) return roundB - roundA;
-      return a.name.localeCompare(b.name);
+
+      // Tie-breaker: Total Time Taken (Lower is better)
+      const getTimeSeconds = (student: AdminStudent) => {
+        if (!student.started_at) return 9999999;
+        const start = new Date(student.started_at).getTime();
+        const end = (student.status === "submitted" && student.submitted_at) 
+          ? new Date(student.submitted_at).getTime() 
+          : Date.now();
+        return (end - start) / 1000;
+      };
+
+      return getTimeSeconds(a) - getTimeSeconds(b);
     });
 
   return (
