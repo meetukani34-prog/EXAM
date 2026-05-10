@@ -64,6 +64,10 @@ export default function PyHuntView() {
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   const [unlockCode, setUnlockCode] = useState("");
 
+  const handleAutoSubmit = useCallback(() => {
+    setIsAutoSubmitted(true);
+  }, []);
+
   useEffect(() => {
     const raw = localStorage.getItem("exam_student");
     if (!raw) return;
@@ -112,8 +116,13 @@ export default function PyHuntView() {
       // ── Initialize exam_status for AntiCheat Sync ─────────
       try {
         await withRetry(() => startExam("PyHunt"));
-      } catch (err) {
-        console.error("PyHunt start sync failed after retries:", err);
+      } catch (err: any) {
+        if (err.message?.includes("already submitted")) {
+          console.log("PyHunt: Exam already marked as submitted in backend.");
+          setCurrentRound(6); // Force to completion state
+        } else {
+          console.error("PyHunt start sync failed after retries:", err);
+        }
       }
 
       setLoading(false);
@@ -377,9 +386,25 @@ export default function PyHuntView() {
     );
   }
 
-  const handleAutoSubmit = useCallback(() => {
-    setIsAutoSubmitted(true);
-  }, []);
+  // ── Mission Accomplished View ───────────────────────────
+  if (currentRound > ROUNDS.length) {
+    return (
+      <div className={styles.successOverlay} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.95)' }}>
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className={styles.successCard}
+        >
+          <div className={styles.successIcon}>🏆</div>
+          <h2>MISSION ACCOMPLISHED</h2>
+          <p>You have successfully decoded all logic nodes and reached the final coordinate.</p>
+          <div className={styles.codeDisplay}>TRANSMISSION COMPLETE</div>
+          <p className={styles.successNote}>Your results have been synchronized with the Nexus command center.</p>
+          <button className={styles.proceedBtn} onClick={() => window.location.href = "/dashboard"}>Return to Dashboard</button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.pyhuntShell}>

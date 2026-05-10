@@ -29,12 +29,17 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
   useEffect(() => {
     // ── Fetch Initial State ──
     async function syncViolationState() {
+      const raw = localStorage.getItem("exam_student");
+      if (!raw) return;
+      const studentId = JSON.parse(raw).id;
+      if (!studentId) return;
+
       try {
         await withRetry(async () => {
           const { data, error } = await supabase
             .from('exam_status')
             .select('warnings')
-            .eq('student_id', (JSON.parse(localStorage.getItem("exam_student") || "{}")).id)
+            .eq('student_id', studentId)
             .maybeSingle();
           if (error) throw error;
           if (data) setWarningCount(data.warnings || 0);
