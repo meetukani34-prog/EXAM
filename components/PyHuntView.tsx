@@ -629,7 +629,8 @@ export default function PyHuntView() {
                   value={gateInput} 
                   onChange={(e) => setGateInput(e.target.value)} 
                   className={`${styles.gateInput} ${gateError ? styles.gateError : ""}`} 
-                  placeholder="Type code here..." 
+                  spellCheck={false}
+                  autoComplete="off"
                   onKeyDown={(e) => e.key === 'Enter' && handleGateUnlock()} 
                 />
                 {gateError && <div className={styles.errorMsg}>Invalid Unlock Code. Transmission Rejected.</div>}
