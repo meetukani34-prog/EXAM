@@ -213,19 +213,19 @@ async def get_student_fidelity(student_id: str, _: bool = Depends(verify_admin))
     db = get_supabase()
     
     # 1. Fetch Student Core
-    student_res = db.table("students").select("*").eq("id", student_id).maybe_single().execute()
+    student_res = db.table("students").select("*").eq("id", student_id).execute()
     if not student_res.data:
         raise HTTPException(status_code=404, detail="Student not found")
-    s = student_res.data
+    s = student_res.data[0]
 
     # 2. Fetch Relations
-    status_res = db.table("exam_status").select("*").eq("student_id", student_id).maybe_single().execute()
+    status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
     results_res = db.table("exam_results").select("*").eq("student_id", student_id).execute()
-    odyssey_res = db.table("odyssey_progress").select("*").eq("student_id", student_id).maybe_single().execute()
+    odyssey_res = db.table("odyssey_progress").select("*").eq("student_id", student_id).execute()
 
-    status = status_res.data or {}
+    status = status_res.data[0] if status_res.data else {}
     results = results_res.data or []
-    odyssey = odyssey_res.data or {}
+    odyssey = odyssey_res.data[0] if odyssey_res.data else {}
 
     # 3. Consolidate
     return StudentFidelity(
