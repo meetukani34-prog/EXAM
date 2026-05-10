@@ -17,6 +17,30 @@ const ROUNDS = [
   { id: 5, name: "Final Transmission", description: "The ultimate sequence. Decrypt the final campus coordinate.", target: "visual" },
 ];
 
+const ROUND_1_QUESTIONS = [
+  {
+    id: 1,
+    question: "What is the output of print(2 ** 3)?",
+    options: ["6", "8", "9", "12"],
+    correct: 1,
+    output: "Key: Manifested"
+  },
+  {
+    id: 2,
+    question: "Which of these is a mutable data type in Python?",
+    options: ["Tuple", "List", "String", "Int"],
+    correct: 1,
+    output: "Key: Manifested"
+  },
+  {
+    id: 3,
+    question: "What does 'len()' function do?",
+    options: ["Returns the length of an object", "Converts to integer", "Prints a value", "Clears a list"],
+    correct: 0,
+    output: "Key: Manifested"
+  }
+];
+
 export default function PyHuntView() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -43,20 +67,6 @@ export default function PyHuntView() {
     const info = JSON.parse(raw);
     setStudent(info);
     setAuthForm(prev => ({ ...prev, usn: info.usn || "" }));
-
-    async function syncProgress() {
-      // ── Fetch Global Config (Start Code & USNs) ──────────
-      const globalAuthRaw = localStorage.getItem("pyhunt_global_auth");
-      if (globalAuthRaw) {
-        const ga = JSON.parse(globalAuthRaw);
-        // If authorized USNs are listed, check if this student is allowed
-        if (ga.authorizedUsns && ga.authorizedUsns.trim()) {
-           const allowedList = ga.authorizedUsns.split(',').map((u: string) => u.trim().toUpperCase());
-           if (!allowedList.includes(info.usn?.toUpperCase())) {
-              setAuthError("CRITICAL: Your USN is not authorized for this logic session.");
-           }
-        }
-      }
 
     async function syncProgress() {
       const studentId = info.id;
@@ -231,7 +241,7 @@ export default function PyHuntView() {
       setGateError(false);
       setCode("");
       setOutput("");
-      setMcqSelection(null);
+      setMcqSelectionMap({});
       
       // Clear student-scoped drafts for previous round
       localStorage.removeItem(`pyhunt_mcq_${studentId}`);
