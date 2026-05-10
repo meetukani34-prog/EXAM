@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { usePyodide } from '@/hooks/usePyodide';
 import { supabase } from '@/lib/supabase';
 import { withRetry } from '@/lib/apiUtils';
@@ -555,12 +555,18 @@ export default function PyHuntView() {
                        <h3>Fix the Logic Sequence</h3>
                        <p className={styles.jumbleSubtitle}>Drag lines into correct order so the logic is valid.</p>
                     </div>
-                    <div className={styles.jumbleList}>
+                    <Reorder.Group 
+                      axis="y" 
+                      values={jumbledLines} 
+                      onReorder={setJumbledLines} 
+                      className={styles.jumbleList}
+                    >
                       {jumbledLines.map((line, idx) => (
-                        <motion.div 
-                          layout 
+                        <Reorder.Item 
                           key={line + idx} 
+                          value={line}
                           className={styles.jumbleItem}
+                          whileDrag={{ scale: 1.05, boxShadow: "0 10px 30px rgba(0, 242, 255, 0.2)" }}
                         >
                           <div className={styles.jumbleItemLeft}>
                             <span className={styles.jumbleNumber}>{idx + 1}</span>
@@ -573,9 +579,9 @@ export default function PyHuntView() {
                                 <span></span><span></span><span></span>
                              </div>
                           </div>
-                        </motion.div>
+                        </Reorder.Item>
                       ))}
-                    </div>
+                    </Reorder.Group>
                     <div className={styles.jumbleFooter}>
                       <button onClick={handleExecute} className={styles.submitOrderBtn}>
                         ✓ Submit Order

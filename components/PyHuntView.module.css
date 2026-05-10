@@ -1012,11 +1012,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(0, 242, 255, 0.03);
-  border: 1px solid rgba(0, 242, 255, 0.1);
-  border-radius: 12px;
-  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 18px 24px;
   transition: all 0.2s;
+  cursor: grab;
+  touch-action: none;
+}
+
+.jumbleItem:active {
+  cursor: grabbing;
 }
 
 .jumbleItem:hover {
@@ -1079,14 +1085,14 @@
 .dragHandle {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  opacity: 0.2;
+  gap: 4px;
+  opacity: 0.6;
 }
 
 .dragHandle span {
-  width: 12px;
+  width: 14px;
   height: 2px;
-  background: #fff;
+  background: #00f2ff;
   border-radius: 2px;
 }
 
