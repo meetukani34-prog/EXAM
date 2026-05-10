@@ -589,7 +589,7 @@ function PyHuntConfig({
                 />
              </div>
              <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>TARGET VALIDATION STRING (EXPECTED IN STDOUT)</label>
+                <label className={adminStyles.inputLabel}>OUTPUT</label>
                 <input
                   className={adminStyles.configInput}
                   value={configs.find((c: any) => c.round === 3)?.target_output || "palindrome: true"}
@@ -625,7 +625,7 @@ function PyHuntConfig({
                 />
              </div>
              <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>TARGET VALIDATION STRING (EXPECTED IN STDOUT)</label>
+                <label className={adminStyles.inputLabel}>OUTPUT</label>
                 <input
                   className={adminStyles.configInput}
                   value={configs.find((c: any) => c.round === 4)?.target_output || "1, 2, Fizz, 4, Buzz"}
