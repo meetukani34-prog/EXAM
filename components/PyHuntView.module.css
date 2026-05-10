@@ -797,6 +797,60 @@
   margin-bottom: 32px;
 }
 
+/* -- Hint-Drift Tooltip -- */
+.hintDrift {
+  position: absolute;
+  top: -60px;
+  right: 0;
+  background: rgba(139, 92, 246, 0.9);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.hintDrift::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 30px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: rgba(139, 92, 246, 0.9) transparent transparent transparent;
+}
+
+/* -- Luminous Success Ripple -- */
+.successRipple {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.rippleCircle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(0, 242, 255, 0.3);
+  box-shadow: 0 0 50px #00f2ff;
+  animation: rippleExpand 1s ease-out forwards;
+}
+
+@keyframes rippleExpand {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(300); opacity: 0; }
+}
+
 .codeDisplay {
   background: rgba(0, 242, 255, 0.1);
   border: 2px dashed rgba(0, 242, 255, 0.5);

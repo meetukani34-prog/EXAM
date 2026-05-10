@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks, Response
+from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
 from datetime import datetime, timezone
 
 from models.schemas import (
@@ -478,12 +478,8 @@ async def start_exam(
 
 
 @router.get("/pyhunt/config")
-async def get_pyhunt_config(response: Response):
+async def get_pyhunt_config():
     """Public endpoint for students to fetch PyHunt configuration."""
-    # Ensure no caching for real-time config updates
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    response.headers["Pragma"] = "no-cache"
-    
     db = get_supabase()
     try:
         res = db.table("pyhunt_global_config").select("*").execute()

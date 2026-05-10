@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Header, Depends, File, UploadFile, Query, Response
+from fastapi import APIRouter, HTTPException, status, Header, Depends, File, UploadFile, Query
 from fastapi.responses import StreamingResponse, JSONResponse
 from typing import Optional, List
 from core.config import get_settings
@@ -655,9 +655,8 @@ async def get_exam_config_public():
 # ── PyHunt Global Configuration ────────────────────────────────
 
 @router.get("/pyhunt/config")
-async def get_pyhunt_config(response: Response, _: bool = Depends(verify_admin)):
+async def get_pyhunt_config(_: bool = Depends(verify_admin)):
     """Fetch all global configuration key-values for PyHunt."""
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     db = get_supabase()
     try:
         result = db.table("pyhunt_global_config").select("*").execute()

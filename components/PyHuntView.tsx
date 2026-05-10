@@ -63,6 +63,8 @@ export default function PyHuntView() {
   const [isAtGate, setIsAtGate] = useState(false);
   const [gateInput, setGateInput] = useState("");
   const [gateError, setGateError] = useState(false);
+  const [hint, setHint] = useState("");
+  const [showSuccessRipple, setShowSuccessRipple] = useState(false);
   
   const [globalConfigs, setGlobalConfigs] = useState<any[]>([]);
   const [mcqSet, setMcqSet] = useState<any[]>(ROUND_1_QUESTIONS);
@@ -267,7 +269,16 @@ export default function PyHuntView() {
     }
     setOutput(result.stdout || "No output generated.");
     const isValid = validateRound(currentRound, result.stdout);
-    if (isValid) setIsAtGate(true);
+    if (isValid) {
+       setShowSuccessRipple(true);
+       setTimeout(() => {
+         setShowSuccessRipple(false);
+         setIsAtGate(true);
+       }, 1000);
+    } else {
+       setHint("Drift detected. Check your logic pattern (formatting is ignored).");
+       setTimeout(() => setHint(""), 4000);
+    }
   };
 
   const moveLine = (index: number, direction: 'up' | 'down') => {
@@ -285,21 +296,35 @@ export default function PyHuntView() {
     if (output.startsWith("ERROR")) setOutput("");
   };
 
+  const atmosphericCrystallize = (input: string) => {
+    if (!input) return "";
+    // Purge leading/trailing gravity and ignore invisible weight (trailing spaces per line)
+    return input
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .join('\n')
+      .toLowerCase();
+  };
+
   const validateRound = (round: number, stdout: string) => {
-    const out = stdout.trim().toLowerCase();
+    const userOutput = atmosphericCrystallize(stdout);
     const roundConfig = globalConfigs.find((c: any) => c.round === round);
     if (!roundConfig) return false;
     
     // Use target_output from admin if available, otherwise fallback to defaults
-    const target = (roundConfig.target_output || "").trim().toLowerCase();
+    const target = atmosphericCrystallize(roundConfig.target_output || "");
     
     if (round === 3) {
        const expected = target || "palindrome: true";
-       return out.includes(expected);
+       return userOutput.includes(expected) || userOutput === expected;
     }
     if (round === 4) {
-       const expected = target || "1, 2, fizz, 4, buzz";
-       return out.includes(expected);
+       const expected = target || "1\n2\nfizz\n4\nbuzz";
+       return userOutput.includes(expected) || userOutput === expected;
+    }
+    if (round === 5) {
+       return target ? userOutput.includes(target) : userOutput.includes("coordinate");
     }
     return false;
   };
@@ -405,6 +430,11 @@ export default function PyHuntView() {
     <div className={styles.pyhuntShell}>
       <AntiCheat isSubmitted={currentRound > 5} examName="PyHunt" onAutoSubmit={handleAutoSubmit} />
       
+      {showSuccessRipple && (
+        <div className={styles.successRipple}>
+          <div className={styles.rippleCircle} />
+        </div>
+      )}
       <aside className={styles.timeline}>
         {ROUNDS.map(r => (
           <div key={r.id} className={`${styles.orbitNode} ${currentRound >= r.id ? styles.active : ""} ${currentRound === r.id ? styles.pulsing : ""}`}>
@@ -432,6 +462,11 @@ export default function PyHuntView() {
                    <div className={styles.pulseDot} />
                    {pyLoading ? "Caching Logic Engine..." : "Engine Ready"}
                  </div>
+                 {hint && (
+                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={styles.hintDrift}>
+                     {hint}
+                   </motion.div>
+                 )}
               </header>
 
               <div className={styles.editorContainer}>
