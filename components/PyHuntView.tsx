@@ -260,7 +260,26 @@ export default function PyHuntView() {
   };
 
   const handleMcqSelect = (idx: number, optIdx: number) => {
-    setMcqSelectionMap(prev => ({ ...prev, [idx]: optIdx }));
+    const newMap = { ...mcqSelectionMap, [idx]: optIdx };
+    setMcqSelectionMap(newMap);
+
+    // Auto-validate Round 1 sequence
+    if (currentRound === 1) {
+      const answeredCount = Object.keys(newMap).length;
+      if (answeredCount === mcqSet.length) {
+        const allCorrect = mcqSet.every((q, i) => newMap[i] === q.correct);
+        if (allCorrect) {
+          const savedConfigs = JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]");
+          const currentConfig = savedConfigs.find((c: any) => c.round === 1);
+          const code = currentConfig?.code || "LIBRARY42";
+          setUnlockCode(code);
+          setOutput("MATCH FOUND: Universal Logic Validated. Manifesting Key...");
+          setTimeout(() => setShowUnlockDialog(true), 800);
+        } else {
+          setOutput("ERROR: Logic mismatch in sequence. Transmission failed.");
+        }
+      }
+    }
   };
 
   const validateRound = (round: number, stdout: string) => {
@@ -533,18 +552,16 @@ export default function PyHuntView() {
               </div>
 
               <div className={styles.controlPanel}>
-                 {/* Only show Validate button on the last MCQ or during coding rounds */}
-                 {(currentRound > 1 || (currentRound === 1 && currentMcqIndex === mcqSet.length - 1)) && (
+                 {/* Only show Execute button for coding rounds (Round 2+) */}
+                 {currentRound > 1 && (
                    <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>
-                     {currentRound === 1 
-                       ? (Object.keys(mcqSelectionMap).length === mcqSet.length ? "Validate Full Sequence" : "Initialize Logic Check") 
-                       : "Execute Logic Protocol"}
+                     Execute Logic Protocol
                    </button>
                  )}
               </div>
 
-              {/* Only show terminal if there is output or if it's a coding round */}
-              {(output || currentRound > 1) && (
+              {/* Only show terminal for coding rounds (Round 2+) or if there is critical output */}
+              {currentRound > 1 && output && (
                 <div className={styles.terminal}>
                    <div className={styles.terminalLabel}>TRANSMISSION OUTPUT</div>
                    <pre>{output}</pre>
