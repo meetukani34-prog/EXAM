@@ -21,6 +21,7 @@ type TabType = "General" | "Exams" | "Violations" | "PyHunt";
 interface StudentFidelity extends AdminStudent {
   exam_results?: any[];
   odyssey_progress?: any;
+  category_scores?: Record<string, { score: number; total: number }>;
 }
 
 export default function StudentExplorer() {
@@ -118,27 +119,70 @@ export default function StudentExplorer() {
   }, [selectedStudent]);
 
   // ── Render Helpers ─────────────────────────────────────────────
-  const renderGeneral = () => (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={styles.statsGrid}>
-      <div className={styles.orbCard}>
-        <div className={styles.orbTitle}>Performance Pulse</div>
-        <div className={styles.orbValue}>{avgScore}%</div>
-        <div style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>Average Consistency</div>
-      </div>
-      <div className={styles.orbCard}>
-        <div className={styles.orbTitle}>Temporal Displacement</div>
-        <div className={styles.orbValue}>{selectedStudent?.exam_results?.length || 0}</div>
-        <div style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>Assessments Navigated</div>
-      </div>
-      <div className={styles.orbCard}>
-        <div className={styles.orbTitle}>Entropy Level</div>
-        <div className={styles.orbValue} style={{ color: violations.length > 5 ? '#ff4d4d' : '#fff' }}>
-          {violations.length}
+  const renderGeneral = () => {
+    if (!selectedStudent) return null;
+    
+    const pyHuntProgress = selectedStudent.odyssey_progress?.is_completed 
+      ? "100%" 
+      : (selectedStudent.odyssey_progress?.current_round 
+          ? ((selectedStudent.odyssey_progress.current_round - 1) * 20) + "%" 
+          : "0%");
+
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <div className={styles.statsGrid}>
+          <div className={styles.orbCard}>
+            <div className={styles.orbTitle}>Performance Pulse</div>
+            <div className={styles.orbValue}>{avgScore}%</div>
+            <div style={{ fontSize: 11, opacity: 0.5, marginTop: 4 }}>Average Consistency</div>
+          </div>
+          <div className={styles.orbCard}>
+            <div className={styles.orbTitle}>Temporal Displacement</div>
+            <div className={styles.orbValue}>{selectedStudent.exam_results?.length || 0}</div>
+            <div style={{ fontSize: 11, opacity: 0.5, marginTop: 4 }}>Assessments Navigated</div>
+          </div>
+          <div className={styles.orbCard}>
+            <div className={styles.orbTitle}>Entropy Level</div>
+            <div className={styles.orbValue} style={{ color: violations.length > 5 ? '#ff4d4d' : '#fff' }}>
+              {violations.length}
+            </div>
+            <div style={{ fontSize: 11, opacity: 0.5, marginTop: 4 }}>Fidelity Deviations</div>
+          </div>
         </div>
-        <div style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>Fidelity Deviations</div>
-      </div>
-    </motion.div>
-  );
+
+        <div className={styles.statsGrid} style={{ marginTop: 24 }}>
+          <div className={styles.orbCard}>
+            <div className={styles.orbTitle}>Aptitude</div>
+            <div className={styles.orbValue}>
+              {selectedStudent.category_scores?.aptitude?.total 
+                ? ((selectedStudent.category_scores.aptitude.score / selectedStudent.category_scores.aptitude.total) * 100).toFixed(0)
+                : "0"}%
+            </div>
+          </div>
+          <div className={styles.orbCard}>
+            <div className={styles.orbTitle}>Programming</div>
+            <div className={styles.orbValue}>
+              {selectedStudent.category_scores?.programming?.total 
+                ? ((selectedStudent.category_scores.programming.score / selectedStudent.category_scores.programming.total) * 100).toFixed(0)
+                : "0"}%
+            </div>
+          </div>
+          <div className={styles.orbCard}>
+            <div className={styles.orbTitle}>Other</div>
+            <div className={styles.orbValue}>
+              {selectedStudent.category_scores?.other?.total 
+                ? ((selectedStudent.category_scores.other.score / selectedStudent.category_scores.other.total) * 100).toFixed(0)
+                : "0"}%
+            </div>
+          </div>
+          <div className={styles.orbCard} style={{ background: 'linear-gradient(135deg, rgba(0,242,255,0.1), transparent)' }}>
+            <div className={styles.orbTitle}>PyHunt Progress</div>
+            <div className={styles.orbValue}>{pyHuntProgress}</div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
 
   const renderViolations = () => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={styles.timeline}>

@@ -282,3 +282,4 @@ class StudentFidelity(BaseModel):
     exam_name: Optional[str]
     exam_results: List[Dict[str, Any]]
     odyssey_progress: Optional[Dict[str, Any]]
+    category_scores: Dict[str, Dict[str, float]] # { "aptitude": {"score": 10, "total": 20}, ... }

@@ -234,7 +234,36 @@ async def get_student_fidelity(student_id: str, _: bool = Depends(verify_admin))
     status = status_res.data[0] if status_res.data else {}
     results = results_res.data or []
 
-    # 3. Consolidate
+    # 3. Calculate Category Breakdown
+    cat_scores = {
+        "aptitude": {"score": 0.0, "total": 0.0},
+        "programming": {"score": 0.0, "total": 0.0},
+        "other": {"score": 0.0, "total": 0.0}
+    }
+
+    if results:
+        latest_res = results[0]
+        student_answers = latest_res.get("answers", {})
+        exam_name = status.get("exam_name", "General")
+        
+        # Fetch questions for this exam to get categories and correct answers
+        try:
+            questions_res = db.table("questions").select("id, category, correct_answer, marks").eq("exam_name", exam_name).execute()
+            if questions_res.data:
+                for q in questions_res.data:
+                    q_id = q["id"]
+                    cat = q.get("category", "other").lower()
+                    if cat not in cat_scores: cat = "other"
+                    
+                    q_marks = q.get("marks", 1)
+                    cat_scores[cat]["total"] += q_marks
+                    
+                    if q_id in student_answers and student_answers[q_id] == q["correct_answer"]:
+                        cat_scores[cat]["score"] += q_marks
+        except Exception as e:
+            print(f"Category calculation failed: {e}")
+
+    # 4. Consolidate
     return StudentFidelity(
         student_id=s["id"],
         name=s.get("name", "Unknown"),
@@ -251,7 +280,8 @@ async def get_student_fidelity(student_id: str, _: bool = Depends(verify_admin))
         is_blocked=status.get("is_blocked", s.get("is_blocked", False)),
         exam_name=status.get("exam_name", "General"),
         exam_results=results,
-        odyssey_progress=odyssey
+        odyssey_progress=odyssey,
+        category_scores=cat_scores
     )
 
 @router.post("/students")
