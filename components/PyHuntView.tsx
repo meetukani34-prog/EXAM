@@ -172,9 +172,24 @@ export default function PyHuntView() {
 
      if (student?.id && currentRound === 1) {
         const saved = localStorage.getItem(`pyhunt_mcq_map_${student.id}`);
-        if (saved) setMcqSelectionMap(JSON.parse(saved));
+        if (saved) {
+           setMcqSelectionMap(JSON.parse(saved));
+        } else {
+           setMcqSelectionMap({});
+        }
      }
-  }, [student, currentRound]);
+  }, [student?.id, currentRound]);
+
+  // Reset session states when student changes
+  useEffect(() => {
+    if (student?.id) {
+      setCode("");
+      setOutput("");
+      setCurrentMcqIndex(0);
+      setIsAtGate(false);
+      setShowUnlockDialog(false);
+    }
+  }, [student?.id]);
 
   useEffect(() => {
      if (student?.id && Object.keys(mcqSelectionMap).length > 0) {
