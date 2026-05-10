@@ -148,6 +148,26 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     } catch (err: any) { alert("Failed to reset: " + err.message); }
   };
 
+  const handleToggleBlock = async (s: AdminStudent) => {
+    const action = s.is_blocked ? "unblock" : "block";
+    if (!confirm(`Are you sure you want to ${action} ${s.name}?`)) return;
+    try {
+      if (s.is_blocked) await unblockAdminStudent(s.student_id);
+      else await blockAdminStudent(s.student_id);
+      fetchStudentsGlobal();
+    } catch (err: any) { alert(`Failed to ${action}: ` + err.message); }
+  };
+
+  const handleDeleteStudent = async (s: AdminStudent) => {
+    if (!confirm(`DANGER: Permanently delete ${s.name} (${s.usn})? This cannot be undone.`)) return;
+    try {
+      await deleteAdminStudent(s.student_id);
+      await supabase.from('odyssey_progress').delete().eq('student_id', s.student_id);
+      fetchStudentsGlobal();
+      fetchOdyssey();
+    } catch (err: any) { alert("Failed to delete: " + err.message); }
+  };
+
   const participants = students
     .map(s => {
       const progress = odysseyData.find(p => p.student_id === s.student_id);
@@ -225,6 +245,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                   <th>LAST VIOLATION</th>
                   <th>LAST ACTIVE</th>
                   <th>STATUS</th>
+                  <th>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
@@ -253,8 +274,17 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                     </td>
                     <td>
                        <span className={`${adminStyles.liveStatus} ${p.status === 'active' ? adminStyles.statusActive : adminStyles.statusFinished}`}>
-                         {p.status === 'submitted' ? "FINISHED" : "ACTIVE"}
+                         {p.status === 'submitted' ? "FINISHED" : (p.is_blocked ? "STOPPED" : "ACTIVE")}
                        </span>
+                    </td>
+                    <td>
+                       <div className={adminStyles.actionGroup}>
+                          <button className={`${adminStyles.actionBtn} ${adminStyles.btnReset}`} onClick={() => handleReExam(p)}>RESET</button>
+                          <button className={`${adminStyles.actionBtn} ${adminStyles.btnStop}`} onClick={() => handleToggleBlock(p)}>
+                             {p.is_blocked ? "RESUME" : "STOP"}
+                          </button>
+                          <button className={`${adminStyles.actionBtn} ${adminStyles.btnDelete}`} onClick={() => handleDeleteStudent(p)}>DELETE</button>
+                       </div>
                     </td>
                   </tr>
                 ))}
