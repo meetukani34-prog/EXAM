@@ -304,6 +304,10 @@ export async function fetchAdminStudents(): Promise<AdminStudent[]> {
   return adminFetch<AdminStudent[]>("/admin/students");
 }
 
+export async function fetchStudentFidelity(studentId: string): Promise<any> {
+  return adminFetch<any>(`/admin/students/${studentId}/fidelity`);
+}
+
 export async function createAdminStudent(data: {
   usn: string;
   name: string;

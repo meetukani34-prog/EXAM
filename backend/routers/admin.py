@@ -10,7 +10,7 @@ from models.schemas import (
     StudentStatus, StudentCreate, StudentUpdate,
     ExamConfig, ExamConfigUpdate, FolderRenameRequest,
     FolderEditBranchRequest, SupportRequestResponse,
-    ViolationHistoryOut
+    ViolationHistoryOut, StudentFidelity
 )
 from datetime import datetime, timezone
 import io
@@ -205,6 +205,46 @@ async def get_all_students(_: bool = Depends(verify_admin)):
     except Exception as e:
         print(f"CRITICAL get_all_students: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+@router.get("/students/{student_id}/fidelity", response_model=StudentFidelity)
+async def get_student_fidelity(student_id: str, _: bool = Depends(verify_admin)):
+    """Fetch high-fidelity student data including all relations."""
+    db = get_supabase()
+    
+    # 1. Fetch Student Core
+    student_res = db.table("students").select("*").eq("id", student_id).maybe_single().execute()
+    if not student_res.data:
+        raise HTTPException(status_code=404, detail="Student not found")
+    s = student_res.data
+
+    # 2. Fetch Relations
+    status_res = db.table("exam_status").select("*").eq("student_id", student_id).maybe_single().execute()
+    results_res = db.table("exam_results").select("*").eq("student_id", student_id).execute()
+    odyssey_res = db.table("odyssey_progress").select("*").eq("student_id", student_id).maybe_single().execute()
+
+    status = status_res.data or {}
+    results = results_res.data or []
+    odyssey = odyssey_res.data or {}
+
+    # 3. Consolidate
+    return StudentFidelity(
+        student_id=s["id"],
+        name=s.get("name", "Unknown"),
+        usn=s.get("usn", "N/A"),
+        email=s.get("email"),
+        branch=s.get("branch", "CS"),
+        status=status.get("status", "not_started"),
+        warnings=status.get("warnings", 0),
+        score=results[0].get("score", 0) if results else 0,
+        total_marks=results[0].get("total_marks", 0) if results else 0,
+        last_active=status.get("last_active"),
+        submitted_at=status.get("submitted_at"),
+        started_at=status.get("started_at"),
+        is_blocked=status.get("is_blocked", s.get("is_blocked", False)),
+        exam_name=status.get("exam_name", "General"),
+        exam_results=results,
+        odyssey_progress=odyssey
+    )
 
 @router.post("/students")
 async def create_student(request: StudentCreate, _: bool = Depends(verify_admin)):

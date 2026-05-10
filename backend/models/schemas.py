@@ -264,3 +264,21 @@ class ViolationHistoryOut(BaseModel):
     exam_name: str
     created_at: str
     metadata: Optional[Dict[str, Any]] = None
+
+class StudentFidelity(BaseModel):
+    student_id: str
+    name: str
+    usn: str
+    email: Optional[str]
+    branch: str
+    status: str
+    warnings: int
+    score: float
+    total_marks: int
+    last_active: Optional[str]
+    submitted_at: Optional[str]
+    started_at: Optional[str]
+    is_blocked: bool
+    exam_name: Optional[str]
+    exam_results: List[Dict[str, Any]]
+    odyssey_progress: Optional[Dict[str, Any]]

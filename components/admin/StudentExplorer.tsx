@@ -10,7 +10,8 @@ import {
   blockAdminStudent, 
   unblockAdminStudent,
   ViolationHistory,
-  fetchViolationHistory
+  fetchViolationHistory,
+  fetchStudentFidelity
 } from "@/lib/api";
 import styles from "./StudentExplorer.module.css";
 import Skeleton from "@/components/Skeleton";
@@ -58,43 +59,10 @@ export default function StudentExplorer() {
     setDetailsLoading(true);
     setSyncError(null);
     try {
-      // Robust select with explicit joins
-      const { data: profile, error } = await supabase
-        .from('students')
-        .select('*, exam_status(*), exam_results(*), odyssey_progress(*)')
-        .eq('id', studentId)
-        .maybeSingle();
-
-      if (error) throw error;
+      const profile = await fetchStudentFidelity(studentId);
 
       if (profile) {
-        // Defensive extraction for joined arrays/objects
-        const getFirst = (val: any) => Array.isArray(val) ? val[0] : val;
-        
-        const status = getFirst(profile.exam_status);
-        const results = getFirst(profile.exam_results);
-        const odyssey = getFirst(profile.odyssey_progress);
-
-        const mapped: StudentFidelity = {
-          student_id: profile.id,
-          name: profile.name || "Unknown Identity",
-          usn: profile.usn || "N/A",
-          email: profile.email || "No Email",
-          branch: profile.branch || "CS",
-          status: status?.status || "not_started",
-          warnings: status?.warnings || 0,
-          score: results?.score || 0,
-          total_marks: results?.total_marks || 0,
-          last_active: status?.last_active,
-          submitted_at: status?.submitted_at,
-          started_at: status?.started_at,
-          is_blocked: status?.is_blocked || profile.is_blocked || false,
-          exam_name: status?.exam_name || "General",
-          exam_results: Array.isArray(profile.exam_results) ? profile.exam_results : (results ? [results] : []),
-          odyssey_progress: odyssey || null
-        };
-        
-        setSelectedStudent(mapped);
+        setSelectedStudent(profile);
         const vLogs = await fetchViolationHistory(studentId);
         setViolations(vLogs);
       } else {
