@@ -23,31 +23,37 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
 
   const triggerViolation = useCallback(
     async (type: string, metadata?: Record<string, unknown>) => {
-      // 1. Block if already submitted, or if we are CURRENTLY showing a modal/reporting
-      if (isSubmitted || isReporting.current || showModal) return;
+      // 1. HARD LOCK: Block if already submitted, if we are ALREADY reporting, or if modal is showing.
+      // We use both refs and state for maximum resilience.
+      if (isSubmitted || isReporting.current || showModal) {
+        console.log(`[ANTICHEAT] Blocking ${type} (Submitted: ${isSubmitted}, Reporting: ${isReporting.current}, Modal: ${showModal})`);
+        return;
+      }
       
       const now = Date.now();
-      // 2. Strict Debounce: 5 seconds between ANY violation events
-      if (now - lastViolationTime.current < 5000) return; 
+      // 2. Strict Debounce: 8 seconds between violation events (longer window to allow UI/Network to settle)
+      if (now - lastViolationTime.current < 8000) {
+        console.log(`[ANTICHEAT] Debouncing ${type}`);
+        return;
+      }
       
       lastViolationTime.current = now;
       isReporting.current = true;
+      setShowModal(true); // Show modal IMMEDIATELY with a loading state or pending message
 
       try {
+        setModalMessage("📡 Synchronizing telemetry...");
         const res = await reportViolation(type, examName, metadata);
-        const count = res.warning_count;
         
-        // 3. Fidelity Sync: Ensure state updates before showing modal
-        setWarningCount(count);
+        // 3. Update state with actual count from backend
+        setWarningCount(res.warning_count);
         setModalMessage(res.message);
-        setShowModal(true);
 
         if (res.auto_submitted) {
           onAutoSubmit();
         }
       } catch (err) {
-        console.error("Violation sync failed:", err);
-        // Fallback local increment if network fails
+        console.error("[ANTICHEAT] Sync failed:", err);
         setWarningCount((prev) => {
           const next = prev + 1;
           setModalMessage(
@@ -57,18 +63,17 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
               ? "🚨 Final warning! One more violation will submit your exam."
               : "⚠️ Warning: Please stay on the exam tab."
           );
-          setShowModal(true);
           if (next >= 3) onAutoSubmit();
           return next;
         });
       } finally {
-        // Unlock after delay to ensure UI stability
+        // Unlock after delay
         setTimeout(() => {
           isReporting.current = false;
-        }, 1000);
+        }, 2000);
       }
     },
-    [isSubmitted, onAutoSubmit, showModal]
+    [isSubmitted, onAutoSubmit, showModal, examName]
   );
 
   // ── Sync status on focus ─────────────────────────────────
