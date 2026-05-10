@@ -221,11 +221,18 @@ async def get_student_fidelity(student_id: str, _: bool = Depends(verify_admin))
     # 2. Fetch Relations
     status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
     results_res = db.table("exam_results").select("*").eq("student_id", student_id).execute()
-    odyssey_res = db.table("odyssey_progress").select("*").eq("student_id", student_id).execute()
+    
+    # Odyssey is optional, handle missing table (PGRST205)
+    odyssey = {}
+    try:
+        odyssey_res = db.table("odyssey_progress").select("*").eq("student_id", student_id).execute()
+        if odyssey_res.data:
+            odyssey = odyssey_res.data[0]
+    except Exception as e:
+        print(f"Odyssey telemetry unavailable: {e}")
 
     status = status_res.data[0] if status_res.data else {}
     results = results_res.data or []
-    odyssey = odyssey_res.data[0] if odyssey_res.data else {}
 
     # 3. Consolidate
     return StudentFidelity(
