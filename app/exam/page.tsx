@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { fetchQuestions, submitExam, fetchPublicExamConfig, heartbeat, saveAnswer, type Question, type SubmitResponse } from "@/lib/api";
+import { fetchQuestions, submitExam, fetchPublicExamConfig, heartbeat, saveAnswer, startExam, type Question, type SubmitResponse } from "@/lib/api";
 import { useExamState, clearExamStorage } from "@/hooks/useExamState";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -99,12 +99,35 @@ export default function ExamPage() {
     // Pick random final theme on mount
     setFinalTheme(FINAL_THEMES[Math.floor(Math.random() * FINAL_THEMES.length)]);
 
+    // If examStartTime is null, the student landed here without going through
+    // /instructions (e.g. page reload). Call startExam to ensure backend status
+    // is 'active' and get a real start time.
+    const ensureStarted = async () => {
+      if (!info.examStartTime && info.id !== "PREVIEW") {
+        try {
+          const res = await startExam(quizTitle);
+          stableStartTime.current = res.started_at;
+          info.examStartTime = res.started_at;
+          // Update localStorage so subsequent reloads have the start time
+          localStorage.setItem("exam_student", JSON.stringify({
+            ...info,
+            examStartTime: res.started_at
+          }));
+          setStudent({ ...info });
+        } catch (e) {
+          console.warn("[EXAM] Auto-start failed:", e);
+        }
+      }
+    };
+
     // Fetch questions for the specific exam title
     fetchQuestions(quizTitle)
       .then((qs) => {
         setQuestions(qs);
         setLoading(false);
         enterFullscreen();
+        // Ensure exam is started in backend after questions load
+        ensureStarted();
       })
       .catch(() => {
         setError("Failed to load exam questions. Please refresh.");

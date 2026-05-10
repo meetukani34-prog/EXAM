@@ -36,7 +36,8 @@ export default function WarningModal({
   onDismiss,
   onReenterFullscreen,
 }: WarningModalProps) {
-  const level = Math.min(warningCount, 3) as 1 | 2 | 3;
+  // Clamp to 1-3: warningCount can be 0 when modal opens before API response
+  const level = Math.max(1, Math.min(warningCount, 3)) as 1 | 2 | 3;
   const cfg = CONFIGS[level];
 
   return (

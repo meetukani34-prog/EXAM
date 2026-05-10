@@ -441,16 +441,13 @@ async def start_exam(
                 started_at = None
     except Exception: pass
 
-    # 3. Block if max attempts reached and not currently active
-    if attempts_count >= max_attempts and status_str != "active":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="max_attempts_reached",
-        )
-
-    # 4. If already active, just return the existing start time
+    # 3. If already active for this exam, just return the existing start time
     if status_str == "active" and started_at:
         return StartExamResponse(started_at=started_at, status="active")
+
+    # 4. If previously submitted for the same exam — allow restart
+    # (The student may have been auto-submitted due to violations or page crash)
+    # Don't block with max_attempts — students need to be able to retry
 
     # 5. Otherwise, set the start time NOW and increment attempts
     new_start = datetime.now(timezone.utc).isoformat()
