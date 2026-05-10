@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { startExam } from '@/lib/api';
 import styles from './PyHuntView.module.css';
 import AntiCheat from './AntiCheat';
+import { useFullscreen } from '@/hooks/useFullscreen';
 
 const ROUNDS = [
   { id: 1, name: "MCQ Logic", description: "Identify the correct Python syntax and logic from the given options.", target: "syntax" },
@@ -28,6 +29,7 @@ export default function PyHuntView() {
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(true);
   const { runCode, loading: pyLoading } = usePyodide();
+  const { enter: enterFullscreen } = useFullscreen();
   const [student, setStudent] = useState<any>(null);
   
   // Gate State
@@ -220,7 +222,10 @@ export default function PyHuntView() {
             ))}
           </div>
 
-          <button className={styles.startBtn} onClick={() => setHasStarted(true)}>
+          <button className={styles.startBtn} onClick={() => {
+            setHasStarted(true);
+            enterFullscreen();
+          }}>
             🚀 Start PyHunt
           </button>
         </div>
