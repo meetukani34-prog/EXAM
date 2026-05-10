@@ -4,7 +4,7 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import { reportViolation } from "@/lib/api";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import WarningModal from "./WarningModal";
-import FaceMonitor from "./FaceMonitor";
+// import FaceMonitor from "./FaceMonitor";
 
 interface AntiCheatProps {
   isSubmitted: boolean;
@@ -178,9 +178,9 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
 
   return (
     <>
-      {isStabilized && (
+      {/* {isStabilized && (
         <FaceMonitor onViolation={triggerViolation} isSubmitted={isSubmitted} />
-      )}
+      )} */}
       {showModal && (
         <WarningModal
           warningCount={warningCount}
