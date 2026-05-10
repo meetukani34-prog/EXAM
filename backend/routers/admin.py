@@ -234,11 +234,16 @@ async def get_student_fidelity(student_id: str, _: bool = Depends(verify_admin))
     status = status_res.data[0] if status_res.data else {}
     results = results_res.data or []
 
-    # 3. Calculate Category Breakdown
+    # 3. Calculate Category Breakdown & Group Results
     cat_scores = {
         "aptitude": {"score": 0.0, "total": 0.0},
         "programming": {"score": 0.0, "total": 0.0},
         "other": {"score": 0.0, "total": 0.0}
+    }
+    results_by_cat = {
+        "aptitude": [],
+        "programming": [],
+        "other": []
     }
 
     if results:
@@ -252,18 +257,24 @@ async def get_student_fidelity(student_id: str, _: bool = Depends(verify_admin))
             try:
                 questions_res = db.table("questions").select("id, category, correct_answer, marks").eq("exam_name", e_name).execute()
                 if questions_res.data:
+                    # Determine primary category for this result node
+                    # (Simplified: check which category has most questions)
+                    cat_counts = {}
                     for q in questions_res.data:
                         q_id = q["id"]
                         cat = q.get("category", "other").lower()
                         if cat not in cat_scores: cat = "other"
+                        cat_counts[cat] = cat_counts.get(cat, 0) + 1
                         
                         q_marks = q.get("marks", 1)
-                        # Avoid double-counting if student took multiple exams with same categories
-                        # Actually, we want the aggregate total of all questions they've been assigned
                         cat_scores[cat]["total"] += q_marks
                         
                         if q_id in student_answers and student_answers[q_id] == q["correct_answer"]:
                             cat_scores[cat]["score"] += q_marks
+                    
+                    # Sort result into its primary category bucket
+                    primary_cat = max(cat_counts, key=cat_counts.get) if cat_counts else "other"
+                    results_by_cat[primary_cat].append(res)
             except Exception as e:
                 print(f"Category calculation failed for {e_name}: {e}")
 
@@ -285,7 +296,8 @@ async def get_student_fidelity(student_id: str, _: bool = Depends(verify_admin))
         exam_name=status.get("exam_name", "General"),
         exam_results=results,
         odyssey_progress=odyssey,
-        category_scores=cat_scores
+        category_scores=cat_scores,
+        results_by_category=results_by_cat
     )
 
 @router.post("/students")

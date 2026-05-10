@@ -16,12 +16,13 @@ import {
 import styles from "./StudentExplorer.module.css";
 import Skeleton from "@/components/Skeleton";
 
-type TabType = "General" | "Exams" | "Violations" | "PyHunt";
+type TabType = "General" | "Aptitude" | "Programming" | "Other" | "Violations" | "PyHunt";
 
 interface StudentFidelity extends AdminStudent {
   exam_results?: any[];
   odyssey_progress?: any;
   category_scores?: Record<string, { score: number; total: number }>;
+  results_by_category?: Record<string, any[]>;
 }
 
 export default function StudentExplorer() {
@@ -184,6 +185,34 @@ export default function StudentExplorer() {
     );
   };
 
+  const renderCategoryDetails = (cat: string) => {
+    const results = selectedStudent?.results_by_category?.[cat.toLowerCase()] || [];
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={styles.timeline}>
+        {results.length === 0 ? (
+          <div style={{ padding: 40, opacity: 0.3, textAlign: 'center' }}>
+             No assessments manifested in {cat} node.
+          </div>
+        ) : (
+          results.map((res, i) => (
+            <div key={i} className={styles.timelineNode} style={{ animationDelay: `${i * 100}ms` }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>{res.exam_name}</div>
+                <div style={{ fontSize: 12, opacity: 0.5 }}>
+                   Submitted: {new Date(res.submitted_at).toLocaleString()}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                 <div style={{ fontWeight: 900, fontSize: 20 }}>{res.score} / {res.total_marks}</div>
+                 <div style={{ fontSize: 10, opacity: 0.5 }}>DOMAIN: {cat.toUpperCase()}</div>
+              </div>
+            </div>
+          ))
+        )}
+      </motion.div>
+    );
+  };
+
   const renderViolations = () => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={styles.timeline}>
       {violations.length === 0 ? (
@@ -280,8 +309,8 @@ export default function StudentExplorer() {
                 </div>
               </header>
 
-              <nav className={styles.tabPulse}>
-                {(["General", "Exams", "Violations", "PyHunt"] as const).map(tab => (
+              <nav className={styles.tabPulse} style={{ overflowX: 'auto', paddingBottom: 10 }}>
+                {(["General", "Aptitude", "Programming", "Other", "Violations", "PyHunt"] as const).map(tab => (
                   <button key={tab} className={`${styles.tabButton} ${activeTab === tab ? styles.tabButtonActive : ''}`} onClick={() => setActiveTab(tab)}>{tab}</button>
                 ))}
               </nav>
@@ -289,7 +318,9 @@ export default function StudentExplorer() {
               <div style={{ flex: 1 }}>
                 {activeTab === "General" && renderGeneral()}
                 {activeTab === "Violations" && renderViolations()}
-                {activeTab === "Exams" && <div style={{ padding: 40, opacity: 0.3 }}>Mapping temporal attempt history...</div>}
+                {activeTab === "Aptitude" && renderCategoryDetails("Aptitude")}
+                {activeTab === "Programming" && renderCategoryDetails("Programming")}
+                {activeTab === "Other" && renderCategoryDetails("Other")}
                 {activeTab === "PyHunt" && (
                    <div className={styles.statsGrid}>
                       <div className={styles.orbCard} style={{ borderColor: 'rgba(0, 242, 255, 0.4)' }}>
