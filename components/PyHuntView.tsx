@@ -53,9 +53,11 @@ export default function PyHuntView() {
   const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(true);
+  const [student, setStudent] = useState<any>(null);
+
+  // Lazy load pyodide only for round 2+
   const { runCode, loading: pyLoading } = usePyodide(currentRound > 1);
   const { enter: enterFullscreen } = useFullscreen();
-  const [student, setStudent] = useState<any>(null);
   
   // Gate State
   const [isAtGate, setIsAtGate] = useState(false);
@@ -64,10 +66,15 @@ export default function PyHuntView() {
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   const [unlockCode, setUnlockCode] = useState("");
 
+  const [mcqSet, setMcqSet] = useState<any[]>(ROUND_1_QUESTIONS);
+  const [mcqSelectionMap, setMcqSelectionMap] = useState<Record<number, number>>({});
+  const [currentMcqIndex, setCurrentMcqIndex] = useState(0);
+
   const handleAutoSubmit = useCallback(() => {
     setIsAutoSubmitted(true);
   }, []);
 
+  // ── Initialization & Sync ──
   useEffect(() => {
     const raw = localStorage.getItem("exam_student");
     if (!raw) return;
@@ -77,11 +84,11 @@ export default function PyHuntView() {
 
     async function syncProgress() {
       const studentId = info.id;
-      // ── Fetch Global Config (Start Code & USNs) ──────────
+      
+      // ── Authorization Check ──
       const globalAuthRaw = localStorage.getItem("pyhunt_global_auth");
       if (globalAuthRaw) {
         const ga = JSON.parse(globalAuthRaw);
-        // If authorized USNs are listed, check if this student is allowed
         if (ga.authorizedUsns && ga.authorizedUsns.trim()) {
            const allowedList = ga.authorizedUsns.split(',').map((u: string) => u.trim().toUpperCase());
            if (!allowedList.includes(info.usn?.toUpperCase())) {
@@ -90,8 +97,8 @@ export default function PyHuntView() {
         }
       }
 
-      // ── Fetch Student Progress ──
-      const { data, error } = await withRetry(async () => {
+      // ── Fetch DB State ──
+      const { data } = await withRetry(async () => {
         return await supabase
           .from('odyssey_progress')
           .select('*')
@@ -102,41 +109,41 @@ export default function PyHuntView() {
       if (data) {
         // Handle Admin Reset Signal
         if (data.round_1_state && (data.round_1_state as any).reset) {
+          console.log("PyHunt: Reset signal received. Clearing local state.");
           localStorage.removeItem(`pyhunt_mcq_map_${studentId}`);
           localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
           setMcqSelectionMap({});
           setCode("");
           
-          // Clear the reset flag in DB
           await supabase.from('odyssey_progress')
             .update({ round_1_state: {} })
             .eq('student_id', studentId);
+        } else {
+          // Restore local progress
+          const savedMap = localStorage.getItem(`pyhunt_mcq_map_${studentId}`);
+          if (savedMap) setMcqSelectionMap(JSON.parse(savedMap));
+          
+          const savedCode = localStorage.getItem(`pyhunt_code_draft_${studentId}`);
+          if (savedCode) setCode(savedCode);
         }
         setCurrentRound(data.current_round);
       } else {
-        // Initialize for new student
+        // First time
         await withRetry(async () => {
           return await supabase.from('odyssey_progress').insert([{ student_id: studentId, current_round: 1 }]);
         });
         setCurrentRound(1);
       }
 
-      // Load draft code for this specific student
-      const savedCode = localStorage.getItem(`pyhunt_code_draft_${studentId}`);
-      if (savedCode) setCode(savedCode);
-
-      // ── Initialize exam_status for AntiCheat Sync ─────────
+      // Start Exam Tracking
       try {
         await withRetry(() => startExam("PyHunt"));
       } catch (err: any) {
         if (err.message?.includes("already submitted") || (err instanceof ApiError && err.status === 403)) {
-          console.log("PyHunt: Exam already marked as submitted in backend.");
-          setCurrentRound(6); // Force to completion state
-          setIsAuthorized(true); // Bypass authorization for finished exams
-          setLoading(false); // Stop loading immediately
-          return; // Exit syncProgress early
-        } else {
-          console.error("PyHunt start sync failed after retries:", err);
+          setCurrentRound(6); 
+          setIsAuthorized(true);
+          setLoading(false);
+          return;
         }
       }
 
@@ -145,7 +152,7 @@ export default function PyHuntView() {
     syncProgress();
   }, []);
 
-  // Save draft code periodically (Debounced)
+  // ── Persistence Effects ──
   useEffect(() => {
     if (student?.id && code) {
       const timer = setTimeout(() => {
@@ -155,31 +162,16 @@ export default function PyHuntView() {
     }
   }, [code, student]);
 
-  const handleAuthorize = () => {
-    const globalAuthRaw = localStorage.getItem("pyhunt_global_auth");
-    let targetCode = "PYHUNT67"; // Fallback
-    if (globalAuthRaw) {
-      targetCode = JSON.parse(globalAuthRaw).startCode || "PYHUNT67";
-    }
+  useEffect(() => {
+     if (student?.id && Object.keys(mcqSelectionMap).length > 0) {
+        const timer = setTimeout(() => {
+           localStorage.setItem(`pyhunt_mcq_map_${student.id}`, JSON.stringify(mcqSelectionMap));
+        }, 1000);
+        return () => clearTimeout(timer);
+     }
+  }, [mcqSelectionMap, student]);
 
-    if (authForm.missionCode.toUpperCase() === targetCode.toUpperCase()) {
-      if (authError.startsWith("CRITICAL")) return;
-      setIsAuthorized(true);
-      // Store authorization for THIS student session
-      if (student?.id) {
-        sessionStorage.setItem(`pyhunt_auth_${student.id}`, "true");
-      }
-      setAuthError("");
-    } else {
-      setAuthError("Invalid Mission Authorization Code.");
-    }
-  };
-
-  const [mcqSet, setMcqSet] = useState<any[]>(ROUND_1_QUESTIONS);
-  const [mcqSelectionMap, setMcqSelectionMap] = useState<Record<number, number>>({});
-  const [currentMcqIndex, setCurrentMcqIndex] = useState(0);
-  
-  // Restore MCQ selection and load Admin MCQs
+  // Load Admin MCQs
   useEffect(() => {
      if (typeof window !== "undefined") {
         const savedMcqs = localStorage.getItem("pyhunt_mcqs_local");
@@ -201,36 +193,27 @@ export default function PyHuntView() {
            }
         }
      }
+  }, []);
 
-     if (student?.id && currentRound === 1) {
-        const saved = localStorage.getItem(`pyhunt_mcq_map_${student.id}`);
-        if (saved) {
-           setMcqSelectionMap(JSON.parse(saved));
-        } else {
-           setMcqSelectionMap({});
-        }
-     }
-  }, [student?.id, currentRound]);
-
-  // Reset session states when student changes
-  useEffect(() => {
-    if (student?.id) {
-      setCode("");
-      setOutput("");
-      setCurrentMcqIndex(0);
-      setIsAtGate(false);
-      setShowUnlockDialog(false);
+  // ── Handlers ──
+  const handleAuthorize = () => {
+    const globalAuthRaw = localStorage.getItem("pyhunt_global_auth");
+    let targetCode = "PYHUNT67"; 
+    if (globalAuthRaw) {
+      targetCode = JSON.parse(globalAuthRaw).startCode || "PYHUNT67";
     }
-  }, [student?.id]);
 
-  useEffect(() => {
-     if (student?.id && Object.keys(mcqSelectionMap).length > 0) {
-        const timer = setTimeout(() => {
-           localStorage.setItem(`pyhunt_mcq_map_${student.id}`, JSON.stringify(mcqSelectionMap));
-        }, 1000);
-        return () => clearTimeout(timer);
-     }
-  }, [mcqSelectionMap, student]);
+    if (authForm.missionCode.toUpperCase() === targetCode.toUpperCase()) {
+      if (authError.startsWith("CRITICAL")) return;
+      setIsAuthorized(true);
+      if (student?.id) {
+        sessionStorage.setItem(`pyhunt_auth_${student.id}`, "true");
+      }
+      setAuthError("");
+    } else {
+      setAuthError("Invalid Mission Authorization Code.");
+    }
+  };
 
   const handleExecute = async () => {
     if (currentRound === 1) {
@@ -243,7 +226,6 @@ export default function PyHuntView() {
       }
 
       if (allCorrect) {
-        // User must now enter the Orbital Unlock Code
         setIsAtGate(true);
         setGateError(false);
         setOutput("");
@@ -276,7 +258,6 @@ export default function PyHuntView() {
 
   const validateRound = (round: number, stdout: string) => {
     const out = stdout.trim();
-    if (round === 1) return true;
     if (round === 3) return out.toLowerCase().includes("palindrome: true");
     if (round === 4) return out.includes("1, 2, Fizz, 4, Buzz");
     return false;
@@ -297,10 +278,10 @@ export default function PyHuntView() {
       setCode("");
       setOutput("");
       setMcqSelectionMap({});
+      setCurrentMcqIndex(0);
       
-      // Clear student-scoped drafts for previous round
-      localStorage.removeItem(`pyhunt_mcq_${studentId}`);
       localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
+      localStorage.removeItem(`pyhunt_mcq_map_${studentId}`);
 
       await withRetry(async () => {
         const { error } = await supabase
@@ -315,9 +296,9 @@ export default function PyHuntView() {
     }
   };
 
+  // ── Render Helpers ──
   if (loading) return <div className={styles.levitate}>Igniting PyHunt Engines...</div>;
 
-  // ── Mission Accomplished View (Priority) ───────────────────────────
   if (currentRound > ROUNDS.length) {
     return (
       <div className={styles.successOverlay} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.95)' }}>
@@ -504,27 +485,24 @@ export default function PyHuntView() {
                       ))}
                     </div>
 
-                    {mcqSet.length > 1 && (
-                      <div className={styles.mcqNav}>
+                    <div className={styles.mcqNav}>
+                       <button 
+                         disabled={currentMcqIndex === 0} 
+                         onClick={() => setCurrentMcqIndex(prev => prev - 1)}
+                         className={styles.navBtn}
+                       >
+                         ← Previous Node
+                       </button>
+                       
+                       {mcqSelectionMap[currentMcqIndex] !== undefined && currentMcqIndex < mcqSet.length - 1 && (
                          <button 
-                           disabled={currentMcqIndex === 0} 
-                           onClick={() => setCurrentMcqIndex(prev => prev - 1)}
+                           onClick={() => setCurrentMcqIndex(prev => prev + 1)}
                            className={styles.navBtn}
                          >
-                           ← Previous Node
+                           Next Node →
                          </button>
-                         
-                         {/* Only show next if an answer is selected for current question */}
-                         {mcqSelectionMap[currentMcqIndex] !== undefined && currentMcqIndex < mcqSet.length - 1 && (
-                           <button 
-                             onClick={() => setCurrentMcqIndex(prev => prev + 1)}
-                             className={styles.navBtn}
-                           >
-                             Next Node →
-                           </button>
-                         )}
-                      </div>
-                    )}
+                       )}
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -545,24 +523,23 @@ export default function PyHuntView() {
 
               <div className={styles.controlPanel}>
                  {currentRound === 1 ? (
-                   // Show Submit button for Round 1 if on last question and all answered
                    (currentMcqIndex === mcqSet.length - 1 && Object.keys(mcqSelectionMap).length === mcqSet.length) && (
                      <button onClick={handleExecute} className={styles.executeBtn}>
-                        Submit Mission Sequence
+                        SUBMIT MISSION SEQUENCE
                      </button>
                    )
                  ) : (
                    <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>
-                     Execute Logic Protocol
+                     EXECUTE LOGIC PROTOCOL
                    </button>
                  )}
               </div>
 
-              {/* Only show terminal for coding rounds (Round 2+) or if there is critical output */}
-              {currentRound > 1 && output && (
+              {/* Terminal for Feedback */}
+              {(currentRound > 1 || (output && output.includes("ERROR"))) && (
                 <div className={styles.terminal}>
                    <div className={styles.terminalLabel}>TRANSMISSION OUTPUT</div>
-                   <pre>{output}</pre>
+                   <pre style={{ color: output.includes("ERROR") ? "#ff4d4d" : "inherit" }}>{output}</pre>
                 </div>
               )}
             </motion.div>
@@ -585,9 +562,8 @@ export default function PyHuntView() {
             >
               <div className={styles.successIcon}>🎉</div>
               <h3>Logic Sequence Verified!</h3>
-              <p>You have successfully validated the first logic node. The manifested key for the next orbit is:</p>
+              <p>You have successfully validated the logic node. The manifested key for the next orbit is:</p>
               <div className={styles.codeDisplay}>{unlockCode}</div>
-              <p className={styles.successNote}>Enter this code in the orbital gate to proceed.</p>
               <button 
                 className={styles.proceedBtn}
                 onClick={() => {
