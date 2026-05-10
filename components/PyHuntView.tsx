@@ -443,10 +443,10 @@ export default function PyHuntView() {
                     </div>
                   </div>
                 ) : currentRound === 2 ? (
-                  <div className={styles.jumbleWrapper}>
+                  <div className={styles.jumbleCard}>
                     <div className={styles.jumbleHeader}>
-                       <h3>Fix the Logic Flow</h3>
-                       <p>Reorder the code blocks to reconstruct the valid Python sequence.</p>
+                       <h3>Fix the</h3>
+                       <p className={styles.jumbleSubtitle}>Drag lines into correct order so the logic is valid.</p>
                     </div>
                     <div className={styles.jumbleList}>
                       {jumbledLines.map((line, idx) => (
@@ -455,16 +455,24 @@ export default function PyHuntView() {
                           key={line + idx} 
                           className={styles.jumbleItem}
                         >
-                          <div className={styles.jumbleContent}>
-                            <span className={styles.jumbleIdx}>{idx + 1}</span>
+                          <div className={styles.jumbleItemLeft}>
+                            <span className={styles.jumbleNumber}>{idx + 1}</span>
                             <code>{line}</code>
                           </div>
                           <div className={styles.jumbleActions}>
-                             <button disabled={idx === 0} onClick={() => moveLine(idx, 'up')}>▲</button>
-                             <button disabled={idx === jumbledLines.length - 1} onClick={() => moveLine(idx, 'down')}>▼</button>
+                             <button disabled={idx === 0} onClick={() => moveLine(idx, 'up')} className={styles.orderBtn}>▲</button>
+                             <button disabled={idx === jumbledLines.length - 1} onClick={() => moveLine(idx, 'down')} className={styles.orderBtn}>▼</button>
+                             <div className={styles.dragHandle}>
+                                <span></span><span></span><span></span>
+                             </div>
                           </div>
                         </motion.div>
                       ))}
+                    </div>
+                    <div className={styles.jumbleFooter}>
+                      <button onClick={handleExecute} className={styles.submitOrderBtn}>
+                        ✓ Submit Order
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -476,13 +484,12 @@ export default function PyHuntView() {
               </div>
 
               <div className={styles.controlPanel}>
-                 {currentRound === 1 ? (
+                 {currentRound === 1 && (
                    (currentMcqIndex === mcqSet.length - 1 && Object.keys(mcqSelectionMap).length === mcqSet.length) && (
                      <button onClick={handleExecute} className={styles.executeBtn}>SUBMIT MISSION SEQUENCE</button>
                    )
-                 ) : currentRound === 2 ? (
-                    <button onClick={handleExecute} className={styles.executeBtn}>VERIFY LOGIC SEQUENCE</button>
-                 ) : (
+                 )}
+                 {currentRound > 2 && (
                    <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>EXECUTE LOGIC PROTOCOL</button>
                  )}
               </div>
