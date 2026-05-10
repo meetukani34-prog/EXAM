@@ -28,3 +28,9 @@ END $$;
 
 -- 3. Update exam_config with branch
 ALTER TABLE exam_config ADD COLUMN IF NOT EXISTS branch TEXT DEFAULT 'ALL';
+
+-- 4. Update exam_results with reporting columns
+ALTER TABLE exam_results ADD COLUMN IF NOT EXISTS correct_count INTEGER DEFAULT 0;
+ALTER TABLE exam_results ADD COLUMN IF NOT EXISTS wrong_count INTEGER DEFAULT 0;
+ALTER TABLE exam_results ALTER COLUMN score TYPE FLOAT;
+ALTER TABLE exam_results ALTER COLUMN total_marks TYPE FLOAT;

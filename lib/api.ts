@@ -145,11 +145,12 @@ export async function fetchQuestions(title: string): Promise<QuestionsResponse> 
 // ── Save Answer ───────────────────────────────────────────────
 export async function saveAnswer(
   question_id: string,
-  selected_option: string
+  selected_option: string,
+  examName: string = "General Assessment"
 ): Promise<void> {
   await apiFetch("/exam/save-answer", {
     method: "POST",
-    body: JSON.stringify({ question_id, selected_option }),
+    body: JSON.stringify({ question_id, selected_option, exam_name: examName }),
   });
 }
 

@@ -60,6 +60,7 @@ export default function ExamPage() {
     dirtyIds,
     clearDirty,
     isSubmitted,
+    examName: examTitle,
   });
 
   // ── Load student + questions ──────────────────────────────

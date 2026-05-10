@@ -54,6 +54,7 @@ class QuestionsResponse(BaseModel):
 class SaveAnswerRequest(BaseModel):
     question_id: str
     selected_option: str   # "A", "B", "C", or "D"
+    exam_name: Optional[str] = "General Assessment"
 
 class SaveAnswerResponse(BaseModel):
     saved: bool

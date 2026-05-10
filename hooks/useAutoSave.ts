@@ -11,6 +11,7 @@ interface UseAutoSaveOptions {
   dirtyIds: Set<string>;
   clearDirty: () => void;
   isSubmitted: boolean;
+  examName: string;
 }
 
 export function useAutoSave({
@@ -18,6 +19,7 @@ export function useAutoSave({
   dirtyIds,
   clearDirty,
   isSubmitted,
+  examName,
 }: UseAutoSaveOptions) {
   // Keep a ref so interval always sees latest values without re-triggering
   const answersRef = useRef(answers);
@@ -40,7 +42,7 @@ export function useAutoSave({
 
     // Fire all saves in parallel — batch network calls
     await Promise.allSettled(
-      toSave.map((qId) => saveAnswer(qId, current[qId]))
+      toSave.map((qId) => saveAnswer(qId, current[qId], examName))
     );
 
     clearDirty();
@@ -66,6 +68,7 @@ export function useAutoSave({
                 JSON.stringify({
                   question_id: qId,
                   selected_option: current[qId],
+                  exam_name: examName,
                 }),
               ],
               { type: "application/json" }

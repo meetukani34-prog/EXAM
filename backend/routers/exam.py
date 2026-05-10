@@ -204,11 +204,14 @@ def save_answer(
             detail="Exam already submitted. Cannot save answers.",
         )
 
-    # Fetch existing answers
+    exam_name = request.exam_name or "General Assessment"
+
+    # Fetch existing answers for THIS specific exam
     existing = (
         db.table("exam_results")
         .select("answers")
         .eq("student_id", student_id)
+        .eq("exam_name", exam_name)
         .execute()
     )
 
@@ -217,11 +220,12 @@ def save_answer(
         answers[request.question_id] = request.selected_option
         db.table("exam_results").update({"answers": answers}).eq(
             "student_id", student_id
-        ).execute()
+        ).eq("exam_name", exam_name).execute()
     else:
         db.table("exam_results").insert(
             {
                 "student_id": student_id,
+                "exam_name": exam_name,
                 "answers": {request.question_id: request.selected_option},
                 "score": 0,
             }
@@ -257,15 +261,17 @@ def submit_exam(
         db.table("exam_status")
         .select("status")
         .eq("student_id", student_id)
+        .eq("exam_name", exam_title)
         .limit(1)
         .execute()
     )
     if status_row.data and status_row.data[0].get("status") == "submitted":
-        # Return existing result (exam_results has no exam_name column)
+        # Return existing result scoped to THIS exam
         result_row = (
             db.table("exam_results")
-            .select("score, total_marks, submitted_at")
+            .select("score, total_marks, submitted_at, correct_count, wrong_count")
             .eq("student_id", student_id)
+            .eq("exam_name", exam_title)
             .limit(1)
             .execute()
         )
@@ -284,21 +290,21 @@ def submit_exam(
 
     branch = current.get("branch", "CS")
 
-    # Strategy 1: Strict Branch + Strict Title Match
+    # ── 4-Strategy Question Fetching (Sync with get_questions) ──
+    # Strategy 1: Strict Branch + Strict Title
     query = db.table("questions").select("id, correct_answer, marks")
     if branch != "ALL":
         query = query.eq("branch", branch)
-    
     questions_result = query.eq("exam_name", exam_title).execute()
 
-    # Strategy 2: Strict Branch + Fuzzy Title Match
+    # Strategy 2: Strict Branch + Fuzzy Title
     if not questions_result.data:
         query = db.table("questions").select("id, correct_answer, marks")
         if branch != "ALL":
             query = query.eq("branch", branch)
         questions_result = query.ilike("exam_name", f"%{exam_title}%").execute()
 
-    # Strategy 3: Global Title Match (Cross-Branch Fallback)
+    # Strategy 3: Global Title Match
     if not questions_result.data:
         questions_result = (
             db.table("questions")
@@ -306,6 +312,18 @@ def submit_exam(
             .eq("exam_name", exam_title)
             .execute()
         )
+    
+    # Strategy 4: Global Fuzzy Title Match
+    if not questions_result.data:
+        questions_result = (
+            db.table("questions")
+            .select("id, correct_answer, marks")
+            .ilike("exam_name", f"%{exam_title}%")
+            .execute()
+        )
+
+    if not questions_result.data:
+        print(f"[EXAM] CRITICAL: No questions found for exam '{exam_title}' during submission!")
     
     # ── Scoring Configuration ──
     # Fetch global config to see if we have negative marks or a marks override
@@ -353,6 +371,8 @@ def submit_exam(
             "answers": answers,
             "score": score,
             "total_marks": total_marks,
+            "correct_count": correct_count,
+            "wrong_count": wrong_count,
             "submitted_at": submitted_at
         }, on_conflict="student_id,exam_name").execute()
     except Exception as e:
