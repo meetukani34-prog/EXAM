@@ -4,6 +4,7 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import { reportViolation } from "@/lib/api";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import WarningModal from "./WarningModal";
+import { supabase } from "@/lib/supabase";
 // import FaceMonitor from "./FaceMonitor";
 
 interface AntiCheatProps {
