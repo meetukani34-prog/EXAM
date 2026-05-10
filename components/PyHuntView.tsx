@@ -283,9 +283,21 @@ export default function PyHuntView() {
   };
 
   const validateRound = (round: number, stdout: string) => {
-    const out = stdout.trim();
-    if (round === 3) return out.toLowerCase().includes("palindrome: true");
-    if (round === 4) return out.includes("1, 2, Fizz, 4, Buzz");
+    const out = stdout.trim().toLowerCase();
+    const roundConfig = globalConfigs.find((c: any) => c.round === round);
+    if (!roundConfig) return false;
+    
+    // Use target_output from admin if available, otherwise fallback to defaults
+    const target = (roundConfig.target_output || "").trim().toLowerCase();
+    
+    if (round === 3) {
+       const expected = target || "palindrome: true";
+       return out.includes(expected);
+    }
+    if (round === 4) {
+       const expected = target || "1, 2, fizz, 4, buzz";
+       return out.includes(expected);
+    }
     return false;
   };
 

@@ -168,6 +168,68 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     } catch (err: any) { alert("Failed to delete: " + err.message); }
   };
 
+  // ── PyHunt Configuration State ──
+  const [configs, setConfigs] = useState<any[]>([
+    { round: 1, name: "MCQ", clue: "Locate the physical node to find your code.", code: "LIBRARY42" },
+    { round: 2, name: "Jumble", clue: "Order matters in logic.", code: "LAB2CO" },
+    { round: 3, name: "Palindrome", clue: "The mirror speaks the truth.", code: "HEX33" },
+    { round: 4, name: "FizzBuzz", clue: "Numbers dance in patterns.", code: "F1ZZ" },
+  ]);
+  const [mcqs, setMcqs] = useState<any[]>([
+    { id: 1, question: "What is the output of print(2**3)?", options: ["6", "8", "9", "5"], answer: 1 },
+  ]);
+  const [jumbles, setJumbles] = useState<any[]>([
+    { id: 1, blocks: ["def hello():", "  print('world')", "hello()"], target: "def hello():\n  print('world')\nhello()" },
+  ]);
+  const [globalAuth, setGlobalAuth] = useState<any>({ startCode: "PYHUNT67", authorizedUsns: "" });
+
+  const fetchAllConfigs = useCallback(async () => {
+    const { data } = await supabase.from('pyhunt_global_config').select('*');
+    if (data) {
+      const rounds = data.find(c => c.config_key === 'rounds_config')?.config_value;
+      if (rounds) setConfigs(rounds);
+      const m = data.find(c => c.config_key === 'mcqs')?.config_value;
+      if (m) setMcqs(m);
+      const a = data.find(c => c.config_key === 'auth')?.config_value;
+      if (a) setGlobalAuth(a);
+      const j = data.find(c => c.config_key === 'jumbles')?.config_value;
+      if (j) setJumbles(j);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAllConfigs();
+  }, [fetchAllConfigs]);
+
+  const updateConfig = (round: number, field: string, val: string) => {
+    const updated = configs.map((c: any) => c.round === round ? { ...c, [field]: val } : c);
+    setConfigs(updated);
+    supabase.from('pyhunt_global_config').upsert({ config_key: 'rounds_config', config_value: updated }).then();
+  };
+  const updateMcq = (id: number, field: string, val: any) => {
+    const updated = mcqs.map((q: any) => q.id === id ? { ...q, [field]: val } : q);
+    setMcqs(updated);
+    supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }).then();
+  };
+  const addMcq = () => {
+    const updated = [...mcqs, { id: Date.now(), question: "", options: ["", "", "", ""], answer: 0 }];
+    setMcqs(updated);
+    supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }).then();
+  };
+  const removeMcq = (id: number) => {
+    const updated = mcqs.filter((q: any) => q.id !== id);
+    setMcqs(updated);
+    supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }).then();
+  };
+  const saveGlobalAuth = (newAuth: any) => {
+    setGlobalAuth(newAuth);
+    supabase.from('pyhunt_global_config').upsert({ config_key: 'auth', config_value: newAuth }).then();
+  };
+  const saveJumbles = (newJumbles: any) => {
+    setJumbles(newJumbles);
+    supabase.from('pyhunt_global_config').upsert({ config_key: 'jumbles', config_value: newJumbles }).then();
+  };
+
   const participants = students
     .map(s => {
       const progress = odysseyData.find(p => p.student_id === s.student_id);
@@ -206,7 +268,29 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
             Changes are saved to the global database and immediately visible to all students in real-time.
           </p>
         </div>
-        <button className={adminStyles.saveAllBtn} onClick={() => alert("All changes synchronized with local storage.")}>
+        <button 
+          className={adminStyles.saveAllBtn} 
+          onClick={async () => {
+            const btn = document.activeElement as HTMLButtonElement;
+            const originalText = btn.innerText;
+            btn.innerText = "🔄 SYNCING...";
+            btn.disabled = true;
+            
+            // Re-sync all current local states to Supabase just in case
+            await Promise.all([
+               supabase.from('pyhunt_global_config').upsert({ config_key: 'rounds_config', config_value: configs }),
+               supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: mcqs }),
+               supabase.from('pyhunt_global_config').upsert({ config_key: 'auth', config_value: globalAuth }),
+               supabase.from('pyhunt_global_config').upsert({ config_key: 'jumbles', config_value: jumbles })
+            ]);
+
+            btn.innerText = "✅ SYNCHRONIZED";
+            setTimeout(() => {
+              btn.innerText = originalText;
+              btn.disabled = false;
+            }, 2000);
+          }}
+        >
           💾 Save All Changes
         </button>
       </header>
@@ -293,84 +377,32 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
           </div>
         </div>
       ) : (
-        <PyHuntConfig activeTab={activeTab} />
+        <PyHuntConfig 
+           activeTab={activeTab} 
+           configs={configs}
+           setConfigs={setConfigs}
+           mcqs={mcqs}
+           setMcqs={setMcqs}
+           jumbles={jumbles}
+           setJumbles={setJumbles}
+           globalAuth={globalAuth}
+           setGlobalAuth={setGlobalAuth}
+           updateConfig={updateConfig}
+           updateMcq={updateMcq}
+           addMcq={addMcq}
+           removeMcq={removeMcq}
+           saveGlobalAuth={saveGlobalAuth}
+           saveJumbles={saveJumbles}
+        />
       )}
     </div>
   );
 }
 
-function PyHuntConfig({ activeTab }: { activeTab: string }) {
-  const [configs, setConfigs] = useState<any[]>([
-    { round: 1, name: "MCQ", clue: "Locate the physical node to find your code.", code: "LIBRARY42" },
-    { round: 2, name: "Jumble", clue: "Order matters in logic.", code: "LAB2CO" },
-    { round: 3, name: "Palindrome", clue: "The mirror speaks the truth.", code: "HEX33" },
-    { round: 4, name: "FizzBuzz", clue: "Numbers dance in patterns.", code: "F1ZZ" },
-  ]);
-
-  const [mcqs, setMcqs] = useState<any[]>([
-    { id: 1, question: "What is the output of print(2**3)?", options: ["6", "8", "9", "5"], answer: 1 },
-  ]);
-
-  const [jumbles, setJumbles] = useState<any[]>([
-    { id: 1, blocks: ["def hello():", "  print('world')", "hello()"], target: "def hello():\n  print('world')\nhello()" },
-  ]);
-
-  const [globalAuth, setGlobalAuth] = useState<any>({ startCode: "PYHUNT67", authorizedUsns: "" });
-
-  useEffect(() => {
-    async function fetchAllConfigs() {
-      const { data } = await supabase.from('pyhunt_global_config').select('*');
-      if (data) {
-        const rounds = data.find(c => c.config_key === 'rounds_config')?.config_value;
-        if (rounds) setConfigs(rounds);
-        const m = data.find(c => c.config_key === 'mcqs')?.config_value;
-        if (m) setMcqs(m);
-        const a = data.find(c => c.config_key === 'auth')?.config_value;
-        if (a) setGlobalAuth(a);
-        const j = data.find(c => c.config_key === 'jumbles')?.config_value;
-        if (j) setJumbles(j);
-      }
-    }
-    fetchAllConfigs();
-  }, []);
-
-  const saveGlobalAuth = async (newAuth: any) => {
-    setGlobalAuth(newAuth);
-    await supabase.from('pyhunt_global_config').upsert({ config_key: 'auth', config_value: newAuth });
-  };
-
-  const saveConfig = async (newConfigs: any) => {
-    setConfigs(newConfigs);
-    await supabase.from('pyhunt_global_config').upsert({ config_key: 'rounds_config', config_value: newConfigs });
-  };
-
-  const updateConfig = (round: number, field: string, val: string) => {
-    const updated = configs.map((c: any) => c.round === round ? { ...c, [field]: val } : c);
-    saveConfig(updated);
-  };
-
-  const saveMcqs = async (newMcqs: any) => {
-    setMcqs(newMcqs);
-    await supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: newMcqs });
-  };
-
-  const addMcq = () => {
-    saveMcqs([...mcqs, { id: Date.now(), question: "", options: ["", "", "", ""], answer: 0 }]);
-  };
-
-  const updateMcq = (id: number, field: string, val: any) => {
-    saveMcqs(mcqs.map((q: any) => q.id === id ? { ...q, [field]: val } : q));
-  };
-
-  const removeMcq = (id: number) => {
-    saveMcqs(mcqs.filter((q: any) => q.id !== id));
-  };
-
-  const saveJumbles = async (newJumbles: any) => {
-    setJumbles(newJumbles);
-    await supabase.from('pyhunt_global_config').upsert({ config_key: 'jumbles', config_value: newJumbles });
-  };
-
+function PyHuntConfig({ 
+  activeTab, configs, mcqs, jumbles, globalAuth, updateConfig, updateMcq, addMcq, removeMcq, 
+  saveGlobalAuth, saveJumbles 
+}: any) {
   return (
     <div className={adminStyles.configContent}>
       {activeTab === "clues" && (
@@ -484,10 +516,39 @@ function PyHuntConfig({ activeTab }: { activeTab: string }) {
         </div>
       )}
 
-      {["r3", "r4"].includes(activeTab) && (
-        <div style={{ padding: 100, textAlign: 'center', opacity: 0.3 }}>
-          <h3 style={{ fontSize: 24, fontWeight: 900 }}>Module Calibrating</h3>
-          <p>Specific parameter configuration for this logic orbit is being integrated.</p>
+      {activeTab === "r3" && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <h4 style={{ color: '#fff', margin: 0 }}>Round 3: Palindrome Logic Configuration</h4>
+          <div className={adminStyles.configCard}>
+             <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>TARGET VALIDATION STRING (EXPECTED IN STDOUT)</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={configs.find(c => c.round === 3)?.target_output || "palindrome: true"}
+                  onChange={(e) => updateConfig(3, 'target_output', e.target.value)}
+                  placeholder="e.g., palindrome: true"
+                />
+                <p style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>The student's code must print this exact string (case-insensitive) to pass.</p>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "r4" && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <h4 style={{ color: '#fff', margin: 0 }}>Round 4: FizzBuzz Logic Configuration</h4>
+          <div className={adminStyles.configCard}>
+             <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>TARGET VALIDATION STRING (EXPECTED IN STDOUT)</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={configs.find(c => c.round === 4)?.target_output || "1, 2, Fizz, 4, Buzz"}
+                  onChange={(e) => updateConfig(4, 'target_output', e.target.value)}
+                  placeholder="e.g., 1, 2, Fizz, 4, Buzz"
+                />
+                <p style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>The student's code must print this exact string (case-insensitive) to pass.</p>
+             </div>
+          </div>
         </div>
       )}
     </div>
