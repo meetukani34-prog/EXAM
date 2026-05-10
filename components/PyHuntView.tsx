@@ -116,10 +116,13 @@ export default function PyHuntView() {
     syncProgress();
   }, []);
 
-  // Save draft code periodically
+  // Save draft code periodically (Debounced)
   useEffect(() => {
     if (student?.id && code) {
-      localStorage.setItem(`pyhunt_code_draft_${student.id}`, code);
+      const timer = setTimeout(() => {
+        localStorage.setItem(`pyhunt_code_draft_${student.id}`, code);
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [code, student]);
 
@@ -193,7 +196,10 @@ export default function PyHuntView() {
 
   useEffect(() => {
      if (student?.id && Object.keys(mcqSelectionMap).length > 0) {
-        localStorage.setItem(`pyhunt_mcq_map_${student.id}`, JSON.stringify(mcqSelectionMap));
+        const timer = setTimeout(() => {
+           localStorage.setItem(`pyhunt_mcq_map_${student.id}`, JSON.stringify(mcqSelectionMap));
+        }, 1000);
+        return () => clearTimeout(timer);
      }
   }, [mcqSelectionMap, student]);
 
@@ -363,9 +369,13 @@ export default function PyHuntView() {
     );
   }
 
+  const handleAutoSubmit = useCallback(() => {
+    setIsAutoSubmitted(true);
+  }, []);
+
   return (
     <div className={styles.pyhuntShell}>
-      <AntiCheat isSubmitted={currentRound > 5} examName="PyHunt" onAutoSubmit={() => setIsAutoSubmitted(true)} />
+      <AntiCheat isSubmitted={currentRound > 5} examName="PyHunt" onAutoSubmit={handleAutoSubmit} />
       
       <aside className={styles.timeline}>
         {ROUNDS.map(r => (
