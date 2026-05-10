@@ -170,13 +170,15 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                 borderBottom: '2px solid rgba(255,255,255,0.1)',
                 background: 'rgba(255, 255, 255, 0.05)' // Darker but consistent with shell
               }}>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>STUDENT NODE</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>BRANCH</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>WARNINGS</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>CURRENT ORBIT</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>ENTROPY (ERRORS)</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>LAST SIGNAL</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>INTERVENTION</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>STUDENT NODE</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>BRANCH</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>WARNINGS</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>ORBIT PROGRESS</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>MISSION SCORE</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>ELAPSED TIME</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>ENTROPY</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>LAST SIGNAL</th>
+                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>INTERVENTION</th>
               </tr>
             </thead>
             <tbody>
@@ -208,11 +210,21 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                         color: p.pyhunt.current_round === 5 ? '#34d399' : '#00f2ff',
                         border: `1px solid ${p.pyhunt.current_round === 5 ? 'rgba(52, 211, 153, 0.3)' : 'rgba(0, 242, 255, 0.2)'}`
                       }}>
-                        ORBIT {p.pyhunt.current_round}
+                        ROUND {p.pyhunt.current_round} / 5
                       </span>
                     ) : (
                       <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 800, letterSpacing: '0.05em' }}>NOT STARTED</span>
                     )}
+                  </td>
+                  <td>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#34d399' }}>
+                      {p.score || 0} <span style={{ fontSize: 10, opacity: 0.6 }}>PTS</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>
+                      {p.started_at ? getElapsedTime(p.started_at, p.status === "submitted" ? p.submitted_at : null) : "—"}
+                    </div>
                   </td>
                   <td>
                     {p.pyhunt ? (
