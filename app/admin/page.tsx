@@ -112,6 +112,39 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     fetchOdyssey();
   };
 
+  const handleToggleStop = async (s: AdminStudent) => {
+    const action = s.is_blocked ? "Unblock" : "Stop";
+    if (!confirm(`${action} student ${s.name}?`)) return;
+    try {
+      if (s.is_blocked) await unblockAdminStudent(s.student_id);
+      else await blockAdminStudent(s.student_id);
+      fetchStudentsGlobal();
+    } catch (err: any) {
+      alert(`Failed to ${action}: ` + err.message);
+    }
+  };
+
+  const handleReExam = async (s: AdminStudent) => {
+    if (!confirm(`Reset exam for ${s.name}? This will clear all progress and rounds.`)) return;
+    try {
+      await resetAdminStudent(s.student_id);
+      fetchStudentsGlobal();
+      fetchOdyssey(); 
+    } catch (err: any) {
+      alert("Failed to reset: " + err.message);
+    }
+  };
+
+  const handleDelete = async (s: AdminStudent) => {
+    if (!confirm(`Permanently delete student ${s.name} and all their data?`)) return;
+    try {
+      await deleteAdminStudent(s.student_id);
+      fetchStudentsGlobal();
+    } catch (err: any) {
+      alert("Failed to delete: " + err.message);
+    }
+  };
+
   // Merge students with their odyssey progress and filter for PyHunt participants
   const participants = students
     .map(s => {
@@ -253,15 +286,47 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                     </div>
                   </td>
                   <td>
-                    {p.pyhunt && (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
+                      {p.pyhunt && p.pyhunt.current_round < 5 && (
+                        <button
+                          className="btn btn-outline"
+                          style={{ fontSize: 9, padding: '4px 6px', borderRadius: 6, color: '#00f2ff', borderColor: '#00f2ff', fontWeight: 900 }}
+                          onClick={() => handleForceUnlock(p.student_id, p.pyhunt.current_round + 1)}
+                          title="Force Next Round"
+                        >
+                          🚀 NEXT
+                        </button>
+                      )}
                       <button
                         className="btn btn-outline"
-                        style={{ fontSize: 11, padding: '6px 12px', borderRadius: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                        onClick={() => handleForceUnlock(p.student_id, p.pyhunt.current_round + 1)}
+                        style={{ 
+                          fontSize: 9, padding: '4px 6px', borderRadius: 6, 
+                          color: p.is_blocked ? '#4caf50' : '#f87171', 
+                          borderColor: p.is_blocked ? '#4caf50' : '#f87171',
+                          fontWeight: 900
+                        }}
+                        onClick={() => handleToggleStop(p)}
+                        title={p.is_blocked ? "Unblock Student" : "Stop/Block Student"}
                       >
-                        Levite Next
+                        {p.is_blocked ? "🔓 START" : "🛑 STOP"}
                       </button>
-                    )}
+                      <button
+                        className="btn btn-outline"
+                        style={{ fontSize: 9, padding: '4px 6px', borderRadius: 6, color: '#fbbf24', borderColor: '#fbbf24', fontWeight: 900 }}
+                        onClick={() => handleReExam(p)}
+                        title="Reset & Re-exam"
+                      >
+                        🔄 RESET
+                      </button>
+                      <button
+                        className="btn btn-outline"
+                        style={{ fontSize: 9, padding: '4px 6px', borderRadius: 6, color: '#ef4444', borderColor: '#ef4444', fontWeight: 900 }}
+                        onClick={() => handleDelete(p)}
+                        title="Delete Student"
+                      >
+                        🗑️ DEL
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
