@@ -454,7 +454,7 @@
 
 .clueBox p {
   font-size: 15px;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.95);
   line-height: 1.6;
   margin: 0;
 }
@@ -711,11 +711,11 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
   padding: 20px 28px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.95);
   font-size: 18px;
   font-weight: 600;
   text-align: left;
@@ -739,15 +739,15 @@
 .optionLetter {
   width: 36px;
   height: 36px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.9);
   transition: all 0.3s;
 }
 
@@ -765,12 +765,13 @@
 .mcqProgress {
   font-size: 10px;
   font-weight: 900;
-  color: #00f2ff;
-  letter-spacing: 0.2em;
+  color: #00F2FF;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   margin-bottom: 12px;
   display: block;
-  opacity: 0.8;
+  opacity: 1;
+  text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
 }
 
 .mcqNav {
@@ -997,7 +998,7 @@
 
 .jumbleSubtitle {
   font-size: 14px;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255, 255, 255, 0.9);
   margin-top: 8px;
 }
 
