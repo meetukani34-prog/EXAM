@@ -461,6 +461,27 @@ function PyHuntConfig({
                   onChange={(e) => updateConfig(c.round, 'code', e.target.value)}
                 />
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>ROUND PROMPT</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={c.prompt || ""}
+                    onChange={(e) => updateConfig(c.round, 'prompt', e.target.value)}
+                    style={{ height: 100 }}
+                  />
+                </div>
+                <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>ROUND IMAGE URL</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={c.imageUrl || ""}
+                    onChange={(e) => updateConfig(c.round, 'imageUrl', e.target.value)}
+                    style={{ height: 100 }}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -484,6 +505,15 @@ function PyHuntConfig({
                   className={adminStyles.configInput}
                   value={q.question}
                   onChange={(e) => updateMcq(q.id, 'question', e.target.value)}
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>OPTIONAL QUESTION IMAGE URL</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={q.imageUrl || ""}
+                  onChange={(e) => updateMcq(q.id, 'imageUrl', e.target.value)}
+                  placeholder="https://..."
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -541,6 +571,24 @@ function PyHuntConfig({
           <h4 style={{ color: '#fff', margin: 0 }}>Round 3: Palindrome Logic Configuration</h4>
           <div className={adminStyles.configCard}>
              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>QUESTION / PROMPT</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={configs.find((c: any) => c.round === 3)?.prompt || ""}
+                  onChange={(e) => updateConfig(3, 'prompt', e.target.value)}
+                  placeholder="Describe the palindrome challenge..."
+                />
+             </div>
+             <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>OPTIONAL IMAGE URL</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={configs.find((c: any) => c.round === 3)?.imageUrl || ""}
+                  onChange={(e) => updateConfig(3, 'imageUrl', e.target.value)}
+                  placeholder="https://example.com/image.png"
+                />
+             </div>
+             <div className={adminStyles.inputGroup}>
                 <label className={adminStyles.inputLabel}>TARGET VALIDATION STRING (EXPECTED IN STDOUT)</label>
                 <input
                   className={adminStyles.configInput}
@@ -558,6 +606,24 @@ function PyHuntConfig({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <h4 style={{ color: '#fff', margin: 0 }}>Round 4: FizzBuzz Logic Configuration</h4>
           <div className={adminStyles.configCard}>
+             <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>QUESTION / PROMPT</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={configs.find((c: any) => c.round === 4)?.prompt || ""}
+                  onChange={(e) => updateConfig(4, 'prompt', e.target.value)}
+                  placeholder="Describe the FizzBuzz challenge..."
+                />
+             </div>
+             <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>OPTIONAL IMAGE URL</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={configs.find((c: any) => c.round === 4)?.imageUrl || ""}
+                  onChange={(e) => updateConfig(4, 'imageUrl', e.target.value)}
+                  placeholder="https://example.com/image.png"
+                />
+             </div>
              <div className={adminStyles.inputGroup}>
                 <label className={adminStyles.inputLabel}>TARGET VALIDATION STRING (EXPECTED IN STDOUT)</label>
                 <input

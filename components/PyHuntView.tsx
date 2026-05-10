@@ -469,12 +469,31 @@ export default function PyHuntView() {
                  )}
               </header>
 
+              {(() => {
+                const c = globalConfigs.find((conf: any) => conf.round === currentRound);
+                if (!c?.prompt && !c?.imageUrl) return null;
+                return (
+                  <div className={styles.roundMeta}>
+                    {c.imageUrl && <img src={c.imageUrl} alt="Logic Challenge" className={styles.roundImage} />}
+                    {c.prompt && <p className={styles.roundPrompt}>{c.prompt}</p>}
+                  </div>
+                );
+              })()}
               <div className={styles.editorContainer}>
                 {currentRound === 1 ? (
                   <div className={styles.mcqWrapper}>
                     <div className={styles.mcqHeader}>
                        <span className={styles.mcqProgress}>Node {currentMcqIndex + 1} of {mcqSet.length}</span>
                        <p className={styles.mcqQuestion}>{mcqSet[currentMcqIndex].question}</p>
+                       {mcqSet[currentMcqIndex].imageUrl && (
+                         <div style={{ marginTop: 16, textAlign: 'center' }}>
+                            <img 
+                              src={mcqSet[currentMcqIndex].imageUrl} 
+                              alt="Question Visual" 
+                              style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)' }} 
+                            />
+                         </div>
+                       )}
                     </div>
                     <div className={styles.mcqOptions}>
                       {mcqSet[currentMcqIndex].options.map((opt: string, i: number) => (

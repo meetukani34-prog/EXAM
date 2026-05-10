@@ -851,6 +851,35 @@
   100% { transform: scale(300); opacity: 0; }
 }
 
+.roundMeta {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(0, 242, 255, 0.1);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  backdrop-filter: blur(4px);
+}
+
+.roundImage {
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0,0,0,0.2);
+}
+
+.roundPrompt {
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 .codeDisplay {
   background: rgba(0, 242, 255, 0.1);
   border: 2px dashed rgba(0, 242, 255, 0.5);
