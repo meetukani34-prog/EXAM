@@ -63,9 +63,8 @@ export default function PyHuntView() {
   const [isAtGate, setIsAtGate] = useState(false);
   const [gateInput, setGateInput] = useState("");
   const [gateError, setGateError] = useState(false);
-  const [showUnlockDialog, setShowUnlockDialog] = useState(false);
-  const [unlockCode, setUnlockCode] = useState("");
-
+  
+  const [globalConfigs, setGlobalConfigs] = useState<any[]>([]);
   const [mcqSet, setMcqSet] = useState<any[]>(ROUND_1_QUESTIONS);
   const [mcqSelectionMap, setMcqSelectionMap] = useState<Record<number, number>>({});
   const [currentMcqIndex, setCurrentMcqIndex] = useState(0);
@@ -89,17 +88,6 @@ export default function PyHuntView() {
     async function syncProgress() {
       const studentId = info.id;
       
-      const globalAuthRaw = localStorage.getItem("pyhunt_global_auth");
-      if (globalAuthRaw) {
-        const ga = JSON.parse(globalAuthRaw);
-        if (ga.authorizedUsns && ga.authorizedUsns.trim()) {
-           const allowedList = ga.authorizedUsns.split(',').map((u: string) => u.trim().toUpperCase());
-           if (!allowedList.includes(info.usn?.toUpperCase())) {
-              setAuthError("CRITICAL: Your USN is not authorized for this logic session.");
-           }
-        }
-      }
-
       const { data } = await withRetry(async () => {
         return await supabase
           .from('odyssey_progress')
@@ -145,6 +133,35 @@ export default function PyHuntView() {
       setLoading(false);
     }
     syncProgress();
+
+    // Fetch Global Configs
+    async function fetchGlobalConfigs() {
+       const { data } = await supabase.from('pyhunt_global_config').select('*');
+       if (data) {
+          const rounds = data.find(c => c.config_key === 'rounds_config')?.config_value;
+          if (rounds) setGlobalConfigs(rounds);
+
+          const mcqs = data.find(c => c.config_key === 'mcqs')?.config_value;
+          if (mcqs) {
+             const mapped = mcqs.map((m: any) => ({
+                id: m.id,
+                question: m.question,
+                options: m.options,
+                correct: m.answer,
+                output: "Key: Manifested"
+             }));
+             setMcqSet(mapped);
+          }
+       }
+    }
+    fetchGlobalConfigs();
+
+    // Listen for config changes
+    const channel = supabase.channel('pyhunt_global_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pyhunt_global_config' }, () => fetchGlobalConfigs())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   // ── Persistence ──
@@ -169,47 +186,36 @@ export default function PyHuntView() {
   // Load Admin MCQs & Round 2 Jumble Config
   useEffect(() => {
      if (typeof window !== "undefined") {
-        const savedMcqs = localStorage.getItem("pyhunt_mcqs_local");
-        if (savedMcqs) {
-           try {
-             const parsed = JSON.parse(savedMcqs);
-             if (parsed && parsed.length > 0) {
-                const mapped = parsed.map((m: any) => ({
-                   id: m.id,
-                   question: m.question,
-                   options: m.options,
-                   correct: m.answer,
-                   output: "Key: Manifested"
-                }));
-                setMcqSet(mapped);
-             }
-           } catch (e) { console.error("Failed to parse admin mcqs:", e); }
-        }
-
-        // Initialize Round 2 Jumble
-        if (currentRound === 2) {
-          const savedConfigs = JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]");
-          const r2Config = savedConfigs.find((c: any) => c.round === 2);
+        if (currentRound === 2 && globalConfigs.length > 0) {
+          const r2Config = globalConfigs.find((c: any) => c.round === 2);
           if (r2Config && r2Config.code) {
              const lines = r2Config.code.split('\n').filter((l: string) => l.trim() !== "");
              setOriginalJumbleCode(r2Config.code);
-             // Shuffle lines
              const shuffled = [...lines].sort(() => Math.random() - 0.5);
              setJumbledLines(shuffled);
           }
         }
      }
-  }, [currentRound]);
+  }, [currentRound, globalConfigs]);
 
   // ── Handlers ──
-  const handleAuthorize = () => {
-    const globalAuthRaw = localStorage.getItem("pyhunt_global_auth");
-    let targetCode = "PYHUNT67"; 
-    if (globalAuthRaw) {
-      targetCode = JSON.parse(globalAuthRaw).startCode || "PYHUNT67";
+  const handleAuthorize = async () => {
+    const { data } = await supabase.from('pyhunt_global_config').select('*').eq('config_key', 'auth').maybeSingle();
+    let targetCode = "PYHUNT67";
+    let allowedUsns = "";
+    if (data) {
+       targetCode = data.config_value.startCode || "PYHUNT67";
+       allowedUsns = data.config_value.authorizedUsns || "";
     }
+
     if (authForm.missionCode.toUpperCase() === targetCode.toUpperCase()) {
-      if (authError.startsWith("CRITICAL")) return;
+      if (allowedUsns.trim()) {
+         const list = allowedUsns.split(',').map(u => u.trim().toUpperCase());
+         if (!list.includes(student?.usn?.toUpperCase())) {
+            setAuthError("CRITICAL: Your USN is not authorized.");
+            return;
+         }
+      }
       setIsAuthorized(true);
       if (student?.id) sessionStorage.setItem(`pyhunt_auth_${student.id}`, "true");
       setAuthError("");
@@ -285,8 +291,7 @@ export default function PyHuntView() {
 
   const handleGateUnlock = async () => {
     const studentId = student.id;
-    const savedConfigs = JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]");
-    const currentConfig = savedConfigs.find((c: any) => c.round === currentRound);
+    const currentConfig = globalConfigs.find((c: any) => c.round === currentRound);
     const targetCode = currentConfig?.code || (currentRound === 1 ? "LIBRARY42" : "ALPHA");
 
     if (gateInput.trim().toUpperCase() === targetCode.toUpperCase()) {
@@ -316,7 +321,6 @@ export default function PyHuntView() {
     }
   };
 
-  // ── Render ──
   if (loading) return <div className={styles.levitate}>Igniting PyHunt Engines...</div>;
 
   if (currentRound > ROUNDS.length) {
@@ -445,7 +449,7 @@ export default function PyHuntView() {
                 ) : currentRound === 2 ? (
                   <div className={styles.jumbleCard}>
                     <div className={styles.jumbleHeader}>
-                       <h3>Fix the</h3>
+                       <h3>Fix the Logic Sequence</h3>
                        <p className={styles.jumbleSubtitle}>Drag lines into correct order so the logic is valid.</p>
                     </div>
                     <div className={styles.jumbleList}>
@@ -513,7 +517,7 @@ export default function PyHuntView() {
               <h2>ORBITAL UNLOCK REQUIRED</h2>
               <div className={styles.clueBox}>
                 <label>MISSION CLUE:</label>
-                <p>{JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]").find((c: any) => c.round === currentRound)?.clue || "Locate the physical node to find your code."}</p>
+                <p>{globalConfigs.find((c: any) => c.round === currentRound)?.clue || "Locate the physical node to find your code."}</p>
               </div>
               <div className={styles.gateInputGroup}>
                 <label>ENTER UNLOCK CODE</label>

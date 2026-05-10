@@ -183,7 +183,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
             <span style={{ color: '#00f2ff' }}>🐍</span> PyHunt Configuration
           </h2>
           <p style={{ opacity: 0.6, fontSize: 14, marginTop: 8 }}>
-            Changes are saved to this device's localStorage and immediately visible to students using the same device / browser.
+            Changes are saved to the global database and immediately visible to all students in real-time.
           </p>
         </div>
         <button className={adminStyles.saveAllBtn} onClick={() => alert("All changes synchronized with local storage.")}>
@@ -270,55 +270,46 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
 }
 
 function PyHuntConfig({ activeTab }: { activeTab: string }) {
-  const [configs, setConfigs] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("pyhunt_config_local");
-      if (saved) return JSON.parse(saved);
-    }
-    return [
-      { round: 1, name: "MCQ", clue: "ROUND 1 COMPLETE", code: "LIBRARY42" },
-      { round: 2, name: "Jumble", clue: "Round 2 Complete! GOOD JUB NOW FOR 3", code: "LAB2CO" },
-      { round: 3, name: "Palindrome", clue: "The mirror speaks the truth.", code: "HEX33" },
-      { round: 4, name: "FizzBuzz", clue: "Numbers dance in patterns.", code: "F1ZZ" },
-    ];
-  });
+  const [configs, setConfigs] = useState<any[]>([
+    { round: 1, name: "MCQ", clue: "Locate the physical node to find your code.", code: "LIBRARY42" },
+    { round: 2, name: "Jumble", clue: "Order matters in logic.", code: "LAB2CO" },
+    { round: 3, name: "Palindrome", clue: "The mirror speaks the truth.", code: "HEX33" },
+    { round: 4, name: "FizzBuzz", clue: "Numbers dance in patterns.", code: "F1ZZ" },
+  ]);
 
-  const [mcqs, setMcqs] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("pyhunt_mcqs_local");
-      if (saved) return JSON.parse(saved);
-    }
-    return [
-      { id: 1, question: "What is the output of print(2**3)?", options: ["6", "8", "9", "5"], answer: 1 },
-    ];
-  });
+  const [mcqs, setMcqs] = useState<any[]>([
+    { id: 1, question: "What is the output of print(2**3)?", options: ["6", "8", "9", "5"], answer: 1 },
+  ]);
 
-  const [jumbles, setJumbles] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("pyhunt_jumbles_local");
-      if (saved) return JSON.parse(saved);
-    }
-    return [
-      { id: 1, blocks: ["def hello():", "  print('world')", "hello()"], target: "def hello():\n  print('world')\nhello()" },
-    ];
-  });
+  const [jumbles, setJumbles] = useState<any[]>([
+    { id: 1, blocks: ["def hello():", "  print('world')", "hello()"], target: "def hello():\n  print('world')\nhello()" },
+  ]);
 
-  const [globalAuth, setGlobalAuth] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("pyhunt_global_auth");
-      if (saved) return JSON.parse(saved);
-    }
-    return { startCode: "PYHUNT67", authorizedUsns: "" };
-  });
+  const [globalAuth, setGlobalAuth] = useState<any>({ startCode: "PYHUNT67", authorizedUsns: "" });
 
-  const saveGlobalAuth = (newAuth: any) => {
+  useEffect(() => {
+    async function fetchAllConfigs() {
+      const { data } = await supabase.from('pyhunt_global_config').select('*');
+      if (data) {
+        const rounds = data.find(c => c.config_key === 'rounds_config')?.config_value;
+        if (rounds) setConfigs(rounds);
+        const m = data.find(c => c.config_key === 'mcqs')?.config_value;
+        if (m) setMcqs(m);
+        const a = data.find(c => c.config_key === 'auth')?.config_value;
+        if (a) setGlobalAuth(a);
+      }
+    }
+    fetchAllConfigs();
+  }, []);
+
+  const saveGlobalAuth = async (newAuth: any) => {
     setGlobalAuth(newAuth);
-    localStorage.setItem("pyhunt_global_auth", JSON.stringify(newAuth));
+    await supabase.from('pyhunt_global_config').upsert({ config_key: 'auth', config_value: newAuth });
   };
 
-  const saveConfig = (newConfigs: any) => {
+  const saveConfig = async (newConfigs: any) => {
     setConfigs(newConfigs);
-    localStorage.setItem("pyhunt_config_local", JSON.stringify(newConfigs));
+    await supabase.from('pyhunt_global_config').upsert({ config_key: 'rounds_config', config_value: newConfigs });
   };
 
   const updateConfig = (round: number, field: string, val: string) => {
@@ -326,9 +317,9 @@ function PyHuntConfig({ activeTab }: { activeTab: string }) {
     saveConfig(updated);
   };
 
-  const saveMcqs = (newMcqs: any) => {
+  const saveMcqs = async (newMcqs: any) => {
     setMcqs(newMcqs);
-    localStorage.setItem("pyhunt_mcqs_local", JSON.stringify(newMcqs));
+    await supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: newMcqs });
   };
 
   const addMcq = () => {
@@ -370,7 +361,7 @@ function PyHuntConfig({ activeTab }: { activeTab: string }) {
                 <div className={adminStyles.codeBadge}>🔒 GATE KEY: {c.code || "PENDING"}</div>
               </div>
               <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>TRANSMISSION HINT (VISIBLE AFTER ROUND)</label>
+                <label className={adminStyles.inputLabel}>MISSION CLUE (VISIBLE AT GATE)</label>
                 <textarea
                   className={adminStyles.configTextarea}
                   value={c.clue}
