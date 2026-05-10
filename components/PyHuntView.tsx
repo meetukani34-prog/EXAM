@@ -60,6 +60,8 @@ export default function PyHuntView() {
   const [isAtGate, setIsAtGate] = useState(false);
   const [gateInput, setGateInput] = useState("");
   const [gateError, setGateError] = useState(false);
+  const [showUnlockDialog, setShowUnlockDialog] = useState(false);
+  const [unlockCode, setUnlockCode] = useState("");
 
   useEffect(() => {
     const raw = localStorage.getItem("exam_student");
@@ -186,8 +188,12 @@ export default function PyHuntView() {
       const allCorrect = mcqSet.every((q, idx) => mcqSelectionMap[idx] === q.correct);
       
       if (allCorrect) {
+        const savedConfigs = JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]");
+        const currentConfig = savedConfigs.find((c: any) => c.round === 1);
+        const code = currentConfig?.code || "LIBRARY42";
+        setUnlockCode(code);
         setOutput("MATCH FOUND: Universal Logic Validated. Manifesting Key...");
-        setTimeout(() => setIsAtGate(true), 1000);
+        setTimeout(() => setShowUnlockDialog(true), 1000);
       } else {
         const answeredCount = Object.keys(mcqSelectionMap).length;
         if (answeredCount < mcqSet.length) {
@@ -487,6 +493,38 @@ export default function PyHuntView() {
           )}
         </AnimatePresence>
       </main>
+
+      <AnimatePresence>
+        {showUnlockDialog && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className={styles.successOverlay}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className={styles.successCard}
+            >
+              <div className={styles.successIcon}>🎉</div>
+              <h3>Logic Sequence Verified!</h3>
+              <p>You have successfully validated the first logic node. The manifested key for the next orbit is:</p>
+              <div className={styles.codeDisplay}>{unlockCode}</div>
+              <p className={styles.successNote}>Enter this code in the orbital gate to proceed.</p>
+              <button 
+                className={styles.proceedBtn}
+                onClick={() => {
+                  setShowUnlockDialog(false);
+                  setIsAtGate(true);
+                }}
+              >
+                Go to Orbital Gate
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

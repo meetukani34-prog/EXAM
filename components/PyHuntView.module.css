@@ -714,3 +714,91 @@
   opacity: 0.3;
   cursor: not-allowed;
 }
+
+/* -- Success Dialog -- */
+.successOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.successCard {
+  max-width: 450px;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(0, 242, 255, 0.4);
+  border-radius: 32px;
+  padding: 48px;
+  text-align: center;
+  box-shadow: 0 0 100px rgba(0, 242, 255, 0.2);
+}
+
+.successIcon {
+  font-size: 64px;
+  margin-bottom: 24px;
+  filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+}
+
+.successCard h3 {
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #fff, #00f2ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.successCard p {
+  font-size: 16px;
+  opacity: 0.7;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.codeDisplay {
+  background: rgba(0, 242, 255, 0.1);
+  border: 2px dashed rgba(0, 242, 255, 0.5);
+  border-radius: 16px;
+  padding: 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  font-weight: 900;
+  color: #00f2ff;
+  letter-spacing: 0.2em;
+  margin-bottom: 32px;
+  text-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
+}
+
+.successNote {
+  font-size: 13px !important;
+  font-weight: 700;
+  color: #00f2ff !important;
+  opacity: 1 !important;
+  margin-bottom: 32px !important;
+}
+
+.proceedBtn {
+  width: 100%;
+  padding: 18px;
+  background: linear-gradient(135deg, #00f2ff, #0066ff);
+  border: none;
+  border-radius: 16px;
+  color: #000;
+  font-weight: 900;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 10px 30px rgba(0, 242, 255, 0.3);
+}
+
+.proceedBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(0, 242, 255, 0.5);
+}
