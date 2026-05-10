@@ -40,7 +40,7 @@ export default function StudentIdentityExplorer() {
       const all = await fetchAdminStudents();
       setStudents(all);
       
-      if (id) {
+      if (id && id !== "list") {
         await loadStudentDetails(id as string);
       }
       setLoading(false);
@@ -213,7 +213,7 @@ export default function StudentIdentityExplorer() {
       {/* ── Fidelity Vista (Right) ── */}
       <main className={styles.fidelityVista}>
         <AnimatePresence mode="wait">
-          {!id ? (
+          {(!id || id === "list") ? (
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}
