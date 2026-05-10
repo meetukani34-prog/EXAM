@@ -31,8 +31,10 @@ async function apiFetch<T>(
     const res = await fetch(url, { ...options, headers });
 
     if (res.status === 401) {
-      console.error(`[API] 401 Unauthorized for ${url}. Clearing session.`);
-      if (typeof window !== "undefined") {
+      console.error(`[API] 401 Unauthorized for ${url}.`);
+      // DON'T redirect if we're on the exam page — this crashes the active exam
+      const isExamPage = typeof window !== "undefined" && window.location.pathname.startsWith("/exam");
+      if (!isExamPage && typeof window !== "undefined") {
         sessionStorage.removeItem("exam_token");
         sessionStorage.removeItem("exam_student");
         localStorage.removeItem("exam_token");

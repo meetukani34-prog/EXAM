@@ -76,7 +76,10 @@ async def login(request: LoginRequest):
             
             student = insert_res.data[0]
             # Initialize exam_status for the new student
-            db.table("exam_status").insert({"student_id": student["id"]}).execute()
+            try:
+                db.table("exam_status").insert({"student_id": student["id"]}).execute()
+            except Exception:
+                pass  # Row may already exist
             
         except Exception as e:
             print(f"[AUTH] Auto-registration failed: {e}")
@@ -97,14 +100,18 @@ async def login(request: LoginRequest):
             detail="Your account has been blocked by the administrator. You cannot attend the exam.",
         )
 
-    # 3. Check for duplicate active session (safe get for legacy schemas)
+    # 3. Single-session enforcement — auto-clear stale sessions
+    # Previous logic rejected with 409, but crashed pages leave stale sessions
+    # that permanently lock students out. Now we just overwrite.
     is_active = student.get("is_active_session", False)
-    current_tok = student.get("current_token")
-    if is_active and current_tok:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="You are already logged in from another device. Please log out there first.",
-        )
+    if is_active:
+        print(f"[AUTH] Clearing stale session for {student.get('usn', 'unknown')}")
+        try:
+            db.table("students").update(
+                {"is_active_session": False, "current_token": None}
+            ).eq("id", student["id"]).execute()
+        except Exception:
+            pass
 
     # 4. Check if exam already submitted
     try:
@@ -156,10 +163,13 @@ async def login(request: LoginRequest):
         if exam_status_data.get("status") == "active":
             started_at = exam_status_data.get("started_at")
     else:
-        # Create exam_status row for fresh student
-        db.table("exam_status").insert(
-            {"student_id": student["id"], "status": "not_started", "warnings": 0}
-        ).execute()
+        # Create exam_status row for fresh student (ignore if already exists)
+        try:
+            db.table("exam_status").insert(
+                {"student_id": student["id"], "status": "not_started", "warnings": 0}
+            ).execute()
+        except Exception as e:
+            print(f"[AUTH] exam_status insert skipped (may already exist): {e}")
 
     # 8. Fetch the LATEST active exam config
     exam_conf = (
