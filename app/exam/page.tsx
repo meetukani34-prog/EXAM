@@ -42,6 +42,7 @@ export default function ExamPage() {
   // Pagination state
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
+  const [preStart, setPreStart] = useState(true);
 
   // Result Timer (3:00 minutes)
   const [resultTimerSeconds, setResultTimerSeconds] = useState(180);
@@ -126,7 +127,6 @@ export default function ExamPage() {
         const res = await fetchQuestions(quizTitle);
         if (res.questions && res.questions.length > 0) {
           setQuestions(res.questions);
-          enterFullscreen();
         } else {
           setError("No questions available for this exam.");
         }
@@ -138,7 +138,7 @@ export default function ExamPage() {
     };
 
     ensureStarted();
-  }, [router, enterFullscreen]);
+  }, [router]);
 
   // ── Exam config polling (inactive guard) ──────────────────
   useEffect(() => {
@@ -277,6 +277,64 @@ export default function ExamPage() {
               <Skeleton height={200} borderRadius={20} />
               <Skeleton height={150} borderRadius={20} />
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (preStart && !error && !isSubmitted) {
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 10000,
+        background: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        padding: 40
+      }}>
+        {/* Background glow */}
+        <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(13,148,136,0.1) 0%, transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
+        
+        <div style={{ position: 'relative', maxWidth: 500 }}>
+          <div style={{ fontSize: 64, marginBottom: 24, filter: 'drop-shadow(0 0 20px rgba(13,148,136,0.3))' }}>🛡️</div>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 16 }}>Ready to Begin?</h1>
+          <p style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: 40 }}>
+            You are about to enter the secure proctored environment. 
+            Ensure you have a stable connection and stay within the browser window.
+          </p>
+          <button 
+            onClick={async () => {
+              try {
+                await enterFullscreen();
+              } catch (e) {
+                console.warn("Fullscreen trigger failed:", e);
+              }
+              setPreStart(false);
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #0d9488 0%, #115e59 100%)',
+              color: '#fff',
+              border: 'none',
+              padding: '16px 40px',
+              borderRadius: '16px',
+              fontSize: '18px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 10px 30px rgba(13,148,136,0.3)',
+              transition: 'transform 0.2s ease'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            Launch Secure Environment
+          </button>
+          <div style={{ marginTop: 24, fontSize: 13, color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Proctoring system initialized and ready.
           </div>
         </div>
       </div>

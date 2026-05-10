@@ -81,69 +81,51 @@ export default function DashboardPage() {
   const loadExams = useCallback(async () => {
     try {
       const configs = await withRetry(() => fetchPublicExamConfig());
-      const { data: qData, error: qError } = await withRetry(async () => {
-        return await supabase
-          .from("questions")
-          .select("branch, exam_name, category");
-      });
-      if (qError) throw qError;
-
+      
+      // OPTIMIZATION: Instead of fetching ALL questions (which causes lag), 
+      // we'll just use the configs as the base and filter/display accordingly.
       const nodes: ExamNode[] = [];
 
       function inferCategory(examName: string): string {
         const n = (examName || "").toLowerCase();
         if (n.includes("aptitude") || n.includes("quant") || n.includes("reasoning")) return "aptitude";
-        if (n.includes("program") || n.includes("code") || n.includes("coding")) return "programming";
+        if (n.includes("program") || n.includes("code") || n.includes("coding") || n.includes("pyhunt")) return "programming";
         return "other";
       }
 
-      if (qData) {
-        // Fetch ALL exam statuses for this student
-        let statusList: any[] = [];
-        if (student && student.id !== "PREVIEW") {
-          try {
-            statusList = await withRetry(() => getExamStatus());
-          } catch(err) {
-            console.error("Failed to fetch exam status after retries:", err);
-          }
+      // Fetch ALL exam statuses for this student
+      let statusList: any[] = [];
+      if (student && student.id !== "PREVIEW") {
+        try {
+          statusList = await withRetry(() => getExamStatus());
+        } catch(err) {
+          console.error("Failed to fetch exam status after retries:", err);
         }
-
-        const uniqueExams = new Map<string, { exam_name: string, branch: string, count: number, category: string }>();
-        qData.forEach(q => {
-          const br = q.branch || "CS";
-          const ex = q.exam_name || "General Assessment";
-          const key = `${ex}|${br}`;
-          if (!uniqueExams.has(key)) {
-            uniqueExams.set(key, { exam_name: ex, branch: br, count: 0, category: q.category || inferCategory(ex) });
-          }
-          uniqueExams.get(key)!.count++;
-        });
-
-        uniqueExams.forEach((info, key) => {
-          const config = configs.find(c => c.exam_title === info.exam_name);
-          // Find status for THIS specific exam
-          const sData = statusList.find(s => s.exam_name === info.exam_name);
-
-          nodes.push({
-            id: key,
-            exam_name: info.exam_name,
-            branch: info.branch,
-            is_active: config ? config.is_active : true,
-            duration_minutes: config ? config.duration_minutes : 20,
-            scheduled_start: config ? config.scheduled_start : null,
-            scheduled_end: config ? config.scheduled_end : null,
-            question_count: info.count,
-            category: info.category,
-            marks_per_question: (config && config.marks_per_question !== undefined) ? config.marks_per_question : 4,
-            negative_marks: (config && config.negative_marks !== undefined) ? config.negative_marks : -1,
-            max_attempts: config ? (config.max_attempts || 1) : 1,
-            attempts_count: sData ? (sData.attempts_count || 0) : 0,
-            student_status: sData ? sData.status : 'not_started',
-            last_score: sData ? sData.last_score : undefined,
-            last_total: sData ? sData.last_total : undefined,
-          });
-        });
       }
+
+      // Build nodes from configs
+      configs.forEach(config => {
+        const sData = statusList.find(s => s.exam_name === config.exam_title);
+        
+        nodes.push({
+          id: config.exam_title,
+          exam_name: config.exam_title,
+          branch: "ALL", // Default to ALL if not specified in config
+          is_active: config.is_active,
+          duration_minutes: config.duration_minutes || 20,
+          scheduled_start: config.scheduled_start,
+          scheduled_end: config.scheduled_end,
+          question_count: config.total_questions || 0,
+          category: inferCategory(config.exam_title),
+          marks_per_question: config.marks_per_question ?? 4,
+          negative_marks: config.negative_marks ?? -1,
+          max_attempts: config.max_attempts || 1,
+          attempts_count: sData ? (sData.attempts_count || 0) : 0,
+          student_status: sData ? sData.status : 'not_started',
+          last_score: sData ? sData.last_score : undefined,
+          last_total: sData ? sData.last_total : undefined,
+        });
+      });
       setAllExams(nodes);
     } catch (e) {
       console.error("Failed to load exams:", e);

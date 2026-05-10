@@ -354,15 +354,23 @@ def submit_exam(
 
     # 5. Mark submitted and ensure attempt is counted for THIS exam
     try:
-        # Check current count to avoid double-increment
-        curr_res = db.table("exam_status").select("attempts_count, id").eq("student_id", student_id).limit(1).execute()
+        # Check current status record
+        curr_res = db.table("exam_status").select("*").eq("student_id", student_id).limit(1).execute()
         curr_count = 0
         record_id = None
-        if curr_res.data:
-            curr_count = curr_res.data[0].get("attempts_count", 0) or 0
-            record_id = curr_res.data[0].get("id")
+        record_exam = ""
         
-        final_count = curr_count if curr_count > 0 else 1
+        if curr_res.data:
+            data = curr_res.data[0]
+            curr_count = data.get("attempts_count", 0) or 0
+            record_id = data.get("id")
+            record_exam = data.get("exam_name") or ""
+        
+        # If this is a DIFFERENT exam, reset attempt count to 1 for this new context
+        if record_exam != exam_title:
+            final_count = 1
+        else:
+            final_count = curr_count if curr_count > 0 else 1
         
         update_data = {
             "exam_name": exam_title,
@@ -380,9 +388,11 @@ def submit_exam(
             }).execute()
     except Exception as e:
         print(f"[EXAM] Per-exam submit failed: {e}")
+        # Fallback update by student_id
         db.table("exam_status").update({
             "status": "submitted", 
-            "submitted_at": submitted_at
+            "submitted_at": submitted_at,
+            "exam_name": exam_title
         }).eq("student_id", student_id).execute()
 
     # 6. Clear active session
@@ -471,29 +481,34 @@ async def start_exam(
                 detail=f"Maximum attempts ({max_attempts}) reached for this assessment."
             )
 
-    # 5. Otherwise, set the start time NOW and increment attempts
+    # 5. Otherwise, set the start time NOW and determine attempt count
     new_start = datetime.now(timezone.utc).isoformat()
+    
+    # NEW logic: If it's a DIFFERENT exam, reset attempt count to 1
+    # If it's the SAME exam but not active, increment.
+    is_same_exam = (record_exam or "").strip().lower() == title.lower()
+    
+    if not is_same_exam:
+        new_count = 1
+    else:
+        new_count = (attempts_count or 0) + 1
+
     update_payload = {
         "status": "active",
         "started_at": new_start,
         "last_active": new_start,
-        "warnings": 0, # Fresh start only for brand new attempts
-        "exam_name": title
+        "warnings": 0,
+        "exam_name": title,
+        "attempts_count": new_count
     }
     
     try:
         if record_id:
-            # Existing row — update by primary key
-            db.table("exam_status").update({
-                **update_payload,
-                "attempts_count": (attempts_count or 0) + 1
-            }).eq("id", record_id).execute()
+            db.table("exam_status").update(update_payload).eq("id", record_id).execute()
         else:
-            # No row yet — insert
             db.table("exam_status").insert({
                 **update_payload,
                 "student_id": student_id,
-                "attempts_count": 1
             }).execute()
     except Exception as e:
         print(f"[EXAM] Per-exam start failed: {e}")

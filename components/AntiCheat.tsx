@@ -129,16 +129,17 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
       }
     };
     const handleBlur = () => {
-      // Only count blur if page is still visible (prevents double-counting with tab_switch)
-      if (document.visibilityState === "visible") {
-        triggerViolation("window_blur");
-      }
+      // Trigger violation on ANY window blur to catch screenshot tools and overlays
+      triggerViolation("window_blur");
     };
     const handleFsChange = () => {
       const isFs =
         !!document.fullscreenElement ||
-        !!(document as any).webkitFullscreenElement;
-      if (!isFs) {
+        !!(document as any).webkitFullscreenElement ||
+        !!(document as any).mozFullScreenElement ||
+        !!(document as any).msFullscreenElement;
+      
+      if (!isFs && !isSubmitted) {
         triggerViolation("fullscreen_exit");
       }
     };
