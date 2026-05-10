@@ -524,7 +524,7 @@ function PyHuntConfig({
                 <label className={adminStyles.inputLabel}>TARGET VALIDATION STRING (EXPECTED IN STDOUT)</label>
                 <input
                   className={adminStyles.configInput}
-                  value={configs.find(c => c.round === 3)?.target_output || "palindrome: true"}
+                  value={configs.find((c: any) => c.round === 3)?.target_output || "palindrome: true"}
                   onChange={(e) => updateConfig(3, 'target_output', e.target.value)}
                   placeholder="e.g., palindrome: true"
                 />
@@ -542,7 +542,7 @@ function PyHuntConfig({
                 <label className={adminStyles.inputLabel}>TARGET VALIDATION STRING (EXPECTED IN STDOUT)</label>
                 <input
                   className={adminStyles.configInput}
-                  value={configs.find(c => c.round === 4)?.target_output || "1, 2, Fizz, 4, Buzz"}
+                  value={configs.find((c: any) => c.round === 4)?.target_output || "1, 2, Fizz, 4, Buzz"}
                   onChange={(e) => updateConfig(4, 'target_output', e.target.value)}
                   placeholder="e.g., 1, 2, Fizz, 4, Buzz"
                 />
@@ -770,7 +770,7 @@ export default function AdminPage() {
         qs.forEach((q: AdminQuestion) => {
           const key = `${q.branch}-${q.exam_name}`;
           if (!seen.has(key)) {
-            const config = configs.find(c => c.exam_title === q.exam_name);
+            const config = configs.find((c: any) => c.exam_title === q.exam_name);
             list.push({
               branch: q.branch,
               exam_name: q.exam_name,
@@ -783,7 +783,7 @@ export default function AdminPage() {
 
         // 2. Add configs that might not have questions yet
         configs.forEach((c: any) => {
-          if (!list.find(x => x.exam_name === (c.exam_title || c.exam_name))) {
+          if (!list.find((x: any) => x.exam_name === (c.exam_title || c.exam_name))) {
             list.push({
               branch: "CS",
               exam_name: c.exam_title || c.exam_name,
@@ -1148,7 +1148,7 @@ export default function AdminPage() {
                 </span>
               </div>
               {Array.from(new Set(quizzes.map(q => q.exam_name))).map(name => {
-                const q = quizzes.find(x => x.exam_name === name);
+                const q = quizzes.find((x: any) => x.exam_name === name);
                 const isActive = (q as any)?.is_active;
                 return (
                   <div key={name} style={{
@@ -1584,7 +1584,7 @@ function QuestionsTab() {
       // Update local state immediately for snappy UI
       setConfigs(prev => prev.map(c => c.exam_title === title ? { ...c, is_active: !currentStatus } : c));
       // If title didn't exist in configs, add it
-      if (!configs.find(c => c.exam_title === title)) {
+      if (!configs.find((c: any) => c.exam_title === title)) {
         load();
       }
     } catch (error) {
@@ -1610,7 +1610,7 @@ function QuestionsTab() {
 
     if (selectedStatus === "all") return branchMatch && categoryMatch;
 
-    const conf = configs.find(c => c.exam_title === q.exam_name);
+    const conf = configs.find((c: any) => c.exam_title === q.exam_name);
     const now = Date.now();
 
     let statusMatch = false;
@@ -1823,7 +1823,7 @@ function QuestionsTab() {
                       {/* Activation & Status Indicators */}
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 12 }} onClick={e => e.stopPropagation()}>
                         {(() => {
-                          const conf = configs.find(c => c.exam_title === name);
+                          const conf = configs.find((c: any) => c.exam_title === name);
                           const isManualActive = conf ? conf.is_active : true;
 
                           const now = Date.now();
@@ -2408,7 +2408,7 @@ function StudentsTab({ students, load }: { students: AdminStudent[], load: () =>
                       <button className="btn btn-outline" onClick={() => {
                         let bID = s.branch || "CS";
                         // Normalize legacy full names to IDs if necessary
-                        const match = ALL_BRANCH_DATA.find(b => b.name === bID || b.id === bID);
+                        const match = ALL_BRANCH_DATA.find((b: any) => b.name === bID || b.id === bID);
                         if (match) bID = match.id;
 
                         setEditing(s as any);

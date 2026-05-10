@@ -138,10 +138,10 @@ export default function PyHuntView() {
     async function fetchGlobalConfigs() {
        const { data } = await supabase.from('pyhunt_global_config').select('*');
        if (data) {
-          const rounds = data.find(c => c.config_key === 'rounds_config')?.config_value;
+          const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
           if (rounds) setGlobalConfigs(rounds);
 
-          const mcqs = data.find(c => c.config_key === 'mcqs')?.config_value;
+          const mcqs = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
           if (mcqs) {
              const mapped = mcqs.map((m: any) => ({
                 id: m.id,
@@ -152,7 +152,7 @@ export default function PyHuntView() {
              }));
              setMcqSet(mapped);
           }
-          const j = data.find(c => c.config_key === 'jumbles')?.config_value;
+          const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
           if (j && j.length > 0) {
              setOriginalJumbleCode(j[0].target);
           }
