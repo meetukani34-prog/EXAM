@@ -17,19 +17,24 @@ async def get_exam_status(current: dict = Depends(get_current_student)):
     db = get_supabase()
     student_id = current["student_id"]
     try:
-        # Fetch status row for this student
+        # 1. Fetch all status rows for this student
         status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
-        # exam_results has no exam_name column — just get score/total_marks
-        results_res = db.table("exam_results").select("score, total_marks").eq("student_id", student_id).limit(1).execute()
-        
         status_data = status_res.data or []
-        result_row = results_res.data[0] if results_res.data else None
         
-        # Attach score to each status row (there's usually only one per student)
+        # 2. Fetch all result rows for this student
+        results_res = db.table("exam_results").select("score, total_marks, exam_name").eq("student_id", student_id).execute()
+        results_data = results_res.data or []
+        
+        # Create a lookup map for results by exam_name
+        results_map = { r.get("exam_name"): r for r in results_data }
+        
+        # 3. Attach scores to matching status rows
         for s in status_data:
-            if result_row:
-                s["last_score"] = result_row.get("score")
-                s["last_total"] = result_row.get("total_marks")
+            exam_title = s.get("exam_name")
+            res = results_map.get(exam_title)
+            if res:
+                s["last_score"] = res.get("score")
+                s["last_total"] = res.get("total_marks")
         
         return status_data
     except Exception as e:
@@ -340,60 +345,47 @@ def submit_exam(
 
     submitted_at = datetime.now(timezone.utc).isoformat()
 
-    # 4. Upsert exam_results — student_id is UNIQUE (one row per student)
+    # 4. Upsert exam_results — unique per (student_id, exam_name)
     try:
         db.table("exam_results").upsert({
             "student_id": student_id,
+            "exam_name": exam_title,
             "answers": answers,
             "score": score,
             "total_marks": total_marks,
             "submitted_at": submitted_at
-        }, on_conflict="student_id").execute()
+        }, on_conflict="student_id,exam_name").execute()
     except Exception as e:
         print(f"[EXAM] exam_results upsert failed: {e}")
 
     # 5. Mark submitted and ensure attempt is counted for THIS exam
     try:
-        # Check current status record
-        curr_res = db.table("exam_status").select("*").eq("student_id", student_id).limit(1).execute()
+        # Fetch existing status for THIS specific exam
+        curr_res = db.table("exam_status").select("*").eq("student_id", student_id).eq("exam_name", exam_title).limit(1).execute()
+        
         curr_count = 0
         record_id = None
-        record_exam = ""
         
         if curr_res.data:
             data = curr_res.data[0]
             curr_count = data.get("attempts_count", 0) or 0
             record_id = data.get("id")
-            record_exam = data.get("exam_name") or ""
         
-        # If this is a DIFFERENT exam, reset attempt count to 1 for this new context
-        if record_exam != exam_title:
-            final_count = 1
-        else:
-            final_count = curr_count if curr_count > 0 else 1
+        # Increment count if not already submitted
+        final_count = curr_count if curr_count > 0 else 1
         
         update_data = {
+            "student_id": student_id,
             "exam_name": exam_title,
             "status": "submitted", 
             "submitted_at": submitted_at,
-            "attempts_count": final_count
+            "attempts_count": final_count,
+            "warnings": 0  # Clear warnings on submission
         }
         
-        if record_id:
-            db.table("exam_status").update(update_data).eq("id", record_id).execute()
-        else:
-            db.table("exam_status").insert({
-                **update_data,
-                "student_id": student_id,
-            }).execute()
+        db.table("exam_status").upsert(update_data, on_conflict="student_id,exam_name").execute()
     except Exception as e:
         print(f"[EXAM] Per-exam submit failed: {e}")
-        # Fallback update by student_id
-        db.table("exam_status").update({
-            "status": "submitted", 
-            "submitted_at": submitted_at,
-            "exam_name": exam_title
-        }).eq("student_id", student_id).execute()
 
     # 6. Clear active session
     db.table("students").update(
@@ -434,27 +426,20 @@ async def start_exam(
             max_attempts = config_res.data[0].get("max_attempts") or 1
     except Exception: pass
 
-    # 2. Fetch status safely for this student
+    # 2. Fetch status safely for this student AND this specific exam
     attempts_count = 0
     status_str = "not_started"
     started_at = None
     record_id = None
     try:
-        # Schema: student_id is UNIQUE — one row per student
-        status_res = db.table("exam_status").select("*").eq("student_id", student_id).limit(1).execute()
+        # Use composite check
+        status_res = db.table("exam_status").select("*").eq("student_id", student_id).eq("exam_name", title).limit(1).execute()
         if status_res.data:
             data = status_res.data[0]
             record_id = data.get("id")
             attempts_count = data.get("attempts_count", 0) or 0
-            record_exam = data.get("exam_name") or ""
-            # Only use status/started_at from the same exam
-            if record_exam == title:
-                status_str = data.get("status", "not_started")
-                started_at = data.get("started_at")
-            else:
-                # Different exam — treat as not_started for this exam
-                status_str = "not_started"
-                started_at = None
+            status_str = data.get("status", "not_started")
+            started_at = data.get("started_at")
     except Exception: pass
 
     # 3. If already active for this exam, KEEP existing warnings and started_at.
@@ -467,53 +452,39 @@ async def start_exam(
         except Exception: pass
         return StartExamResponse(started_at=started_at, status="active")
 
-    # 4. Block restart if already submitted OR reached max attempts for the same exam
-    # This prevents bypassing auto-submission by refreshing.
-    if (record_exam or "").strip().lower() == title.lower():
-        if status_str == "submitted":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Exam already submitted. You cannot restart."
-            )
-        if (attempts_count or 0) >= max_attempts and status_str != "active":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Maximum attempts ({max_attempts}) reached for this assessment."
-            )
+    # 4. Block restart if already submitted OR reached max attempts
+    if status_str == "submitted":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Exam already submitted. You cannot restart."
+        )
+    if (attempts_count or 0) >= max_attempts and status_str != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Maximum attempts ({max_attempts}) reached for this assessment."
+        )
 
     # 5. Otherwise, set the start time NOW and determine attempt count
     new_start = datetime.now(timezone.utc).isoformat()
-    
-    # NEW logic: If it's a DIFFERENT exam, reset attempt count to 1
-    # If it's the SAME exam but not active, increment.
-    is_same_exam = (record_exam or "").strip().lower() == title.lower()
-    
-    if not is_same_exam:
-        new_count = 1
-    else:
-        new_count = (attempts_count or 0) + 1
+    new_count = (attempts_count or 0) + 1
 
     update_payload = {
+        "student_id": student_id,
+        "exam_name": title,
         "status": "active",
         "started_at": new_start,
         "last_active": new_start,
         "warnings": 0,
-        "exam_name": title,
         "attempts_count": new_count
     }
     
     try:
-        if record_id:
-            db.table("exam_status").update(update_payload).eq("id", record_id).execute()
-        else:
-            db.table("exam_status").insert({
-                **update_payload,
-                "student_id": student_id,
-            }).execute()
+        db.table("exam_status").upsert(update_payload, on_conflict="student_id,exam_name").execute()
     except Exception as e:
         print(f"[EXAM] Per-exam start failed: {e}")
-        # Fallback to simple update
-        db.table("exam_status").update(update_payload).eq("student_id", student_id).execute()
+        # Fallback to simple update if ID exists
+        if record_id:
+            db.table("exam_status").update(update_payload).eq("id", record_id).execute()
 
     return StartExamResponse(started_at=new_start, status="active")
 

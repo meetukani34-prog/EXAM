@@ -60,7 +60,7 @@ try:
     async def health_check():
         return {"status": "ok", "version": "1.0.2-stable", "timestamp": datetime.now(timezone.utc).isoformat()}
 
-    @app.get("/api/status")
+    @app.get("/api/system-status")
     async def root_api():
         return {"message": "ExamGuard API Active", "version": "1.0.2-stable"}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { fetchPublicExamConfig, type ExamConfig, updateProfile, getExamStatus } from "@/lib/api";
@@ -110,7 +110,7 @@ export default function DashboardPage() {
         nodes.push({
           id: config.exam_title,
           exam_name: config.exam_title,
-          branch: "ALL", // Default to ALL if not specified in config
+          branch: config.branch || "ALL",
           is_active: config.is_active,
           duration_minutes: config.duration_minutes || 20,
           scheduled_start: config.scheduled_start,
@@ -141,7 +141,14 @@ export default function DashboardPage() {
     return () => { supabase.removeChannel(channel); supabase.removeChannel(qChannel); };
   }, [loadExams]);
 
-  const studentExams = student?.branch === "ALL" ? allExams : allExams.filter(e => e.branch === student?.branch);
+  const studentExams = useMemo(() => {
+    if (!student) return [];
+    return allExams.filter(e => 
+      e.branch === "ALL" || 
+      e.branch === student.branch || 
+      student.branch === "ALL"
+    );
+  }, [allExams, student]);
 
   const handleLaunchExam = (exam: ExamNode) => {
     if (!exam.is_active) return;

@@ -644,7 +644,7 @@ async def get_exam_config_public():
         # Include all relevant fields for the student dashboard
         result = db.table("exam_config").select(
             "is_active, scheduled_start, scheduled_end, duration_minutes, exam_title, "
-            "marks_per_question, negative_marks, max_attempts, show_answers_after"
+            "marks_per_question, negative_marks, max_attempts, show_answers_after, branch"
         ).execute()
         return result.data or []
     except Exception as e:
