@@ -382,13 +382,28 @@ export default function PyHuntView() {
       <div className={styles.authContainer}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={styles.authCard}>
           <header className={styles.authHeader}>
-            <div className={styles.lobbyIcon} style={{ transform: 'scale(0.8)', marginBottom: 12 }}>
-              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" strokeWidth="1.5">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            <div className={styles.lobbyIcon} style={{ marginBottom: 24 }}>
+              <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path 
+                  d="M20 70C20 70 30 85 50 85C70 85 85 70 85 50C85 30 70 15 50 15C30 15 15 30 15 50C15 65 25 75 35 75C45 75 55 65 55 50C55 35 45 25 35 25" 
+                  stroke="url(#snake_grad_auth)" 
+                  strokeWidth="10" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                />
+                <circle cx="35" cy="40" r="4" fill="#00FFA3">
+                  <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite" />
+                </circle>
+                <defs>
+                  <linearGradient id="snake_grad_auth" x1="15" y1="50" x2="85" y2="50" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#00F0FF" />
+                    <stop offset="1" stopColor="#00FFA3" />
+                  </linearGradient>
+                </defs>
               </svg>
             </div>
-            <h2>MISSION AUTHORIZATION</h2>
-            <p className={styles.authSubtitle}>Enter your credentials to access the PyHunt logic nodes.</p>
+            <h2>PyHunt</h2>
+            <p className={styles.authSubtitle}>Enter your credentials to access the logic nodes.</p>
           </header>
           <div className={styles.authForm}>
             <div className={styles.authInputGroup}><label>Candidate USN</label><input type="text" className={styles.authInput} value={authForm.usn} readOnly /></div>
