@@ -165,10 +165,9 @@ async def get_all_students(_: bool = Depends(verify_admin)):
         rows = []
         if result.data:
             for s in result.data:
-                e_statuses = s.get("exam_status")
+                e_statuses = s.get("exam_status") or []
                 
-                # If student has NO exam status records yet, add a 'not_started' entry
-                if not e_statuses or len(e_statuses) == 0:
+                if not e_statuses:
                     rows.append(StudentStatus(
                         student_id=s["id"],
                         usn=s.get("usn") or s.get("roll_number") or "UNKNOWN",
@@ -185,22 +184,24 @@ async def get_all_students(_: bool = Depends(verify_admin)):
                     ))
                     continue
 
-                # If student has one or more exam sessions, add an entry for each
-                for e_status in e_statuses:
-                    rows.append(StudentStatus(
-                        student_id=s["id"],
-                        usn=s.get("usn") or s.get("roll_number") or "UNKNOWN",
-                        name=s.get("name", "UNKNOWN"),
-                        email=s.get("email"),
-                        branch=s.get("branch", "CS"),
-                        status=e_status.get("status", "not_started"),
-                        warnings=e_status.get("warnings", 0),
-                        last_active=e_status.get("last_active"),
-                        submitted_at=e_status.get("submitted_at"),
-                        started_at=e_status.get("started_at"),
-                        is_blocked=s.get("is_blocked", False),
-                        exam_name=e_status.get("exam_name")
-                    ))
+                # Consolidate: if student has multiple sessions, only show the most recent one
+                sorted_sessions = sorted(e_statuses, key=lambda x: x.get("last_active") or "", reverse=True)
+                latest = sorted_sessions[0]
+
+                rows.append(StudentStatus(
+                    student_id=s["id"],
+                    usn=s.get("usn") or s.get("roll_number") or "UNKNOWN",
+                    name=s.get("name", "UNKNOWN"),
+                    email=s.get("email"),
+                    branch=s.get("branch", "CS"),
+                    status=latest.get("status", "not_started"),
+                    warnings=latest.get("warnings", 0),
+                    last_active=latest.get("last_active"),
+                    submitted_at=latest.get("submitted_at"),
+                    started_at=latest.get("started_at"),
+                    is_blocked=s.get("is_blocked", False),
+                    exam_name=latest.get("exam_name")
+                ))
         return rows
     except Exception as e:
         print(f"CRITICAL get_all_students: {e}")

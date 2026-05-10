@@ -272,6 +272,20 @@ export default function StudentExplorer() {
                 </button>
               </footer>
             </motion.div>
+          ) : syncError ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff4d4d' }}>
+              <div style={{ textAlign: 'center', maxWidth: 400 }}>
+                <div style={{ fontSize: 60, marginBottom: 20 }}>📡</div>
+                <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 10 }}>Identity Sync Failure</div>
+                <div style={{ opacity: 0.7, fontSize: 14, marginBottom: 24 }}>{syncError}</div>
+                <button 
+                  onClick={() => selectedId && loadStudentDetails(selectedId)}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '10px 24px', borderRadius: 12, fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Retry Manifestation
+                </button>
+              </div>
+            </motion.div>
           ) : (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
                Identity sync failure. Please re-select node.
