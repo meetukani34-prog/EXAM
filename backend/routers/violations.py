@@ -59,38 +59,42 @@ async def report_violation(
     auto_submitted = False
 
     try:
-        # ─── Step 1: Read current warning count for THIS SPECIFIC exam ───
-        # We query by both student_id and exam_name to ensure we don't 'steal' records from other exams
+        # ─── Step 1: Read current exam_status for this student ───
+        # Schema: exam_status has UNIQUE on student_id (single row per student)
         status_res = (
             db.table("exam_status")
-            .select("warnings, id, status")
+            .select("warnings, id, status, exam_name")
             .eq("student_id", student_id)
-            .eq("exam_name", exam_title)
+            .limit(1)
             .execute()
         )
 
         current_warnings = 0
         record_id = None
-        is_already_submitted = False
 
         if status_res.data:
             row = status_res.data[0]
-            current_warnings = row.get("warnings") or 0
             record_id = row.get("id")
-            if row.get("status") == "submitted":
-                is_already_submitted = True
-            
-            print(f"[VIOLATION] Found record {record_id} for '{exam_title}', current_warnings={current_warnings}")
-        else:
-            print(f"[VIOLATION] No record found for student in '{exam_title}'. Starting at 0.")
+            record_exam = row.get("exam_name", "")
 
-        # If already submitted, don't increment further
-        if is_already_submitted:
-            return ReportViolationResponse(
-                warning_count=current_warnings,
-                auto_submitted=True,
-                message=WARNING_3_PYHUNT if is_pyhunt else WARNING_3,
-            )
+            # If the existing record is for THIS exam and already submitted, reject
+            if record_exam == exam_title and row.get("status") == "submitted":
+                return ReportViolationResponse(
+                    warning_count=row.get("warnings", 3),
+                    auto_submitted=True,
+                    message=WARNING_3_PYHUNT if is_pyhunt else WARNING_3,
+                )
+
+            # If the existing record is for a DIFFERENT exam that was submitted,
+            # the student is starting a new exam — reset warnings to 0
+            if record_exam != exam_title and row.get("status") == "submitted":
+                current_warnings = 0
+            else:
+                current_warnings = row.get("warnings") or 0
+
+            print(f"[VIOLATION] Record {record_id}, exam='{record_exam}', warnings={current_warnings}")
+        else:
+            print(f"[VIOLATION] No exam_status row for student. Starting at 0.")
 
         # ─── Step 2: Calculate new warning count ───
         new_warnings = current_warnings + 1
@@ -98,16 +102,18 @@ async def report_violation(
         print(f"[VIOLATION] {current_warnings} → {new_warnings} (auto_submit={auto_submitted})")
 
         # ─── Step 3: Log violation in history table ───
+        # NOTE: The violations table does NOT have an exam_name column.
+        # Store exam info inside the metadata JSONB field instead.
         try:
             safe_type = _safe_db_type(request.type)
-            # Build metadata — include original type if it was mapped
             meta = request.metadata or {}
             if request.type != safe_type:
                 meta["original_type"] = request.type
+            # Always include exam context in metadata for audit trail
+            meta["exam_name"] = exam_title
 
             insert_data = {
                 "student_id": student_id,
-                "exam_name": exam_title,
                 "type": safe_type,
                 "metadata": meta,
             }
@@ -115,28 +121,37 @@ async def report_violation(
         except Exception as log_err:
             print(f"[VIOLATION] History log failed (non-fatal): {log_err}")
 
-        # ─── Step 4: Update/Upsert exam_status ───
+        # ─── Step 4: Update exam_status ───
+        # Schema: student_id is UNIQUE — one row per student, use update or insert
         now_ts = datetime.now(timezone.utc).isoformat()
-        upsert_data = {
-            "student_id": student_id,
-            "exam_name": exam_title,
+        update_data = {
             "warnings": new_warnings,
             "updated_at": now_ts,
+            "exam_name": exam_title,
             "last_active": now_ts,
-            "status": "submitted" if auto_submitted else "active",
         }
         if auto_submitted:
-            upsert_data["submitted_at"] = now_ts
+            update_data["status"] = "submitted"
+            update_data["submitted_at"] = now_ts
 
         try:
-            # Atomic upsert using the composite key (student_id, exam_name)
-            db.table("exam_status").upsert(upsert_data, on_conflict="student_id, exam_name").execute()
-            print(f"[VIOLATION] DB updated successfully.")
-        except Exception as db_err:
-            print(f"[VIOLATION] DB update failed: {db_err}")
-            # Fallback to ID-based update if upsert fails for some reason
             if record_id:
-                db.table("exam_status").update(upsert_data).eq("id", record_id).execute()
+                # Existing row — simple update by primary key
+                db.table("exam_status").update(update_data).eq("id", record_id).execute()
+            else:
+                # No row exists yet — insert a new one
+                db.table("exam_status").insert({
+                    "student_id": student_id,
+                    "exam_name": exam_title,
+                    "warnings": new_warnings,
+                    "status": "submitted" if auto_submitted else "active",
+                    "updated_at": now_ts,
+                    "last_active": now_ts,
+                    **({"submitted_at": now_ts} if auto_submitted else {}),
+                }).execute()
+            print(f"[VIOLATION] DB updated. Warnings: {new_warnings}")
+        except Exception as db_err:
+            print(f"[VIOLATION] DB update failed (non-fatal): {db_err}")
 
         # ─── Step 5: Build response message ───
         if auto_submitted:
