@@ -194,7 +194,11 @@ export default function StudentExplorer() {
 
         <div className={styles.registryList}>
           {loading ? (
-            <div style={{ padding: 20 }}><Skeleton height={40} count={5} /></div>
+            <div style={{ padding: 20 }}>
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} height={40} style={{ marginBottom: 8 }} />
+              ))}
+            </div>
           ) : filteredStudents.map(s => (
             <div 
               key={s.student_id} 
