@@ -10,7 +10,7 @@ from models.schemas import (
     StudentStatus, StudentCreate, StudentUpdate,
     ExamConfig, ExamConfigUpdate, FolderRenameRequest,
     FolderEditBranchRequest, SupportRequestResponse,
-    ViolationHistoryOut, StudentFidelity
+    ViolationHistoryOut, StudentFidelity, GlobalConfigUpdate
 )
 from datetime import datetime, timezone
 import io
@@ -650,6 +650,46 @@ async def get_exam_config_public():
     except Exception as e:
         print(f"[ADMIN] Public config fetch failed: {e}")
         return []
+
+
+# ── PyHunt Global Configuration ────────────────────────────────
+
+@router.get("/pyhunt/config")
+async def get_pyhunt_config(_: bool = Depends(verify_admin)):
+    """Fetch all global configuration key-values for PyHunt."""
+    db = get_supabase()
+    try:
+        result = db.table("pyhunt_global_config").select("*").execute()
+        return result.data or []
+    except Exception as e:
+        print(f"[ADMIN] pyhunt_config fetch failed: {e}")
+        return []
+
+@router.post("/pyhunt/config")
+async def update_pyhunt_config(request: GlobalConfigUpdate, _: bool = Depends(verify_admin)):
+    """Upsert a global configuration key-value (bypasses RLS)."""
+    db = get_supabase()
+    try:
+        # We use the config_key as the on_conflict target
+        result = db.table("pyhunt_global_config").upsert({
+            "config_key": request.config_key,
+            "config_value": request.config_value,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }, on_conflict="config_key").execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to update configuration")
+        return result.data[0]
+    except Exception as e:
+        err_msg = str(e)
+        if "PGRST204" in err_msg or "PGRST205" in err_msg or "relation" in err_msg:
+             raise HTTPException(
+                status_code=400,
+                detail="Database Table Missing: Please run the SQL to create the 'pyhunt_global_config' table."
+            )
+        print(f"CRITICAL update_pyhunt_config: {e}")
+        raise HTTPException(status_code=500, detail=err_msg)
+
 
 
 # ── Orbital Node Management (Folder CRUD) ─────────────────────

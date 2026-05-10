@@ -37,6 +37,9 @@ import {
   ExamConfig,
   updateExamConfig,
   fetchAllExamConfigs,
+  fetchPyHuntConfig,
+  updatePyHuntConfig,
+  GlobalConfigEntry,
 } from "@/lib/api";
 import { BRANCHES as BRANCH_LIST, BRANCH_IDS } from "@/lib/constants";
 import styles from "./admin.module.css";
@@ -184,20 +187,20 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
   const [globalAuth, setGlobalAuth] = useState<any>({ startCode: "PYHUNT67", authorizedUsns: "" });
 
   const fetchAllConfigs = useCallback(async () => {
-    const { data, error } = await supabase.from('pyhunt_global_config').select('*');
-    if (error) {
+    try {
+      const data = await fetchPyHuntConfig();
+      if (data) {
+        const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
+        if (rounds) setConfigs(rounds);
+        const m = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
+        if (m) setMcqs(m);
+        const a = data.find((c: any) => c.config_key === 'auth')?.config_value;
+        if (a) setGlobalAuth(a);
+        const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
+        if (j) setJumbles(j);
+      }
+    } catch (error) {
       console.error("Fetch error:", error);
-      return;
-    }
-    if (data) {
-      const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
-      if (rounds) setConfigs(rounds);
-      const m = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
-      if (m) setMcqs(m);
-      const a = data.find((c: any) => c.config_key === 'auth')?.config_value;
-      if (a) setGlobalAuth(a);
-      const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
-      if (j) setJumbles(j);
     }
   }, []);
 
@@ -284,15 +287,22 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
             btn.innerText = "🔄 SYNCING...";
             btn.disabled = true;
             
-            // Re-sync all current local states to Supabase just in case
-            await Promise.all([
-               supabase.from('pyhunt_global_config').upsert({ config_key: 'rounds_config', config_value: configs }, { onConflict: 'config_key' }),
-               supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: mcqs }, { onConflict: 'config_key' }),
-               supabase.from('pyhunt_global_config').upsert({ config_key: 'auth', config_value: globalAuth }, { onConflict: 'config_key' }),
-               supabase.from('pyhunt_global_config').upsert({ config_key: 'jumbles', config_value: jumbles }, { onConflict: 'config_key' })
-            ]);
+            try {
+              // Re-sync all current local states via backend API
+              await Promise.all([
+                 updatePyHuntConfig('rounds_config', configs),
+                 updatePyHuntConfig('mcqs', mcqs),
+                 updatePyHuntConfig('auth', globalAuth),
+                 updatePyHuntConfig('jumbles', jumbles)
+              ]);
 
-            btn.innerText = "✅ SYNCHRONIZED";
+              btn.innerText = "✅ SYNCHRONIZED";
+            } catch (err: any) {
+              console.error("Sync failed:", err);
+              btn.innerText = "❌ FAILED";
+              alert("Synchronization failed: " + (err.message || "Unknown error"));
+            }
+
             setTimeout(() => {
               btn.innerText = originalText;
               btn.disabled = false;

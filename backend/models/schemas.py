@@ -187,7 +187,13 @@ class ExamConfigUpdate(BaseModel):
     total_marks: Optional[int] = None
     exam_description: Optional[str] = None
 
+# ── Global Config ──────────────────────────────────────────────
+class GlobalConfigUpdate(BaseModel):
+    config_key: str
+    config_value: Any
+
 # ── Leaderboard ───────────────────────────────────────────────
+
 class LeaderboardEntry(BaseModel):
     rank: int
     student_id: str

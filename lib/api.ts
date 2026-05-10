@@ -566,3 +566,22 @@ export async function fetchViolationHistory(studentId?: string): Promise<Violati
   return adminFetch<ViolationHistory[]>(url);
 }
 
+// ── PyHunt Global Configuration ────────────────────────────────
+
+export interface GlobalConfigEntry {
+  config_key: string;
+  config_value: any;
+  updated_at?: string;
+}
+
+export async function fetchPyHuntConfig(): Promise<GlobalConfigEntry[]> {
+  return adminFetch<GlobalConfigEntry[]>("/admin/pyhunt/config");
+}
+
+export async function updatePyHuntConfig(key: string, value: any): Promise<void> {
+  await adminFetch("/admin/pyhunt/config", {
+    method: "POST",
+    body: JSON.stringify({ config_key: key, config_value: value }),
+  });
+}
+
