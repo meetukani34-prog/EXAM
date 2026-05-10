@@ -39,6 +39,8 @@ import {
   fetchAllExamConfigs,
   fetchPyHuntConfig,
   updatePyHuntConfig,
+  resetOdysseyProgress,
+  fetchPublicPyHuntConfig,
   GlobalConfigEntry,
 } from "@/lib/api";
 import { BRANCHES as BRANCH_LIST, BRANCH_IDS } from "@/lib/constants";
@@ -103,11 +105,8 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
       .select('*')
       .order('last_ping', { ascending: false });
 
-    // Fetch last violations for each student
-    const { data: violData } = await supabase
-      .from('violation_history')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Fetch last violations for each student via backend API
+    const violData = await fetchViolationHistory();
 
     if (error && status === 404) {
       setTableMissing(true);
@@ -135,16 +134,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     if (!confirm(`Reset exam for ${s.name}? This will clear all progress and rounds.`)) return;
     try {
       await resetAdminStudent(s.student_id);
-      await supabase.from('odyssey_progress').update({
-        current_round: 1,
-        round_1_state: { reset: true },
-        round_2_state: {},
-        round_3_state: {},
-        round_4_state: {},
-        round_5_state: {},
-        is_completed: false,
-        error_entropy: 0
-      }).eq('student_id', s.student_id);
+      await resetOdysseyProgress(s.student_id);
 
       fetchStudentsGlobal();
       fetchOdyssey();
@@ -211,34 +201,46 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
   const updateConfig = async (round: number, field: string, val: string) => {
     const updated = configs.map((c: any) => c.round === round ? { ...c, [field]: val } : c);
     setConfigs(updated);
-    const { error } = await supabase.from('pyhunt_global_config').upsert({ config_key: 'rounds_config', config_value: updated }, { onConflict: 'config_key' });
-    if (error) alert("Failed to save config: " + error.message);
+    try {
+      await updatePyHuntConfig('rounds_config', updated);
+    } catch (err: any) {
+      alert("Failed to save config: " + err.message);
+    }
   };
   const updateMcq = async (id: number, field: string, val: any) => {
     const updated = mcqs.map((q: any) => q.id === id ? { ...q, [field]: val } : q);
     setMcqs(updated);
-    const { error } = await supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }, { onConflict: 'config_key' });
-    if (error) alert("Failed to save MCQ: " + error.message);
+    try {
+      await updatePyHuntConfig('mcqs', updated);
+    } catch (err: any) {
+      alert("Failed to save MCQ: " + err.message);
+    }
   };
   const addMcq = async () => {
     const updated = [...mcqs, { id: Date.now(), question: "", options: ["", "", "", ""], answer: 0 }];
     setMcqs(updated);
-    await supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }, { onConflict: 'config_key' });
+    await updatePyHuntConfig('mcqs', updated);
   };
   const removeMcq = async (id: number) => {
     const updated = mcqs.filter((q: any) => q.id !== id);
     setMcqs(updated);
-    await supabase.from('pyhunt_global_config').upsert({ config_key: 'mcqs', config_value: updated }, { onConflict: 'config_key' });
+    await updatePyHuntConfig('mcqs', updated);
   };
   const saveGlobalAuth = async (newAuth: any) => {
     setGlobalAuth(newAuth);
-    const { error } = await supabase.from('pyhunt_global_config').upsert({ config_key: 'auth', config_value: newAuth }, { onConflict: 'config_key' });
-    if (error) alert("Failed to save Auth: " + error.message);
+    try {
+      await updatePyHuntConfig('auth', newAuth);
+    } catch (err: any) {
+      alert("Failed to save Auth: " + err.message);
+    }
   };
   const saveJumbles = async (newJumbles: any) => {
     setJumbles(newJumbles);
-    const { error } = await supabase.from('pyhunt_global_config').upsert({ config_key: 'jumbles', config_value: newJumbles }, { onConflict: 'config_key' });
-    if (error) alert("Failed to save Jumble: " + error.message);
+    try {
+      await updatePyHuntConfig('jumbles', newJumbles);
+    } catch (err: any) {
+      alert("Failed to save Jumble: " + err.message);
+    }
   };
 
   const participants = students

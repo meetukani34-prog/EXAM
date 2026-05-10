@@ -475,3 +475,15 @@ async def start_exam(
         db.table("exam_status").update(update_payload).eq("student_id", student_id).execute()
 
     return StartExamResponse(started_at=new_start, status="active")
+
+
+@router.get("/pyhunt/config")
+async def get_pyhunt_config():
+    """Public endpoint for students to fetch PyHunt configuration."""
+    db = get_supabase()
+    try:
+        res = db.table("pyhunt_global_config").select("*").execute()
+        return res.data or []
+    except Exception as e:
+        print(f"[EXAM] PyHunt config fetch failed: {e}")
+        return []

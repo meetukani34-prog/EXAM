@@ -585,3 +585,16 @@ export async function updatePyHuntConfig(key: string, value: any): Promise<void>
   });
 }
 
+export async function resetOdysseyProgress(studentId: string): Promise<void> {
+  await adminFetch(`/admin/students/${studentId}/reset-odyssey`, {
+    method: "POST",
+  });
+}
+
+/** Public endpoint for students — no admin secret needed. */
+export async function fetchPublicPyHuntConfig(): Promise<GlobalConfigEntry[]> {
+  const res = await fetch(`${API_BASE}/exam/pyhunt/config`);
+  if (!res.ok) return [];
+  return res.json();
+}
+

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePyodide } from '@/hooks/usePyodide';
 import { supabase } from '@/lib/supabase';
 import { withRetry } from '@/lib/apiUtils';
-import { startExam, ApiError } from '@/lib/api';
+import { startExam, ApiError, fetchPublicPyHuntConfig } from '@/lib/api';
 import styles from './PyHuntView.module.css';
 import AntiCheat from './AntiCheat';
 import { useFullscreen } from '@/hooks/useFullscreen';
@@ -136,8 +136,8 @@ export default function PyHuntView() {
 
     // Fetch Global Configs
     async function fetchGlobalConfigs() {
-       const { data } = await supabase.from('pyhunt_global_config').select('*');
-       if (data) {
+       const data = await fetchPublicPyHuntConfig();
+       if (data && data.length > 0) {
           const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
           if (rounds) setGlobalConfigs(rounds);
 
@@ -200,12 +200,15 @@ export default function PyHuntView() {
 
   // ── Handlers ──
   const handleAuthorize = async () => {
-    const { data } = await supabase.from('pyhunt_global_config').select('*').eq('config_key', 'auth').maybeSingle();
+    const data = await fetchPublicPyHuntConfig();
     let targetCode = "PYHUNT67";
     let allowedUsns = "";
-    if (data) {
-       targetCode = data.config_value.startCode || "PYHUNT67";
-       allowedUsns = data.config_value.authorizedUsns || "";
+    if (data && data.length > 0) {
+       const auth = data.find((c: any) => c.config_key === 'auth')?.config_value;
+       if (auth) {
+          targetCode = auth.startCode || "PYHUNT67";
+          allowedUsns = auth.authorizedUsns || "";
+       }
     }
 
     if (authForm.missionCode.toUpperCase() === targetCode.toUpperCase()) {

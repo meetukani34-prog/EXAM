@@ -949,22 +949,46 @@ async def get_violation_history(student_id: str | None = None, _: bool = Depends
     if student_id:
         query = query.eq("student_id", student_id)
         
-    res = query.order("created_at", desc=True).limit(100).execute()
+    res = query.order("timestamp", desc=True).limit(100).execute()
     
     rows = []
     for r in (res.data or []):
         student = r.get("students", {})
+        metadata = r.get("metadata") or {}
+        # Try to get exam_name from root, then metadata, then fallback
+        exam_name = r.get("exam_name") or metadata.get("exam_name") or "General"
+        
         rows.append(ViolationHistoryOut(
             id=r["id"],
             student_id=r["student_id"],
             student_name=student.get("name", "Unknown"),
             usn=student.get("usn", "Unknown"),
             type=r["type"],
-            exam_name=r.get("exam_name", "General"),
-            created_at=r["created_at"],
-            metadata=r.get("metadata")
+            exam_name=exam_name,
+            created_at=r["timestamp"],
+            metadata=metadata
         ))
     return rows
+
+@router.post("/students/{student_id}/reset-odyssey")
+async def reset_odyssey(student_id: str, _: bool = Depends(verify_admin)):
+    """Reset PyHunt (Odyssey) progress for a student."""
+    db = get_supabase()
+    try:
+        res = db.table("odyssey_progress").update({
+            "current_round": 1,
+            "round_1_state": {"reset": True},
+            "round_2_state": {},
+            "round_3_state": {},
+            "round_4_state": {},
+            "round_5_state": {},
+            "is_completed": False,
+            "error_entropy": 0,
+            "last_ping": datetime.now(timezone.utc).isoformat()
+        }).eq("student_id", student_id).execute()
+        return {"status": "success", "updated": len(res.data or []) > 0}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.patch("/support-requests/{request_id}/status")
 async def update_support_status(request_id: str, request: dict, _: bool = Depends(verify_admin)):
