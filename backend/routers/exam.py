@@ -267,14 +267,26 @@ def submit_exam(
     )
     if status_row.data and status_row.data[0].get("status") == "submitted":
         # Return existing result scoped to THIS exam
-        result_row = (
-            db.table("exam_results")
-            .select("score, total_marks, submitted_at, correct_count, wrong_count")
-            .eq("student_id", student_id)
-            .eq("exam_name", exam_title)
-            .limit(1)
-            .execute()
-        )
+        # We use a try-except here in case the migration columns (correct_count) aren't ready yet
+        try:
+            result_row = (
+                db.table("exam_results")
+                .select("score, total_marks, submitted_at, correct_count, wrong_count")
+                .eq("student_id", student_id)
+                .eq("exam_name", exam_title)
+                .limit(1)
+                .execute()
+            )
+        except Exception:
+            # Fallback for old schema
+            result_row = (
+                db.table("exam_results")
+                .select("score, total_marks, submitted_at")
+                .eq("student_id", student_id)
+                .eq("exam_name", exam_title)
+                .limit(1)
+                .execute()
+            )
         r = result_row.data[0] if result_row.data else {}
         total = r.get("total_marks", 0)
         score = r.get("score", 0)
@@ -365,6 +377,7 @@ def submit_exam(
 
     # 4. Upsert exam_results — unique per (student_id, exam_name)
     try:
+        # Try full payload with reporting columns
         db.table("exam_results").upsert({
             "student_id": student_id,
             "exam_name": exam_title,
@@ -376,7 +389,19 @@ def submit_exam(
             "submitted_at": submitted_at
         }, on_conflict="student_id,exam_name").execute()
     except Exception as e:
-        print(f"[EXAM] exam_results upsert failed: {e}")
+        print(f"[EXAM] Full upsert failed (likely missing columns), retrying basic: {e}")
+        try:
+            # Fallback to basic schema
+            db.table("exam_results").upsert({
+                "student_id": student_id,
+                "exam_name": exam_title,
+                "answers": answers,
+                "score": score,
+                "total_marks": total_marks,
+                "submitted_at": submitted_at
+            }, on_conflict="student_id,exam_name").execute()
+        except Exception as e2:
+            print(f"[EXAM] CRITICAL: exam_results fallback upsert failed: {e2}")
 
     # 5. Mark submitted and ensure attempt is counted for THIS exam
     try:
