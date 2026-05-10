@@ -1,5 +1,12 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
+export class ApiError extends Error {
+  constructor(public detail: string, public status: number) {
+    super(detail);
+    this.name = "ApiError";
+  }
+}
+
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("exam_token");
@@ -47,7 +54,7 @@ async function apiFetch<T>(
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Request failed" }));
       console.error(`[API] Error response for ${url}:`, err);
-      throw new Error(err.detail || `HTTP ${res.status}`);
+      throw new ApiError(err.detail || `HTTP ${res.status}`, res.status);
     }
 
     return res.json();

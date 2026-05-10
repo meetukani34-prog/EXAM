@@ -1,3 +1,5 @@
+import { ApiError } from "./api";
+
 /**
  * Executes an asynchronous function with exponential backoff retry logic.
  * @param fn The async function to execute.
@@ -11,7 +13,13 @@ export async function withRetry<T>(
 ): Promise<T> {
   try {
     return await fn();
-  } catch (error) {
+  } catch (error: any) {
+    // ── Non-Retryable Errors ──
+    // If it's an ApiError with 403 (Already submitted / Forbidden), don't retry.
+    if (error instanceof ApiError && error.status === 403) {
+      throw error;
+    }
+    
     if (retries <= 0) {
       throw error;
     }

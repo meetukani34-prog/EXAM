@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePyodide } from '@/hooks/usePyodide';
 import { supabase } from '@/lib/supabase';
 import { withRetry } from '@/lib/apiUtils';
-import { startExam } from '@/lib/api';
+import { startExam, ApiError } from '@/lib/api';
 import styles from './PyHuntView.module.css';
 import AntiCheat from './AntiCheat';
 import { useFullscreen } from '@/hooks/useFullscreen';
@@ -117,9 +117,11 @@ export default function PyHuntView() {
       try {
         await withRetry(() => startExam("PyHunt"));
       } catch (err: any) {
-        if (err.message?.includes("already submitted")) {
+        if (err.message?.includes("already submitted") || (err instanceof ApiError && err.status === 403)) {
           console.log("PyHunt: Exam already marked as submitted in backend.");
           setCurrentRound(6); // Force to completion state
+          setLoading(false); // Stop loading immediately
+          return; // Exit syncProgress early
         } else {
           console.error("PyHunt start sync failed after retries:", err);
         }
