@@ -78,11 +78,21 @@ export default function WarningModal({
               {cfg.dismissLabel}
             </button>
           )}
+
+          {level === 3 && (
+            <button
+              className="btn btn-primary btn-lg"
+              onClick={() => window.location.href = "/dashboard"}
+              style={{ width: "100%", marginTop: 12 }}
+            >
+              Back to Home
+            </button>
+          )}
         </div>
 
         {level === 3 && (
           <p className={styles.final}>
-            Your answers have been saved and submitted. You may close this window.
+            Your answers have been saved and submitted.
           </p>
         )}
       </div>

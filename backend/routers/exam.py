@@ -441,8 +441,16 @@ async def start_exam(
                 started_at = None
     except Exception: pass
 
-    # 3. If already active for this exam, just return the existing start time
+    # 3. If already active for this exam, we still want to reset warnings 
+    # to 0 to ensure the student starts this session fresh (avoid stale warnings).
+    # We keep the same started_at to maintain the timer.
     if status_str == "active" and started_at:
+        try:
+            db.table("exam_status").update({
+                "warnings": 0,
+                "last_active": datetime.now(timezone.utc).isoformat()
+            }).eq("student_id", student_id).execute()
+        except Exception: pass
         return StartExamResponse(started_at=started_at, status="active")
 
     # 4. If previously submitted for the same exam — allow restart
