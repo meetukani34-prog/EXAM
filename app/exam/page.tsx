@@ -123,9 +123,9 @@ export default function ExamPage() {
       
       // Load questions
       try {
-        const qs = await fetchQuestions(quizTitle);
-        if (qs && qs.length > 0) {
-          setQuestions(qs);
+        const res = await fetchQuestions(quizTitle);
+        if (res.questions && res.questions.length > 0) {
+          setQuestions(res.questions);
           enterFullscreen();
         } else {
           setError("No questions available for this exam.");

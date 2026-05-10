@@ -38,7 +38,8 @@ class QuestionOut(BaseModel):
     options: List[str]
     branch: str = "CS"
     order_index: int
-    marks: int
+    marks: float
+    neg_marks: float = 0.0
     exam_name: str = "Initial Assessment"
     image_url: Optional[str] = None
     audio_url: Optional[str] = None
@@ -46,6 +47,8 @@ class QuestionOut(BaseModel):
 class QuestionsResponse(BaseModel):
     questions: List[QuestionOut]
     total: int
+    pos_marks_global: float = 1.0
+    neg_marks_global: float = 0.0
 
 # ── Answers ───────────────────────────────────────────────────
 class SaveAnswerRequest(BaseModel):

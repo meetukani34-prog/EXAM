@@ -124,15 +124,22 @@ export interface Question {
   branch: string;
   order_index: number;
   marks: number;
+  neg_marks: number;
   image_url: string | null;
   audio_url: string | null;
 }
 
-export async function fetchQuestions(title: string): Promise<Question[]> {
-  const res = await apiFetch<{ questions: Question[]; total: number }>(
+export interface QuestionsResponse {
+  questions: Question[];
+  total: number;
+  pos_marks_global: number;
+  neg_marks_global: number;
+}
+
+export async function fetchQuestions(title: string): Promise<QuestionsResponse> {
+  return await apiFetch<QuestionsResponse>(
     `/exam/questions?title=${encodeURIComponent(title)}`
   );
-  return res.questions;
 }
 
 // ── Save Answer ───────────────────────────────────────────────

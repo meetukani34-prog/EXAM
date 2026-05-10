@@ -428,3 +428,274 @@
   background: #ff5252 !important;
   color: #fff !important;
 }
+
+/* ── Modals (Glassmorphism) ────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 10, 20, 0.7);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal {
+  background: rgba(15, 15, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 28px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  padding: 40px;
+  overflow-y: auto;
+  box-shadow: 
+    0 25px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  animation: modalPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal h3 {
+  margin: 0 0 24px 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6) !important;
+  margin-bottom: 8px;
+}
+
+.optionsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.formRow {
+  display: flex;
+  flex-wrap: wrap; /* Prevents overlap by wrapping if needed */
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.formRow .formGroup {
+  flex: 1;
+  min-width: 180px; /* Ensures items don't get too squeezed */
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 14px;
+  color: #f1f5f9 !important;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+}
+
+.input:focus {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+select.input option {
+  background: #1e1b4b;
+  color: #ffffff !important;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ── Node Management Headers ── */
+.nodeManagementHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 100;
+}
+
+.nodeInfo h4 {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.nodeActions {
+  display: flex;
+  gap: 12px;
+}
+
+/* ── Asset Management ── */
+.imagePreviewContainer {
+  position: relative;
+  width: 100%;
+  max-height: 240px;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  margin-top: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imagePreview {
+  max-width: 100%;
+  max-height: 240px;
+  display: block;
+  object-fit: contain;
+}
+
+.removeImageBtn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.removeImageBtn:hover {
+  background: #ef4444;
+  transform: scale(1.15) rotate(90deg);
+}
+
+.uploadZone {
+  border: 2px dashed rgba(139, 92, 246, 0.3);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  background: rgba(139, 92, 246, 0.03);
+}
+
+.uploadZone:hover {
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.6);
+}
+
+/* ── Floating Orbs (Identity Clusters) ───────────── */
+.orbGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 32px;
+  padding: 40px 0;
+}
+
+.orbNode {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.orbCircle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+  animation: floating 4s ease-in-out infinite;
+}
+
+.orbNode:hover .orbCircle {
+  transform: scale(1.08);
+  border-color: rgba(139, 92, 246, 0.8);
+  box-shadow: 0 0 40px rgba(139, 92, 246, 0.4);
+}
+
+.orbTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.orbSubtitle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a78bfa;
+}
+
+@keyframes floating {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.isolationView {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 24px;
+  padding: 32px;
+  margin-top: 24px;
+  animation: fadeIn 0.5s ease-out;
+}

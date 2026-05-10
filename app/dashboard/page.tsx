@@ -504,7 +504,7 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
   const displayDate = exam.scheduled_start ? new Date(exam.scheduled_start).toLocaleDateString() : "2024-05-08";
   const displayTime = exam.scheduled_start ? new Date(exam.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : "14:00";
 
-  const hasReachedLimit = (exam.attempts_count || 0) >= (exam.max_attempts || 1) && exam.student_status === 'submitted';
+  const hasReachedLimit = (exam.attempts_count || 0) >= (exam.max_attempts || 1) && exam.student_status !== 'active';
 
   const isInactive = !exam.is_active;
   const isDisabled = isLocked || hasReachedLimit || isInactive;
@@ -516,7 +516,7 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <h3 className={styles.examTitle}>{exam.exam_name}</h3>
           <span className={styles.statusBadge} style={{ background: isInactive ? 'rgba(239, 68, 68, 0.1)' : undefined, color: isInactive ? '#ef4444' : undefined }}>
-            {isInactive ? "Inactive" : (isLocked ? "Scheduled" : (hasReachedLimit ? "Completed" : "Live"))}
+            {isInactive ? "Inactive" : (isLocked ? "Scheduled" : (exam.student_status === 'active' ? "Active" : (hasReachedLimit ? "Completed" : "Live")))}
           </span>
         </div>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -567,10 +567,10 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
               border: hasReachedLimit ? '1px solid rgba(52, 211, 153, 0.2)' : (isInactive ? '1px solid rgba(239, 68, 68, 0.2)' : undefined)
             }}
           >
-            {isInactive ? "Closed" : (isLocked ? "Locked" : (hasReachedLimit ? "Attempted" : "Start Exam"))}
+            {isInactive ? "Closed" : (isLocked ? "Locked" : (exam.student_status === 'active' ? "Resume Exam" : (hasReachedLimit ? "Attempted" : "Start Exam")))}
           </button>
           <div style={{ fontSize: 13, fontWeight: 700, color: isInactive ? '#ef4444' : (isLocked ? 'var(--nexus-gold)' : (hasReachedLimit ? '#34d399' : 'var(--nexus-cyan)')) }}>
-            {isInactive ? "Inactive" : (hasReachedLimit ? "Verified" : (countdown || "Ready"))}
+            {isInactive ? "Inactive" : (exam.student_status === 'active' ? "In Progress" : (hasReachedLimit ? "Verified" : (countdown || "Ready")))}
           </div>
         </div>
       </div>

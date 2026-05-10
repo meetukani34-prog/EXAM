@@ -494,10 +494,12 @@
   padding: 18px;
   color: #FFFFFF !important;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 900;
   text-align: center;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  caret-color: #FFFFFF;
   transition: all 0.3s;
 }
 
@@ -666,9 +668,16 @@
   border-radius: 16px;
   color: #FFFFFF !important;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   transition: all 0.3s;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+  caret-color: #FFFFFF;
+}
+
+.authInput:read-only {
+  color: #FFFFFF !important;
+  opacity: 0.9;
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .authInput::placeholder {

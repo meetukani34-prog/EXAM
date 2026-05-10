@@ -12,8 +12,8 @@
     radial-gradient(ellipse at 20% 50%, rgba(186, 230, 253, 0.4) 0%, transparent 70%),
     radial-gradient(ellipse at 80% 30%, rgba(196, 181, 253, 0.2) 0%, transparent 70%),
     linear-gradient(135deg, #dbeafe 0%, #e0f2fe 50%, #ede9fe 100%);
-  background-size: 400% 400%;
-  animation: bgShift 45s ease infinite alternate;
+  background-size: 200% 200%;
+  animation: bgShift 80s ease infinite alternate;
   position: relative;
   overflow: hidden;
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;

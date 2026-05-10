@@ -138,6 +138,17 @@ def get_questions(
         # Return empty list instead of 500 to keep UI stable
         return QuestionsResponse(questions=[], total=0)
 
+    # ── Scoring Configuration for the frontend ──
+    marks_override = None
+    neg_marks = 0.0
+    try:
+        config_res = db.table("exam_config").select("marks_per_question, negative_marks").eq("exam_title", title).execute()
+        if config_res.data:
+            cfg = config_res.data[0]
+            marks_override = cfg.get("marks_per_question")
+            neg_marks = float(cfg.get("negative_marks") if cfg.get("negative_marks") is not None else 0.0)
+    except Exception: pass
+
     questions = [
         QuestionOut(
             id=q["id"],
@@ -145,12 +156,20 @@ def get_questions(
             options=q["options"],
             branch=q.get("branch", branch),
             order_index=q["order_index"],
-            marks=q["marks"],
+            marks=q["marks"] if marks_override is None else marks_override,
+            neg_marks=neg_marks,
+            image_url=q.get("image_url"),
+            audio_url=q.get("audio_url")
         )
         for q in (result.data or [])
     ]
 
-    return QuestionsResponse(questions=questions, total=len(questions))
+    return QuestionsResponse(
+        questions=questions, 
+        total=len(questions),
+        pos_marks_global=marks_override if marks_override is not None else (questions[0].marks if questions else 1.0),
+        neg_marks_global=neg_marks
+    )
 
 
 @router.post("/save-answer", response_model=SaveAnswerResponse)
@@ -396,10 +415,11 @@ async def start_exam(
     db = get_supabase()
     student_id = current["student_id"]
 
+    title = title.strip()
     # 1. Fetch config safely
     max_attempts = 1
     try:
-        config_res = db.table("exam_config").select("*").eq("exam_title", title).limit(1).execute()
+        config_res = db.table("exam_config").select("*").ilike("exam_title", title).limit(1).execute()
         if config_res.data:
             max_attempts = config_res.data[0].get("max_attempts") or 1
     except Exception: pass
@@ -437,13 +457,19 @@ async def start_exam(
         except Exception: pass
         return StartExamResponse(started_at=started_at, status="active")
 
-    # 4. Block restart if already submitted for the same exam
+    # 4. Block restart if already submitted OR reached max attempts for the same exam
     # This prevents bypassing auto-submission by refreshing.
-    if status_str == "submitted" and record_exam == title:
-         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Exam already submitted. You cannot restart."
-        )
+    if record_exam.strip().lower() == title.lower():
+        if status_str == "submitted":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Exam already submitted. You cannot restart."
+            )
+        if (attempts_count or 0) >= max_attempts and status_str != "active":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Maximum attempts ({max_attempts}) reached for this assessment."
+            )
 
     # 5. Otherwise, set the start time NOW and increment attempts
     new_start = datetime.now(timezone.utc).isoformat()

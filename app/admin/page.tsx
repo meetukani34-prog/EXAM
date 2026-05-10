@@ -2135,10 +2135,12 @@ function QuestionsTab() {
             </div>
             <div className={adminStyles.formGroup}>
               <label>Options</label>
-              {formData.options.map((opt, i) => (
-                <input key={i} className={adminStyles.input} placeholder={`Option ${String.fromCharCode(65 + i)}`} value={opt}
-                  onChange={(e) => { const n = [...formData.options]; n[i] = e.target.value; setFormData({ ...formData, options: n }); }} />
-              ))}
+              <div className={adminStyles.optionsGrid}>
+                {formData.options.map((opt, i) => (
+                  <input key={i} className={adminStyles.input} placeholder={`Option ${String.fromCharCode(65 + i)}`} value={opt}
+                    onChange={(e) => { const n = [...formData.options]; n[i] = e.target.value; setFormData({ ...formData, options: n }); }} />
+                ))}
+              </div>
             </div>
             <div className={adminStyles.formRow}>
               <div className={adminStyles.formGroup}>
@@ -2156,6 +2158,9 @@ function QuestionsTab() {
                   {formData.options.map((_, i) => <option key={i} value={String.fromCharCode(65 + i)}>Option {String.fromCharCode(65 + i)}</option>)}
                 </select>
               </div>
+            </div>
+
+            <div className={adminStyles.formRow}>
               <div className={adminStyles.formGroup}>
                 <label>Exam Identity (Anchor)</label>
                 <select

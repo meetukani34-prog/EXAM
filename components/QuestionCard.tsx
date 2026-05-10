@@ -9,6 +9,7 @@ interface QuestionCardProps {
     text: string; 
     options: string[]; 
     marks: number; 
+    neg_marks?: number;
     image_url?: string | null;
     audio_url?: string | null;
   };
@@ -36,10 +37,10 @@ export default function QuestionCard({
       {/* Question header */}
       <div className={styles.header}>
         <span className={styles.numberText}>Question {questionNumber} of {totalQuestions}</span>
-        {/* We can put the marks over to the right or omit it if not needed, but let's keep it aligned right */}
-        {question.marks > 0 && (
-          <span className={styles.marks}>{question.marks} mark{question.marks !== 1 ? "s" : ""}</span>
-        )}
+        {/* Dynamic marks display (+1 / -0.25) */}
+        <span className={styles.marks}>
+          +{question.marks} / -{question.neg_marks || 0}
+        </span>
       </div>
 
       {/* Question text */}
