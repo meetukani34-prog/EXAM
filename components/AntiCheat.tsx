@@ -4,6 +4,7 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import { reportViolation } from "@/lib/api";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import WarningModal from "./WarningModal";
+import { withRetry } from "@/lib/apiUtils";
 import { supabase } from "@/lib/supabase";
 // import FaceMonitor from "./FaceMonitor";
 
@@ -29,14 +30,17 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
     // ── Fetch Initial State ──
     async function syncViolationState() {
       try {
-        const { data } = await supabase
-          .from('exam_status')
-          .select('warnings')
-          .eq('student_id', (JSON.parse(localStorage.getItem("exam_student") || "{}")).id)
-          .single();
-        if (data) setWarningCount(data.warnings || 0);
+        await withRetry(async () => {
+          const { data, error } = await supabase
+            .from('exam_status')
+            .select('warnings')
+            .eq('student_id', (JSON.parse(localStorage.getItem("exam_student") || "{}")).id)
+            .maybeSingle();
+          if (error) throw error;
+          if (data) setWarningCount(data.warnings || 0);
+        });
       } catch (err) {
-        console.warn("[ANTICHEAT] Failed to sync initial warnings:", err);
+        console.warn("[ANTICHEAT] Failed to sync initial warnings after retries:", err);
       }
     }
     syncViolationState();
@@ -72,7 +76,7 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
 
       try {
         setModalMessage("📡 Synchronizing telemetry...");
-        const res = await reportViolation(type, examName, metadata);
+        const res = await withRetry(() => reportViolation(type, examName, metadata));
 
         // Update state with actual count from backend
         const count = res.warning_count ?? 1;

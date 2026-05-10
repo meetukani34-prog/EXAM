@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { fetchPublicExamConfig, type ExamConfig, updateProfile, getExamStatus } from "@/lib/api";
+import { withRetry } from "@/lib/apiUtils";
 import { CldUploadWidget } from 'next-cloudinary';
 import styles from "./dashboard.module.css";
 import PyHuntView from "@/components/PyHuntView";
@@ -79,10 +80,13 @@ export default function DashboardPage() {
   // ── Load exams ────────────────────────────────────────────
   const loadExams = useCallback(async () => {
     try {
-      const configs = await fetchPublicExamConfig();
-      const { data: qData } = await supabase
-        .from("questions")
-        .select("branch, exam_name, category");
+      const configs = await withRetry(() => fetchPublicExamConfig());
+      const { data: qData, error: qError } = await withRetry(async () => {
+        return await supabase
+          .from("questions")
+          .select("branch, exam_name, category");
+      });
+      if (qError) throw qError;
 
       const nodes: ExamNode[] = [];
 
@@ -98,9 +102,9 @@ export default function DashboardPage() {
         let statusList: any[] = [];
         if (student && student.id !== "PREVIEW") {
           try {
-            statusList = await getExamStatus();
+            statusList = await withRetry(() => getExamStatus());
           } catch(err) {
-            console.error("Failed to fetch exam status:", err);
+            console.error("Failed to fetch exam status after retries:", err);
           }
         }
 

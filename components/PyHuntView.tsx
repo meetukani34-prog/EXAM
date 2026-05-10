@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePyodide } from '@/hooks/usePyodide';
 import { supabase } from '@/lib/supabase';
+import { withRetry } from '@/lib/apiUtils';
 import { startExam } from '@/lib/api';
 import styles from './PyHuntView.module.css';
 import AntiCheat from './AntiCheat';
@@ -86,17 +87,21 @@ export default function PyHuntView() {
       }
 
       // ── Fetch Student Progress ──
-      const { data, error } = await supabase
-        .from('odyssey_progress')
-        .select('*')
-        .eq('student_id', studentId)
-        .maybeSingle();
+      const { data, error } = await withRetry(async () => {
+        return await supabase
+          .from('odyssey_progress')
+          .select('*')
+          .eq('student_id', studentId)
+          .maybeSingle();
+      });
 
       if (data) {
         setCurrentRound(data.current_round);
       } else {
         // Initialize for new student
-        await supabase.from('odyssey_progress').insert([{ student_id: studentId, current_round: 1 }]);
+        await withRetry(async () => {
+          return await supabase.from('odyssey_progress').insert([{ student_id: studentId, current_round: 1 }]);
+        });
         setCurrentRound(1);
       }
 
@@ -106,9 +111,9 @@ export default function PyHuntView() {
 
       // ── Initialize exam_status for AntiCheat Sync ─────────
       try {
-        await startExam("PyHunt");
+        await withRetry(() => startExam("PyHunt"));
       } catch (err) {
-        console.error("PyHunt start sync failed:", err);
+        console.error("PyHunt start sync failed after retries:", err);
       }
 
       setLoading(false);
@@ -274,10 +279,13 @@ export default function PyHuntView() {
       localStorage.removeItem(`pyhunt_mcq_${studentId}`);
       localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
 
-      await supabase
-        .from('odyssey_progress')
-        .update({ current_round: next, last_ping: new Date().toISOString() })
-        .eq('student_id', studentId);
+      await withRetry(async () => {
+        const { error } = await supabase
+          .from('odyssey_progress')
+          .update({ current_round: next, last_ping: new Date().toISOString() })
+          .eq('student_id', studentId);
+        if (error) throw error;
+      });
     } else {
       setGateError(true);
       setTimeout(() => setGateError(false), 2000);
