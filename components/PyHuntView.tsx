@@ -120,6 +120,7 @@ export default function PyHuntView() {
         if (err.message?.includes("already submitted") || (err instanceof ApiError && err.status === 403)) {
           console.log("PyHunt: Exam already marked as submitted in backend.");
           setCurrentRound(6); // Force to completion state
+          setIsAuthorized(true); // Bypass authorization for finished exams
           setLoading(false); // Stop loading immediately
           return; // Exit syncProgress early
         } else {
@@ -305,6 +306,26 @@ export default function PyHuntView() {
 
   if (loading) return <div className={styles.levitate}>Igniting PyHunt Engines...</div>;
 
+  // ── Mission Accomplished View (Priority) ───────────────────────────
+  if (currentRound > ROUNDS.length) {
+    return (
+      <div className={styles.successOverlay} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.95)' }}>
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className={styles.successCard}
+        >
+          <div className={styles.successIcon}>🏆</div>
+          <h2>MISSION ACCOMPLISHED</h2>
+          <p>You have successfully decoded all logic nodes and reached the final coordinate.</p>
+          <div className={styles.codeDisplay}>TRANSMISSION COMPLETE</div>
+          <p className={styles.successNote}>Your results have been synchronized with the Nexus command center.</p>
+          <button className={styles.proceedBtn} onClick={() => window.location.href = "/dashboard"}>Return to Dashboard</button>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (!isAuthorized) {
     return (
       <div className={styles.authContainer}>
@@ -384,26 +405,6 @@ export default function PyHuntView() {
             🚀 Start PyHunt
           </button>
         </div>
-      </div>
-    );
-  }
-
-  // ── Mission Accomplished View ───────────────────────────
-  if (currentRound > ROUNDS.length) {
-    return (
-      <div className={styles.successOverlay} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.95)' }}>
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className={styles.successCard}
-        >
-          <div className={styles.successIcon}>🏆</div>
-          <h2>MISSION ACCOMPLISHED</h2>
-          <p>You have successfully decoded all logic nodes and reached the final coordinate.</p>
-          <div className={styles.codeDisplay}>TRANSMISSION COMPLETE</div>
-          <p className={styles.successNote}>Your results have been synchronized with the Nexus command center.</p>
-          <button className={styles.proceedBtn} onClick={() => window.location.href = "/dashboard"}>Return to Dashboard</button>
-        </motion.div>
       </div>
     );
   }

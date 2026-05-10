@@ -15,8 +15,13 @@ export async function withRetry<T>(
     return await fn();
   } catch (error: any) {
     // ── Non-Retryable Errors ──
-    // If it's an ApiError with 403 (Already submitted / Forbidden), don't retry.
-    if (error instanceof ApiError && error.status === 403) {
+    // Skip 403 (Forbidden/Submitted) and 404 (Not Found/Missing Table)
+    if (error instanceof ApiError && (error.status === 403 || error.status === 404)) {
+      throw error;
+    }
+    
+    // Also check for Supabase-style error objects if they have a status
+    if (error?.status === 404 || error?.status === 403) {
       throw error;
     }
     
