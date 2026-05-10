@@ -352,7 +352,18 @@
 }
 
 
-/* -- Gate Overlay -- */
+/* -- Gate Modal Overlay (Full Screen) -- */
+.gateModalOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.9);
+  backdrop-filter: blur(12px);
+  z-index: 2000;
+}
+
 .gateOverlay {
   position: absolute;
   inset: 0;
@@ -467,6 +478,12 @@
   text-align: center;
 }
 
+.gateActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .unlockBtn {
   width: 100%;
   padding: 16px;
@@ -479,6 +496,25 @@
   letter-spacing: 0.1em;
   cursor: pointer;
   transition: all 0.3s;
+}
+
+.cancelBtn {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 0.1em;
+}
+
+.cancelBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .unlockBtn:hover {

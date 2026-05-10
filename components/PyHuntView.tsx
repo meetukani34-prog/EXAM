@@ -59,7 +59,7 @@ export default function PyHuntView() {
   const { runCode, loading: pyLoading } = usePyodide(currentRound > 1);
   const { enter: enterFullscreen } = useFullscreen();
   
-  // Gate State
+  // Gate State (Modal)
   const [isAtGate, setIsAtGate] = useState(false);
   const [gateInput, setGateInput] = useState("");
   const [gateError, setGateError] = useState(false);
@@ -85,7 +85,6 @@ export default function PyHuntView() {
     async function syncProgress() {
       const studentId = info.id;
       
-      // ── Authorization Check ──
       const globalAuthRaw = localStorage.getItem("pyhunt_global_auth");
       if (globalAuthRaw) {
         const ga = JSON.parse(globalAuthRaw);
@@ -97,7 +96,6 @@ export default function PyHuntView() {
         }
       }
 
-      // ── Fetch DB State ──
       const { data } = await withRetry(async () => {
         return await supabase
           .from('odyssey_progress')
@@ -107,9 +105,7 @@ export default function PyHuntView() {
       });
 
       if (data) {
-        // Handle Admin Reset Signal
         if (data.round_1_state && (data.round_1_state as any).reset) {
-          console.log("PyHunt: Reset signal received. Clearing local state.");
           localStorage.removeItem(`pyhunt_mcq_map_${studentId}`);
           localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
           setMcqSelectionMap({});
@@ -119,23 +115,19 @@ export default function PyHuntView() {
             .update({ round_1_state: {} })
             .eq('student_id', studentId);
         } else {
-          // Restore local progress
           const savedMap = localStorage.getItem(`pyhunt_mcq_map_${studentId}`);
           if (savedMap) setMcqSelectionMap(JSON.parse(savedMap));
-          
           const savedCode = localStorage.getItem(`pyhunt_code_draft_${studentId}`);
           if (savedCode) setCode(savedCode);
         }
         setCurrentRound(data.current_round);
       } else {
-        // First time
         await withRetry(async () => {
           return await supabase.from('odyssey_progress').insert([{ student_id: studentId, current_round: 1 }]);
         });
         setCurrentRound(1);
       }
 
-      // Start Exam Tracking
       try {
         await withRetry(() => startExam("PyHunt"));
       } catch (err: any) {
@@ -146,13 +138,12 @@ export default function PyHuntView() {
           return;
         }
       }
-
       setLoading(false);
     }
     syncProgress();
   }, []);
 
-  // ── Persistence Effects ──
+  // ── Persistence ──
   useEffect(() => {
     if (student?.id && code) {
       const timer = setTimeout(() => {
@@ -171,7 +162,6 @@ export default function PyHuntView() {
      }
   }, [mcqSelectionMap, student]);
 
-  // Load Admin MCQs
   useEffect(() => {
      if (typeof window !== "undefined") {
         const savedMcqs = localStorage.getItem("pyhunt_mcqs_local");
@@ -202,13 +192,10 @@ export default function PyHuntView() {
     if (globalAuthRaw) {
       targetCode = JSON.parse(globalAuthRaw).startCode || "PYHUNT67";
     }
-
     if (authForm.missionCode.toUpperCase() === targetCode.toUpperCase()) {
       if (authError.startsWith("CRITICAL")) return;
       setIsAuthorized(true);
-      if (student?.id) {
-        sessionStorage.setItem(`pyhunt_auth_${student.id}`, "true");
-      }
+      if (student?.id) sessionStorage.setItem(`pyhunt_auth_${student.id}`, "true");
       setAuthError("");
     } else {
       setAuthError("Invalid Mission Authorization Code.");
@@ -219,12 +206,10 @@ export default function PyHuntView() {
     if (currentRound === 1) {
       const allCorrect = mcqSet.every((q, idx) => mcqSelectionMap[idx] === q.correct);
       const answeredCount = Object.keys(mcqSelectionMap).length;
-
       if (answeredCount < mcqSet.length) {
         setOutput(`ERROR: Incomplete logic chain. Answer all ${mcqSet.length} nodes.`);
         return;
       }
-
       if (allCorrect) {
         setIsAtGate(true);
         setGateError(false);
@@ -237,18 +222,13 @@ export default function PyHuntView() {
 
     setOutput("Executing Logic...");
     const result = await runCode(code);
-    
     if (result.error) {
       setOutput(`ERROR: ${result.error}`);
       return;
     }
-
     setOutput(result.stdout || "No output generated.");
-    
     const isValid = validateRound(currentRound, result.stdout);
-    if (isValid) {
-      setIsAtGate(true);
-    }
+    if (isValid) setIsAtGate(true);
   };
 
   const handleMcqSelect = (idx: number, optIdx: number) => {
@@ -296,22 +276,17 @@ export default function PyHuntView() {
     }
   };
 
-  // ── Render Helpers ──
+  // ── Render ──
   if (loading) return <div className={styles.levitate}>Igniting PyHunt Engines...</div>;
 
   if (currentRound > ROUNDS.length) {
     return (
       <div className={styles.successOverlay} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.95)' }}>
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className={styles.successCard}
-        >
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={styles.successCard}>
           <div className={styles.successIcon}>🏆</div>
           <h2>MISSION ACCOMPLISHED</h2>
           <p>You have successfully decoded all logic nodes and reached the final coordinate.</p>
           <div className={styles.codeDisplay}>TRANSMISSION COMPLETE</div>
-          <p className={styles.successNote}>Your results have been synchronized with the Nexus command center.</p>
           <button className={styles.proceedBtn} onClick={() => window.location.href = "/dashboard"}>Return to Dashboard</button>
         </motion.div>
       </div>
@@ -321,11 +296,7 @@ export default function PyHuntView() {
   if (!isAuthorized) {
     return (
       <div className={styles.authContainer}>
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={styles.authCard}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={styles.authCard}>
           <header className={styles.authHeader}>
             <div className={styles.lobbyIcon} style={{ transform: 'scale(0.8)', marginBottom: 12 }}>
               <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" strokeWidth="1.5">
@@ -335,28 +306,9 @@ export default function PyHuntView() {
             <h2>MISSION AUTHORIZATION</h2>
             <p className={styles.authSubtitle}>Enter your credentials to access the PyHunt logic nodes.</p>
           </header>
-
           <div className={styles.authForm}>
-            <div className={styles.authInputGroup}>
-              <label>Candidate USN</label>
-              <input 
-                type="text" 
-                className={styles.authInput} 
-                value={authForm.usn}
-                readOnly
-              />
-            </div>
-            <div className={styles.authInputGroup}>
-              <label>Mission Start Code</label>
-              <input 
-                type="password" 
-                className={styles.authInput} 
-                placeholder="Enter authorized mission code"
-                value={authForm.missionCode}
-                onChange={(e) => setAuthForm(prev => ({ ...prev, missionCode: e.target.value }))}
-                onKeyDown={(e) => e.key === 'Enter' && handleAuthorize()}
-              />
-            </div>
+            <div className={styles.authInputGroup}><label>Candidate USN</label><input type="text" className={styles.authInput} value={authForm.usn} readOnly /></div>
+            <div className={styles.authInputGroup}><label>Mission Start Code</label><input type="password" className={styles.authInput} placeholder="Enter authorized mission code" value={authForm.missionCode} onChange={(e) => setAuthForm(prev => ({ ...prev, missionCode: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && handleAuthorize()} /></div>
             <button className={styles.authBtn} onClick={handleAuthorize}>AUTHORIZE MISSION</button>
             {authError && <div className={styles.authError}>{authError}</div>}
           </div>
@@ -371,16 +323,11 @@ export default function PyHuntView() {
         <div className={styles.lobbyContent}>
           <div className={styles.lobbyIcon}>
             <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="var(--nexus-cyan)" strokeWidth="1.5">
-              <circle cx="12" cy="12" r="10" strokeOpacity="0.3" />
-              <path d="M12 6v6l4 2" strokeLinecap="round" />
-              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" strokeDasharray="4 4" />
+              <circle cx="12" cy="12" r="10" strokeOpacity="0.3" /><path d="M12 6v6l4 2" strokeLinecap="round" /><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" strokeDasharray="4 4" />
             </svg>
           </div>
           <h1 className={styles.lobbyTitle}>PyHunt</h1>
-          <p className={styles.lobbySubtitle}>
-            Python Treasure Hunt — Solve 5 rounds of challenges and decode physical hints to reach the final coordinate!
-          </p>
-          
+          <p className={styles.lobbySubtitle}>Python Treasure Hunt — Solve 5 rounds of challenges!</p>
           <div className={styles.roundList}>
             {ROUNDS.map(r => (
               <div key={r.id} className={styles.roundListItem}>
@@ -389,13 +336,7 @@ export default function PyHuntView() {
               </div>
             ))}
           </div>
-
-          <button className={styles.startBtn} onClick={() => {
-            setHasStarted(true);
-            enterFullscreen();
-          }}>
-            🚀 Start PyHunt
-          </button>
+          <button className={styles.startBtn} onClick={() => { setHasStarted(true); enterFullscreen(); }}>🚀 Start PyHunt</button>
         </div>
       </div>
     );
@@ -419,39 +360,8 @@ export default function PyHuntView() {
 
       <main className={styles.logicChamber}>
         <AnimatePresence mode="wait">
-          {isAtGate ? (
             <motion.div 
-              key="gate"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05 }}
-              className={styles.gateOverlay}
-            >
-              <div className={styles.gateCard}>
-                <div className={styles.gateIcon}>🔒</div>
-                <h2>ORBITAL UNLOCK REQUIRED</h2>
-                <div className={styles.clueBox}>
-                  <label>LOCATION TRANSMISSION HINT:</label>
-                  <p>{JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]").find((c: any) => c.round === currentRound)?.clue || "Find the next node to receive your code."}</p>
-                </div>
-                <div className={styles.gateInputGroup}>
-                  <label>ENTER UNLOCK CODE</label>
-                  <input 
-                    type="text" 
-                    value={gateInput}
-                    onChange={(e) => setGateInput(e.target.value)}
-                    className={`${styles.gateInput} ${gateError ? styles.gateError : ""}`}
-                    placeholder="e.g. ALPHA_NINER"
-                    onKeyDown={(e) => e.key === 'Enter' && handleGateUnlock()}
-                  />
-                  {gateError && <div className={styles.errorMsg}>Invalid Unlock Code. Check your surroundings.</div>}
-                </div>
-                <button onClick={handleGateUnlock} className={styles.unlockBtn}>🔓 Unlock Next Orbit</button>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div 
-              key="editor"
+              key={currentRound}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -486,36 +396,15 @@ export default function PyHuntView() {
                     </div>
 
                     <div className={styles.mcqNav}>
-                       <button 
-                         disabled={currentMcqIndex === 0} 
-                         onClick={() => setCurrentMcqIndex(prev => prev - 1)}
-                         className={styles.navBtn}
-                       >
-                         ← Previous Node
-                       </button>
-                       
+                       <button disabled={currentMcqIndex === 0} onClick={() => setCurrentMcqIndex(prev => prev - 1)} className={styles.navBtn}>← Previous Node</button>
                        {mcqSelectionMap[currentMcqIndex] !== undefined && currentMcqIndex < mcqSet.length - 1 && (
-                         <button 
-                           onClick={() => setCurrentMcqIndex(prev => prev + 1)}
-                           className={styles.navBtn}
-                         >
-                           Next Node →
-                         </button>
+                         <button onClick={() => setCurrentMcqIndex(prev => prev + 1)} className={styles.navBtn}>Next Node →</button>
                        )}
                     </div>
                   </div>
                 ) : (
                   <>
-                    <textarea 
-                      className={styles.codeArea}
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      placeholder="# Manifest your Python logic here..."
-                      spellCheck={false}
-                      autoComplete="off"
-                      autoCorrect="off"
-                      autoCapitalize="off"
-                    />
+                    <textarea className={styles.codeArea} value={code} onChange={(e) => setCode(e.target.value)} placeholder="# Manifest your Python logic here..." spellCheck={false} autoComplete="off" />
                     <div className={styles.editorGlow} />
                   </>
                 )}
@@ -524,18 +413,13 @@ export default function PyHuntView() {
               <div className={styles.controlPanel}>
                  {currentRound === 1 ? (
                    (currentMcqIndex === mcqSet.length - 1 && Object.keys(mcqSelectionMap).length === mcqSet.length) && (
-                     <button onClick={handleExecute} className={styles.executeBtn}>
-                        SUBMIT MISSION SEQUENCE
-                     </button>
+                     <button onClick={handleExecute} className={styles.executeBtn}>SUBMIT MISSION SEQUENCE</button>
                    )
                  ) : (
-                   <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>
-                     EXECUTE LOGIC PROTOCOL
-                   </button>
+                   <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>EXECUTE LOGIC PROTOCOL</button>
                  )}
               </div>
 
-              {/* Terminal for Feedback */}
               {(currentRound > 1 || (output && output.includes("ERROR"))) && (
                 <div className={styles.terminal}>
                    <div className={styles.terminalLabel}>TRANSMISSION OUTPUT</div>
@@ -543,38 +427,38 @@ export default function PyHuntView() {
                 </div>
               )}
             </motion.div>
-          )}
         </AnimatePresence>
       </main>
 
+      {/* MODAL GATE BOX */}
       <AnimatePresence>
-        {showUnlockDialog && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className={styles.successOverlay}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className={styles.successCard}
-            >
-              <div className={styles.successIcon}>🎉</div>
-              <h3>Logic Sequence Verified!</h3>
-              <p>You have successfully validated the logic node. The manifested key for the next orbit is:</p>
-              <div className={styles.codeDisplay}>{unlockCode}</div>
-              <button 
-                className={styles.proceedBtn}
-                onClick={() => {
-                  setShowUnlockDialog(false);
-                  setIsAtGate(true);
-                }}
-              >
-                Go to Orbital Gate
-              </button>
+        {isAtGate && (
+          <div className={styles.gateModalOverlay}>
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className={styles.gateCard}>
+              <div className={styles.gateIcon}>🔒</div>
+              <h2>ORBITAL UNLOCK REQUIRED</h2>
+              <div className={styles.clueBox}>
+                <label>MISSION CLUE:</label>
+                <p>{JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]").find((c: any) => c.round === currentRound)?.clue || "Locate the physical node to find your code."}</p>
+              </div>
+              <div className={styles.gateInputGroup}>
+                <label>ENTER UNLOCK CODE</label>
+                <input 
+                  type="text" 
+                  value={gateInput} 
+                  onChange={(e) => setGateInput(e.target.value)} 
+                  className={`${styles.gateInput} ${gateError ? styles.gateError : ""}`} 
+                  placeholder="Type code here..." 
+                  onKeyDown={(e) => e.key === 'Enter' && handleGateUnlock()} 
+                />
+                {gateError && <div className={styles.errorMsg}>Invalid Unlock Code. Transmission Rejected.</div>}
+              </div>
+              <div className={styles.gateActions}>
+                <button onClick={handleGateUnlock} className={styles.unlockBtn}>🔓 UNLOCK NEXT ORBIT</button>
+                <button onClick={() => setIsAtGate(false)} className={styles.cancelBtn}>RETURN</button>
+              </div>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
