@@ -21,6 +21,7 @@ VALID_VIOLATION_TYPES = {
     "multiple_faces",
 }
 AUTO_SUBMIT_THRESHOLD = 3
+
 # Standard Messages
 WARNING_1 = "⚠️ Warning 1: Please return to the exam and stay focused."
 WARNING_2 = "🚨 Final warning! One more violation and your exam will be auto-submitted."
@@ -31,6 +32,7 @@ WARNING_1_PYHUNT = "🧬 LOGIC DESYNC: Warning 1. Maintain crystalline focus on 
 WARNING_2_PYHUNT = "☣️ CRITICAL INSTABILITY: Warning 2. One more desync will terminate the mission."
 WARNING_3_PYHUNT = "💀 SESSION DEAUTHORIZED: 3rd violation. Logic engine has been auto-submitted."
 
+
 @router.post("/report-violation", response_model=ReportViolationResponse)
 async def report_violation(
     request: ReportViolationRequest,
@@ -39,105 +41,101 @@ async def report_violation(
     db = get_supabase()
     student_id = current["student_id"]
     exam_title = request.exam_name or "General Assessment"
-    
+    is_pyhunt = exam_title.lower() == "pyhunt"
+
     print(f"[VIOLATION] Reporting {request.type} for {student_id} on {exam_title}")
 
+    # ── Initialize defaults so they are ALWAYS defined ──
+    new_warnings = 1
+    auto_submitted = False
+
     try:
-        # 1. Fetch current warnings
-        # We search for an EXACT match for this exam first.
-        # If no record exists for this specific exam, we are starting fresh (0 warnings).
-        status_res = db.table("exam_status").select("warnings, id, status")\
-            .eq("student_id", student_id)\
-            .eq("exam_name", exam_title)\
-            .order("updated_at", desc=True)\
-            .limit(1)\
+        # ─── Step 1: Read current warning count for THIS exam ───
+        status_res = (
+            db.table("exam_status")
+            .select("warnings, id, status")
+            .eq("student_id", student_id)
+            .eq("exam_name", exam_title)
+            .order("updated_at", desc=True)
+            .limit(1)
             .execute()
-        
+        )
+
         current_warnings = 0
         record_id = None
-        
+
         if status_res.data:
             row = status_res.data[0]
-            # If the exam was already submitted, we don't increment further (though UI should prevent this)
+
+            # Already submitted? Don't increment, just return.
             if row.get("status") == "submitted":
                 return ReportViolationResponse(
                     warning_count=row.get("warnings", 3),
                     auto_submitted=True,
-                    message=WARNING_3_PYHUNT if exam_title.lower() == "pyhunt" else WARNING_3
+                    message=WARNING_3_PYHUNT if is_pyhunt else WARNING_3,
                 )
-            
-            current_warnings = row.get("warnings", 0)
+
+            current_warnings = row.get("warnings") or 0
             record_id = row.get("id")
-            print(f"[VIOLATION] Found record {record_id} for {exam_title}. Current warnings: {current_warnings}")
+            print(f"[VIOLATION] Record {record_id} for '{exam_title}'. Current warnings: {current_warnings}")
         else:
-            print(f"[VIOLATION] No specific record found for {exam_title}. Starting at 0.")
+            print(f"[VIOLATION] No record for '{exam_title}'. Starting fresh at 0.")
 
-        # Increment
+        # ─── Step 2: Calculate new warning count ───
         new_warnings = current_warnings + 1
-        print(f"[VIOLATION] New warnings: {new_warnings}")
+        auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
+        print(f"[VIOLATION] {current_warnings} → {new_warnings} (auto_submit={auto_submitted})")
 
-        # 2. Log violation in history
+        # ─── Step 3: Log violation in history table ───
         try:
             db_type = request.type if request.type in VALID_VIOLATION_TYPES else "tab_switch"
             db.table("violations").insert({
                 "student_id": student_id,
                 "type": db_type,
                 "exam_name": exam_title,
-                "metadata": request.metadata
+                "metadata": request.metadata,
             }).execute()
-        except Exception as e:
-            print(f"[VIOLATION] History log failed: {e}")
+        except Exception as log_err:
+            print(f"[VIOLATION] History log failed (non-fatal): {log_err}")
 
-        # 3. Update exam_status with ATOMIC increment
-        # We use a raw RPC call or a clever update if supported. 
-        # Since we're using postgrest-py, we'll use the 'id' if we have it, or filters.
-        # To make it atomic in Postgrest without RPC, we use a single query that increments.
+        # ─── Step 4: Update exam_status with new warning count ───
+        now_ts = datetime.now(timezone.utc).isoformat()
+        update_data = {
+            "warnings": new_warnings,
+            "updated_at": now_ts,
+        }
+        if auto_submitted:
+            update_data["status"] = "submitted"
+            update_data["submitted_at"] = now_ts
+        
         try:
-            # Atomic increment: update warnings = warnings + 1
-            # Note: postgrest-py doesn't have a direct .inc(), so we use a RPC if available
-            # or a single UPDATE with a filter.
-            # However, for simplicity and reliability, we'll use an RPC 'increment_warnings'
-            rpc_res = db.rpc("increment_warnings", {
-                "t_student_id": student_id,
-                "t_exam_name": exam_title,
-                "t_threshold": AUTO_SUBMIT_THRESHOLD
-            }).execute()
-            
-            if rpc_res.data and (not isinstance(rpc_res.data, list) or len(rpc_res.data) > 0):
-                # RPC usually returns a list or a single object depending on definition
-                res_data = rpc_res.data[0] if isinstance(rpc_res.data, list) else rpc_res.data
-                if isinstance(res_data, dict):
-                    new_warnings = res_data.get("new_warnings", current_warnings + 1)
-                    auto_submitted = res_data.get("auto_submitted", False)
-                else:
-                    # Fallback if RPC returns scalar or unexpected format
-                    new_warnings = current_warnings + 1
-                    auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
+            if record_id:
+                # We have an exact record — update by ID
+                db.table("exam_status").update(update_data).eq("id", record_id).execute()
             else:
-                # Fallback to manual if RPC fails (e.g. not created)
-                new_warnings = current_warnings + 1
-                auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
-                now_ts = datetime.now(timezone.utc).isoformat()
-                update_data = {
-                    "warnings": new_warnings,
-                    "status": "submitted" if auto_submitted else "active",
-                    "updated_at": now_ts
-                }
-                if auto_submitted: update_data["submitted_at"] = now_ts
-                
-                if record_id:
-                    db.table("exam_status").update(update_data).eq("id", record_id).execute()
-                else:
-                    db.table("exam_status").update(update_data).eq("student_id", student_id).eq("exam_name", exam_title).execute()
-            
+                # No record found — try update by student+exam, then insert if nothing matched
+                res = (
+                    db.table("exam_status")
+                    .update(update_data)
+                    .eq("student_id", student_id)
+                    .eq("exam_name", exam_title)
+                    .execute()
+                )
+                # If update matched nothing, insert a new row
+                if not res.data:
+                    db.table("exam_status").insert({
+                        "student_id": student_id,
+                        "exam_name": exam_title,
+                        "warnings": new_warnings,
+                        "status": "submitted" if auto_submitted else "active",
+                        "updated_at": now_ts,
+                        **({"submitted_at": now_ts} if auto_submitted else {}),
+                    }).execute()
             print(f"[VIOLATION] DB updated. Warnings: {new_warnings}")
-        except Exception as e:
-            print(f"[VIOLATION] DB update failed, falling back to manual: {e}")
-            new_warnings = current_warnings + 1
-            auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
+        except Exception as db_err:
+            print(f"[VIOLATION] DB update failed (non-fatal): {db_err}")
 
-        # 4. Response
-        is_pyhunt = exam_title.lower() == "pyhunt"
+        # ─── Step 5: Build response message ───
         if auto_submitted:
             message = WARNING_3_PYHUNT if is_pyhunt else WARNING_3
         elif new_warnings == 2:
@@ -153,8 +151,9 @@ async def report_violation(
 
     except Exception as e:
         print(f"[VIOLATIONS] Critical Error: {e}")
+        # Even on crash, return a safe response — never let the API 500
         return ReportViolationResponse(
-            warning_count=1,
-            auto_submitted=False,
-            message="⚠️ Stay focused on the exam."
+            warning_count=new_warnings,
+            auto_submitted=auto_submitted,
+            message="⚠️ Stay focused on the exam.",
         )

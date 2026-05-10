@@ -21,6 +21,8 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
   const [isStabilized, setIsStabilized] = useState(false);
   const isReporting = useRef(false);
   const lastViolationTime = useRef(0);
+  // Track if auto-submit has been triggered to prevent multiple calls
+  const hasAutoSubmitted = useRef(false);
 
   useEffect(() => {
     // ── Fidelity Stabilization ──
@@ -35,33 +37,34 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
 
   const triggerViolation = useCallback(
     async (type: string, metadata?: Record<string, unknown>) => {
-      // 1. HARD LOCK: Block if already submitted, if we are ALREADY reporting, or if modal is showing.
-      // We use both refs and state for maximum resilience.
-      if (isSubmitted || isReporting.current || showModal) {
-        console.log(`[ANTICHEAT] Blocking ${type} (Submitted: ${isSubmitted}, Reporting: ${isReporting.current}, Modal: ${showModal})`);
+      // HARD LOCK: Block if submitted, already reporting, already auto-submitted, or modal showing
+      if (isSubmitted || isReporting.current || hasAutoSubmitted.current) {
+        console.log(`[ANTICHEAT] Blocking ${type} — already handled.`);
         return;
       }
-      
+
       const now = Date.now();
-      // 2. Strict Debounce: 8 seconds between violation events (longer window to allow UI/Network to settle)
+      // Strict Debounce: 8 seconds between violation events
       if (now - lastViolationTime.current < 8000) {
         console.log(`[ANTICHEAT] Debouncing ${type}`);
         return;
       }
-      
+
       lastViolationTime.current = now;
       isReporting.current = true;
-      setShowModal(true); // Show modal IMMEDIATELY with a loading state or pending message
+      setShowModal(true);
 
       try {
         setModalMessage("📡 Synchronizing telemetry...");
         const res = await reportViolation(type, examName, metadata);
-        
-        // 3. Update state with actual count from backend
-        setWarningCount(res.warning_count);
+
+        // Update state with actual count from backend
+        const count = res.warning_count ?? 1;
+        setWarningCount(count);
         setModalMessage(res.message);
 
-        if (res.auto_submitted) {
+        if (res.auto_submitted && !hasAutoSubmitted.current) {
+          hasAutoSubmitted.current = true;
           onAutoSubmit();
         }
       } catch (err) {
@@ -75,7 +78,10 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
               ? "🚨 Final warning! One more violation will submit your exam."
               : "⚠️ Warning: Please stay on the exam tab."
           );
-          if (next >= 3) onAutoSubmit();
+          if (next >= 3 && !hasAutoSubmitted.current) {
+            hasAutoSubmitted.current = true;
+            onAutoSubmit();
+          }
           return next;
         });
       } finally {
@@ -85,39 +91,29 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
         }, 2000);
       }
     },
-    [isSubmitted, onAutoSubmit, showModal, examName]
+    [isSubmitted, onAutoSubmit, examName]
   );
 
-  // ── Sync status on focus ─────────────────────────────────
+  // ── Tab visibility & blur (consolidated) ─────────────────
   useEffect(() => {
-    const handleFocus = () => {
-      if (isSubmitted) return;
-      // If we have warnings but no modal is showing, show it!
-      if (warningCount > 0 && !showModal) {
-        setShowModal(true);
-      }
-    };
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, [warningCount, showModal, isSubmitted]);
-
-  // ── Tab visibility ────────────────────────────────────────
-  useEffect(() => {
-    if (!isStabilized) return;
+    if (!isStabilized || isSubmitted) return;
 
     const handleVisibility = () => {
-      if (document.visibilityState === "hidden" && !isSubmitted) {
+      if (document.visibilityState === "hidden") {
         triggerViolation("tab_switch");
       }
     };
     const handleBlur = () => {
-      if (!isSubmitted) triggerViolation("window_blur");
+      // Only count blur if page is still visible (prevents double-counting with tab_switch)
+      if (document.visibilityState === "visible") {
+        triggerViolation("window_blur");
+      }
     };
     const handleFsChange = () => {
       const isFs =
         !!document.fullscreenElement ||
         !!(document as any).webkitFullscreenElement;
-      if (!isFs && !isSubmitted) {
+      if (!isFs) {
         triggerViolation("fullscreen_exit");
       }
     };
@@ -144,8 +140,9 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
 
   // ── Copy / Paste / Select All / DevTools shortcuts ────────
   useEffect(() => {
+    if (isSubmitted) return;
+
     const handleKey = (e: KeyboardEvent) => {
-      if (isSubmitted) return;
       const ctrl = e.ctrlKey || e.metaKey;
       const blocked = ["c", "v", "a", "u", "s", "p"];
       if (ctrl && blocked.includes(e.key.toLowerCase())) {
@@ -166,12 +163,8 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
       }
     };
 
-    const handleCopy = (e: ClipboardEvent) => {
-      if (!isSubmitted) e.preventDefault();
-    };
-    const handlePaste = (e: ClipboardEvent) => {
-      if (!isSubmitted) e.preventDefault();
-    };
+    const handleCopy = (e: ClipboardEvent) => e.preventDefault();
+    const handlePaste = (e: ClipboardEvent) => e.preventDefault();
 
     document.addEventListener("keydown", handleKey);
     document.addEventListener("copy", handleCopy);
