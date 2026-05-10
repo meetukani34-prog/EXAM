@@ -103,7 +103,7 @@ async def report_violation(
                 "t_threshold": AUTO_SUBMIT_THRESHOLD
             }).execute()
             
-            if rpc_res.data:
+            if rpc_res.data and (not isinstance(rpc_res.data, list) or len(rpc_res.data) > 0):
                 # RPC usually returns a list or a single object depending on definition
                 res_data = rpc_res.data[0] if isinstance(rpc_res.data, list) else rpc_res.data
                 if isinstance(res_data, dict):
