@@ -70,22 +70,7 @@ async def report_violation(
             record_id = row.get("id")
             print(f"[VIOLATION] Found record {record_id} for {exam_title}. Current warnings: {current_warnings}")
         else:
-            # Fallback: Check if there's ANY active session for this student
-            # to prevent them from "escaping" warnings by changing exam names (unlikely but possible)
-            active_res = db.table("exam_status").select("warnings, id, exam_name")\
-                .eq("student_id", student_id)\
-                .eq("status", "active")\
-                .order("updated_at", desc=True)\
-                .limit(1)\
-                .execute()
-            
-            if active_res.data:
-                row = active_res.data[0]
-                current_warnings = row.get("warnings", 0)
-                record_id = row.get("id")
-                print(f"[VIOLATION] Found active record {record_id} ({row.get('exam_name')}). Current: {current_warnings}")
-            else:
-                print(f"[VIOLATION] No record found. Starting fresh for {student_id}")
+            print(f"[VIOLATION] No specific record found for {exam_title}. Starting at 0.")
 
         # Increment
         new_warnings = current_warnings + 1
@@ -119,19 +104,26 @@ async def report_violation(
             }).execute()
             
             if rpc_res.data:
-                res_data = rpc_res.data
-                new_warnings = res_data.get("new_warnings", current_warnings + 1)
-                auto_submitted = res_data.get("auto_submitted", False)
+                # RPC usually returns a list or a single object depending on definition
+                res_data = rpc_res.data[0] if isinstance(rpc_res.data, list) else rpc_res.data
+                if isinstance(res_data, dict):
+                    new_warnings = res_data.get("new_warnings", current_warnings + 1)
+                    auto_submitted = res_data.get("auto_submitted", False)
+                else:
+                    # Fallback if RPC returns scalar or unexpected format
+                    new_warnings = current_warnings + 1
+                    auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
             else:
                 # Fallback to manual if RPC fails (e.g. not created)
                 new_warnings = current_warnings + 1
                 auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
+                now_ts = datetime.now(timezone.utc).isoformat()
                 update_data = {
                     "warnings": new_warnings,
                     "status": "submitted" if auto_submitted else "active",
-                    "updated_at": "now()"
+                    "updated_at": now_ts
                 }
-                if auto_submitted: update_data["submitted_at"] = "now()"
+                if auto_submitted: update_data["submitted_at"] = now_ts
                 
                 if record_id:
                     db.table("exam_status").update(update_data).eq("id", record_id).execute()

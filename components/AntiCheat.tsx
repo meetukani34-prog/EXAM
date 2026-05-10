@@ -18,8 +18,20 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
   const [modalMessage, setModalMessage] = useState("");
   const { enter: enterFullscreen } = useFullscreen();
 
+  const [isStabilized, setIsStabilized] = useState(false);
   const isReporting = useRef(false);
   const lastViolationTime = useRef(0);
+
+  useEffect(() => {
+    // ── Fidelity Stabilization ──
+    // Delay monitoring for 3s after mount to ensure backend state settled
+    const stabilizationTimer = setTimeout(() => {
+      setIsStabilized(true);
+      console.log("[ANTICHEAT] Stabilization complete. Monitoring active.");
+    }, 3000);
+
+    return () => clearTimeout(stabilizationTimer);
+  }, []);
 
   const triggerViolation = useCallback(
     async (type: string, metadata?: Record<string, unknown>) => {
@@ -91,24 +103,16 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
 
   // ── Tab visibility ────────────────────────────────────────
   useEffect(() => {
+    if (!isStabilized) return;
+
     const handleVisibility = () => {
       if (document.visibilityState === "hidden" && !isSubmitted) {
         triggerViolation("tab_switch");
       }
     };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [triggerViolation, isSubmitted]);
-
-  // ── Window blur ───────────────────────────────────────────
-  useEffect(() => {
-    const handleBlur = () => triggerViolation("window_blur");
-    window.addEventListener("blur", handleBlur);
-    return () => window.removeEventListener("blur", handleBlur);
-  }, [triggerViolation]);
-
-  // ── Fullscreen exit ───────────────────────────────────────
-  useEffect(() => {
+    const handleBlur = () => {
+      if (!isSubmitted) triggerViolation("window_blur");
+    };
     const handleFsChange = () => {
       const isFs =
         !!document.fullscreenElement ||
@@ -117,13 +121,19 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
         triggerViolation("fullscreen_exit");
       }
     };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("blur", handleBlur);
     document.addEventListener("fullscreenchange", handleFsChange);
     document.addEventListener("webkitfullscreenchange", handleFsChange);
+
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("blur", handleBlur);
       document.removeEventListener("fullscreenchange", handleFsChange);
       document.removeEventListener("webkitfullscreenchange", handleFsChange);
     };
-  }, [isSubmitted, triggerViolation]);
+  }, [triggerViolation, isSubmitted, isStabilized]);
 
   // ── Right-click disable ───────────────────────────────────
   useEffect(() => {
@@ -175,7 +185,9 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
 
   return (
     <>
-      <FaceMonitor onViolation={triggerViolation} isSubmitted={isSubmitted} />
+      {isStabilized && (
+        <FaceMonitor onViolation={triggerViolation} isSubmitted={isSubmitted} />
+      )}
       {showModal && (
         <WarningModal
           warningCount={warningCount}
