@@ -405,7 +405,7 @@ export default function PyHuntView() {
           </header>
           <div className={styles.authForm}>
             <div className={styles.authInputGroup}><label>Candidate USN</label><input type="text" className={styles.authInput} value={authForm.usn} readOnly /></div>
-            <div className={styles.authInputGroup}><label>Mission Start Code</label><input type="password" className={styles.authInput} placeholder="Enter authorized mission code" value={authForm.missionCode} onChange={(e) => setAuthForm(prev => ({ ...prev, missionCode: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && handleAuthorize()} /></div>
+            <div className={styles.authInputGroup}><label>Mission Start Code</label><input type="text" className={styles.authInput} placeholder="Enter authorized mission code" value={authForm.missionCode} onChange={(e) => setAuthForm(prev => ({ ...prev, missionCode: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && handleAuthorize()} /></div>
             <button className={styles.authBtn} onClick={handleAuthorize}>AUTHORIZE MISSION</button>
             {authError && <div className={styles.authError}>{authError}</div>}
           </div>
