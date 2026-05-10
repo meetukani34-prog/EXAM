@@ -90,13 +90,21 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
   const [view, setView] = useState<'observer' | 'config'>('observer');
   const [odysseyData, setOdysseyData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [tableMissing, setTableMissing] = useState(false);
 
   const fetchOdyssey = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data, error, status } = await supabase
       .from('odyssey_progress')
       .select('*')
       .order('last_ping', { ascending: false });
+    
+    if (error && status === 404) {
+      setTableMissing(true);
+    } else {
+      setTableMissing(false);
+    }
+
     setOdysseyData(data || []);
     setLoading(false);
   }, []);
@@ -209,6 +217,27 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
 
       {view === 'observer' ? (
         <div className={adminStyles.tableWrapper}>
+          {tableMissing && (
+            <div style={{ 
+              padding: '16px 24px', 
+              background: 'rgba(239, 68, 68, 0.15)', 
+              color: '#f87171', 
+              borderRadius: 12, 
+              marginBottom: 20, 
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              fontSize: 14,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12
+            }}>
+              <span>⚠️</span>
+              <div>
+                <strong>Supabase Table Missing:</strong> The 'odyssey_progress' table was not found. 
+                Please execute the SQL in <code>supabase/odyssey_schema.sql</code> in your Supabase Dashboard SQL Editor.
+              </div>
+            </div>
+          )}
           <table className={styles.table}>
             <thead>
               <tr style={{
