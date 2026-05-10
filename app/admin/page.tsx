@@ -46,6 +46,7 @@ import Skeleton from "@/components/Skeleton";
 import LeaderboardPage from "./leaderboard/page";
 import IngestPage from "./ingest/page";
 import OrbitalControl from "./control/page";
+import StudentExplorer from "@/components/admin/StudentExplorer";
 
 // ── Types ─────────────────────────────────────────────────────
 // Use AdminStudent from lib/api
@@ -1270,11 +1271,7 @@ export default function AdminPage() {
       {activeTab === "control" && <OrbitalControl />}
       {activeTab === "questions" && <QuestionsTab />}
       {activeTab === "students" && <StudentsTab students={students} load={fetchStudents} />}
-      {activeTab === "explorer" && (
-        <div style={{ height: 'calc(100vh - 120px)' }}>
-           <iframe src="/admin/students/list" style={{ width: '100%', height: '100%', border: 'none' }} />
-        </div>
-      )}
+      {activeTab === "explorer" && <StudentExplorer />}
       {activeTab === "support" && <SupportTab />}
     </div>
   );
