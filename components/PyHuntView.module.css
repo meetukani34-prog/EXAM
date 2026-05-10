@@ -837,3 +837,118 @@
   transform: translateY(-2px);
   box-shadow: 0 15px 40px rgba(0, 242, 255, 0.5);
 }
+
+/* ── Code Jumble (Round 2) ── */
+.jumbleWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: 100%;
+}
+
+.jumbleHeader h3 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.jumbleHeader p {
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.jumbleList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.jumbleItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px 24px;
+  gap: 20px;
+  transition: all 0.3s;
+}
+
+.jumbleItem:hover {
+  background: rgba(0, 242, 255, 0.05);
+  border-color: rgba(0, 242, 255, 0.3);
+}
+
+.jumbleContent {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+}
+
+.jumbleIdx {
+  width: 28px;
+  height: 28px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.4);
+}
+
+.jumbleContent code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  color: #00f2ff;
+  word-break: break-all;
+}
+
+.jumbleActions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jumbleActions button {
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.jumbleActions button:hover:not(:disabled) {
+  background: #00f2ff;
+  color: #000;
+  border-color: #00f2ff;
+}
+
+.jumbleActions button:disabled {
+  opacity: 0.1;
+  cursor: not-allowed;
+}
+
+.jumbleList::-webkit-scrollbar {
+  width: 4px;
+}
+
+.jumbleList::-webkit-scrollbar-thumb {
+  background: rgba(0, 242, 255, 0.2);
+  border-radius: 4px;
+}

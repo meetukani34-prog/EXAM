@@ -70,6 +70,10 @@ export default function PyHuntView() {
   const [mcqSelectionMap, setMcqSelectionMap] = useState<Record<number, number>>({});
   const [currentMcqIndex, setCurrentMcqIndex] = useState(0);
 
+  // Code Jumble (Round 2) State
+  const [jumbledLines, setJumbledLines] = useState<string[]>([]);
+  const [originalJumbleCode, setOriginalJumbleCode] = useState("");
+
   const handleAutoSubmit = useCallback(() => {
     setIsAutoSubmitted(true);
   }, []);
@@ -162,6 +166,7 @@ export default function PyHuntView() {
      }
   }, [mcqSelectionMap, student]);
 
+  // Load Admin MCQs & Round 2 Jumble Config
   useEffect(() => {
      if (typeof window !== "undefined") {
         const savedMcqs = localStorage.getItem("pyhunt_mcqs_local");
@@ -178,12 +183,23 @@ export default function PyHuntView() {
                 }));
                 setMcqSet(mapped);
              }
-           } catch (e) {
-             console.error("Failed to parse admin mcqs:", e);
-           }
+           } catch (e) { console.error("Failed to parse admin mcqs:", e); }
+        }
+
+        // Initialize Round 2 Jumble
+        if (currentRound === 2) {
+          const savedConfigs = JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]");
+          const r2Config = savedConfigs.find((c: any) => c.round === 2);
+          if (r2Config && r2Config.code) {
+             const lines = r2Config.code.split('\n').filter((l: string) => l.trim() !== "");
+             setOriginalJumbleCode(r2Config.code);
+             // Shuffle lines
+             const shuffled = [...lines].sort(() => Math.random() - 0.5);
+             setJumbledLines(shuffled);
+          }
         }
      }
-  }, []);
+  }, [currentRound]);
 
   // ── Handlers ──
   const handleAuthorize = () => {
@@ -220,6 +236,20 @@ export default function PyHuntView() {
       return;
     }
 
+    if (currentRound === 2) {
+      const currentOrder = jumbledLines.join('\n').replace(/\s/g, '');
+      const targetOrder = originalJumbleCode.replace(/\s/g, '');
+
+      if (currentOrder === targetOrder) {
+        setIsAtGate(true);
+        setGateError(false);
+        setOutput("");
+      } else {
+        setOutput("ERROR: Execution sequence invalid. Logic flow interrupted.");
+      }
+      return;
+    }
+
     setOutput("Executing Logic...");
     const result = await runCode(code);
     if (result.error) {
@@ -229,6 +259,16 @@ export default function PyHuntView() {
     setOutput(result.stdout || "No output generated.");
     const isValid = validateRound(currentRound, result.stdout);
     if (isValid) setIsAtGate(true);
+  };
+
+  const moveLine = (index: number, direction: 'up' | 'down') => {
+    const newLines = [...jumbledLines];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newLines.length) return;
+    
+    [newLines[index], newLines[targetIndex]] = [newLines[targetIndex], newLines[index]];
+    setJumbledLines(newLines);
+    if (output.startsWith("ERROR")) setOutput("");
   };
 
   const handleMcqSelect = (idx: number, optIdx: number) => {
@@ -402,6 +442,31 @@ export default function PyHuntView() {
                        )}
                     </div>
                   </div>
+                ) : currentRound === 2 ? (
+                  <div className={styles.jumbleWrapper}>
+                    <div className={styles.jumbleHeader}>
+                       <h3>Fix the Logic Flow</h3>
+                       <p>Reorder the code blocks to reconstruct the valid Python sequence.</p>
+                    </div>
+                    <div className={styles.jumbleList}>
+                      {jumbledLines.map((line, idx) => (
+                        <motion.div 
+                          layout 
+                          key={line + idx} 
+                          className={styles.jumbleItem}
+                        >
+                          <div className={styles.jumbleContent}>
+                            <span className={styles.jumbleIdx}>{idx + 1}</span>
+                            <code>{line}</code>
+                          </div>
+                          <div className={styles.jumbleActions}>
+                             <button disabled={idx === 0} onClick={() => moveLine(idx, 'up')}>▲</button>
+                             <button disabled={idx === jumbledLines.length - 1} onClick={() => moveLine(idx, 'down')}>▼</button>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
                 ) : (
                   <>
                     <textarea className={styles.codeArea} value={code} onChange={(e) => setCode(e.target.value)} placeholder="# Manifest your Python logic here..." spellCheck={false} autoComplete="off" />
@@ -415,6 +480,8 @@ export default function PyHuntView() {
                    (currentMcqIndex === mcqSet.length - 1 && Object.keys(mcqSelectionMap).length === mcqSet.length) && (
                      <button onClick={handleExecute} className={styles.executeBtn}>SUBMIT MISSION SEQUENCE</button>
                    )
+                 ) : currentRound === 2 ? (
+                    <button onClick={handleExecute} className={styles.executeBtn}>VERIFY LOGIC SEQUENCE</button>
                  ) : (
                    <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>EXECUTE LOGIC PROTOCOL</button>
                  )}
