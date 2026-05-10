@@ -75,7 +75,7 @@ function isStale(lastActive: string | null): boolean {
 
 const BRANCHES = BRANCH_IDS;
 const ALL_BRANCH_DATA = BRANCH_LIST;
-type Tab = "monitor" | "questions" | "students" | "leaderboard" | "ingest" | "control" | "support" | "pyhunt";
+type Tab = "monitor" | "questions" | "students" | "leaderboard" | "ingest" | "control" | "support" | "pyhunt" | "explorer";
 const ADMIN_AUTH_KEY = "examguard_admin_auth";
 
 function getStoredAuth(): boolean {
@@ -170,15 +170,15 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                 borderBottom: '2px solid rgba(255,255,255,0.1)',
                 background: 'rgba(255, 255, 255, 0.05)' // Darker but consistent with shell
               }}>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>STUDENT NODE</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>BRANCH</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>WARNINGS</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>ORBIT PROGRESS</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>MISSION SCORE</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>ELAPSED TIME</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>ENTROPY</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>LAST SIGNAL</th>
-                <th style={{ color: '#fff', fontWeight: 800, padding: '16px 20px' }}>INTERVENTION</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>STUDENT NODE</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>BRANCH</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>WARNINGS</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>ORBIT PROGRESS</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>MISSION SCORE</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>ELAPSED TIME</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>ENTROPY</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>LAST SIGNAL</th>
+                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>INTERVENTION</th>
               </tr>
             </thead>
             <tbody>
@@ -876,6 +876,7 @@ export default function AdminPage() {
   const TAB_CONFIG: { id: Tab; label: string; icon: string }[] = [
     { id: "monitor", label: "Monitor", icon: "📡" },
     { id: "pyhunt", label: "PyHunt", icon: "🐍" },
+    { id: "explorer", label: "Explorer", icon: "🛰️" },
     { id: "support", label: "SOS", icon: "🆘" },
     { id: "leaderboard", label: "Leaderboard", icon: "⚡" },
     { id: "questions", label: "Questions", icon: "📋" },
@@ -1269,6 +1270,11 @@ export default function AdminPage() {
       {activeTab === "control" && <OrbitalControl />}
       {activeTab === "questions" && <QuestionsTab />}
       {activeTab === "students" && <StudentsTab students={students} load={fetchStudents} />}
+      {activeTab === "explorer" && (
+        <div style={{ height: 'calc(100vh - 120px)' }}>
+           <iframe src="/admin/students/list" style={{ width: '100%', height: '100%', border: 'none' }} />
+        </div>
+      )}
       {activeTab === "support" && <SupportTab />}
     </div>
   );
@@ -2378,6 +2384,7 @@ function StudentsTab({ students, load }: { students: AdminStudent[], load: () =>
                       }}>Edit</button>
                       <button className="btn btn-outline" onClick={() => { const p = prompt("Enter new password:"); if (p) updateAdminStudent(s.student_id, { password: p }).then(() => alert("Password reset")); }}>Reset PW</button>
                       <button className="btn btn-outline" style={{ color: "var(--accent)", borderColor: "var(--accent)" }} onClick={() => handleResetExam(s.student_id)}>Re-Exam</button>
+                      <button className="btn btn-outline" style={{ color: "#00f2ff", borderColor: "#00f2ff" }} onClick={() => window.open(`/admin/students/${s.student_id}`, '_blank')}>View Pulse</button>
                       <button
                         className="btn btn-outline"
                         style={{
