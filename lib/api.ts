@@ -210,6 +210,8 @@ export interface AdminStudent {
   branch: string;
   status: "not_started" | "active" | "submitted";
   warnings: number;
+  score: number;
+  total_marks: number;
   last_active: string | null;
   submitted_at: string | null;
   started_at: string | null;
