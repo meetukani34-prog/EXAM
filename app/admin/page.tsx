@@ -590,11 +590,12 @@ function PyHuntConfig({
              </div>
              <div className={adminStyles.inputGroup}>
                 <label className={adminStyles.inputLabel}>OUTPUT</label>
-                <input
-                  className={adminStyles.configInput}
+                <textarea
+                  className={adminStyles.configTextarea}
                   value={configs.find((c: any) => c.round === 3)?.target_output || "palindrome: true"}
                   onChange={(e) => updateConfig(3, 'target_output', e.target.value)}
                   placeholder="e.g., palindrome: true"
+                  style={{ minHeight: 120, fontFamily: 'monospace' }}
                 />
                 <p style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>The student's code must print this exact string (case-insensitive) to pass.</p>
              </div>
@@ -626,11 +627,12 @@ function PyHuntConfig({
              </div>
              <div className={adminStyles.inputGroup}>
                 <label className={adminStyles.inputLabel}>OUTPUT</label>
-                <input
-                  className={adminStyles.configInput}
+                <textarea
+                  className={adminStyles.configTextarea}
                   value={configs.find((c: any) => c.round === 4)?.target_output || "1, 2, Fizz, 4, Buzz"}
                   onChange={(e) => updateConfig(4, 'target_output', e.target.value)}
                   placeholder="e.g., 1, 2, Fizz, 4, Buzz"
+                  style={{ minHeight: 120, fontFamily: 'monospace' }}
                 />
                 <p style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>The student's code must print this exact string (case-insensitive) to pass.</p>
              </div>
