@@ -230,23 +230,32 @@
 
 /* ── Lobby Screen ── */
 .lobbyContainer {
-  min-height: calc(100vh - 160px);
+  min-height: 100vh;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  background: radial-gradient(circle at center, rgba(45, 27, 105, 0.4), rgba(2, 6, 23, 1)), 
+              url('https://images.unsplash.com/photo-1464802686167-b939a67e06d1?auto=format&fit=crop&q=80');
+  background-size: cover;
+  background-position: center;
 }
 
 .lobbyContent {
-  max-width: 600px;
+  max-width: 500px;
   width: 100%;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 242, 255, 0.2);
-  border-radius: 32px;
-  padding: 60px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 40px;
+  padding: 60px 40px;
   text-align: center;
-  box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
 }
 
 .lobbyIcon {
@@ -257,21 +266,39 @@
 }
 
 .lobbyTitle {
-  font-size: 56px;
+  font-size: 64px;
   font-weight: 900;
-  margin-bottom: 16px;
-  background: linear-gradient(135deg, #fff, #00f2ff);
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #FF9D42, #FF5C00);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: -2px;
+  letter-spacing: -1px;
 }
 
 .lobbySubtitle {
-  font-size: 16px;
-  opacity: 0.6;
-  line-height: 1.6;
-  margin-bottom: 40px;
+  font-size: 18px;
+  opacity: 0.7;
+  line-height: 1.4;
+  margin-bottom: 32px;
+  max-width: 450px;
+  margin-left: auto;
+  margin-right: auto;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.nexusBadge {
+  display: inline-block;
+  padding: 12px 60px;
+  border: 1px solid rgba(255, 157, 66, 0.3);
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 4px;
+  font-size: 14px;
+  margin-bottom: 32px;
+  background: rgba(255, 157, 66, 0.05);
+  text-transform: uppercase;
 }
 
 .roundList {
@@ -321,25 +348,28 @@
 
 .startBtn {
   width: 100%;
-  padding: 20px;
-  background: linear-gradient(90deg, #00f2ff, #0066ff);
+  max-width: 320px;
+  padding: 18px;
+  background: linear-gradient(135deg, #FF9D42, #FF7A00);
   border: none;
-  border-radius: 16px;
-  color: #000;
-  font-weight: 900;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 800;
   font-size: 18px;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0, 242, 255, 0.3);
-  transition: all 0.3s;
+  box-shadow: 0 10px 25px rgba(255, 122, 0, 0.3);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
+  margin: 0 auto;
 }
 
 .startBtn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 15px 40px rgba(0, 242, 255, 0.5);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(255, 122, 0, 0.5);
+  filter: brightness(1.1);
 }
 
 @media (max-width: 640px) {

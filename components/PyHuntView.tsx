@@ -404,24 +404,47 @@ export default function PyHuntView() {
   if (!hasStarted) {
     return (
       <div className={styles.lobbyContainer}>
-        <div className={styles.lobbyContent}>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={styles.lobbyContent}
+        >
           <div className={styles.lobbyIcon}>
-            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="var(--nexus-cyan)" strokeWidth="1.5">
-              <circle cx="12" cy="12" r="10" strokeOpacity="0.3" /><path d="M12 6v6l4 2" strokeLinecap="round" /><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" strokeDasharray="4 4" />
+            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path 
+                d="M20 70C20 70 30 85 50 85C70 85 85 70 85 50C85 30 70 15 50 15C30 15 15 30 15 50C15 65 25 75 35 75C45 75 55 65 55 50C55 35 45 25 35 25" 
+                stroke="url(#snake_grad)" 
+                strokeWidth="10" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+              <circle cx="35" cy="40" r="4" fill="#00FFA3">
+                <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite" />
+              </circle>
+              <defs>
+                <linearGradient id="snake_grad" x1="15" y1="50" x2="85" y2="50" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#00F0FF" />
+                  <stop offset="1" stopColor="#00FFA3" />
+                </linearGradient>
+              </defs>
             </svg>
           </div>
           <h1 className={styles.lobbyTitle}>PyHunt</h1>
-          <p className={styles.lobbySubtitle}>Python Treasure Hunt — Solve 5 rounds of challenges!</p>
-          <div className={styles.roundList}>
-            {ROUNDS.map(r => (
-              <div key={r.id} className={styles.roundListItem}>
-                <div className={styles.roundBadge}>{r.id}</div>
-                <div className={styles.roundText}>Round {r.id}: {r.name}</div>
-              </div>
-            ))}
+          <p className={styles.lobbySubtitle}>
+            Python Treasure Hunt — Solve 5 rounds of challenges to find hidden clues!
+          </p>
+          
+          <div className={styles.nexusBadge}>
+            NEXUS
           </div>
-          <button className={styles.startBtn} onClick={() => { setHasStarted(true); enterFullscreen(); }}>🚀 Start PyHunt</button>
-        </div>
+
+          <button 
+            className={styles.startBtn} 
+            onClick={() => { setHasStarted(true); enterFullscreen(); }}
+          >
+            🚀 Start PyHunt
+          </button>
+        </motion.div>
       </div>
     );
   }
