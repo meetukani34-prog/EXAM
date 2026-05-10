@@ -87,8 +87,9 @@ function getStoredAuth(): boolean {
 // ── PyHunt Observer Component ──────────────────────────────────
 // ── PyHunt Observer Component ──────────────────────────────────
 function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStudent[], fetchStudentsGlobal: () => void }) {
-  const [view, setView] = useState<'observer' | 'config'>('observer');
+  const [activeTab, setActiveTab] = useState('live_status');
   const [odysseyData, setOdysseyData] = useState<any[]>([]);
+  const [violations, setViolations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [tableMissing, setTableMissing] = useState(false);
 
@@ -99,6 +100,12 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
       .select('*')
       .order('last_ping', { ascending: false });
     
+    // Fetch last violations for each student
+    const { data: violData } = await supabase
+      .from('violation_history')
+      .select('*')
+      .order('created_at', { ascending: false });
+
     if (error && status === 404) {
       setTableMissing(true);
     } else {
@@ -106,6 +113,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     }
 
     setOdysseyData(data || []);
+    setViolations(violData || []);
     setLoading(false);
   }, []);
 
@@ -120,24 +128,10 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     fetchOdyssey();
   };
 
-  const handleToggleStop = async (s: AdminStudent) => {
-    const action = s.is_blocked ? "Unblock" : "Stop";
-    if (!confirm(`${action} student ${s.name}?`)) return;
-    try {
-      if (s.is_blocked) await unblockAdminStudent(s.student_id);
-      else await blockAdminStudent(s.student_id);
-      fetchStudentsGlobal();
-    } catch (err: any) {
-      alert(`Failed to ${action}: ` + err.message);
-    }
-  };
-
   const handleReExam = async (s: AdminStudent) => {
     if (!confirm(`Reset exam for ${s.name}? This will clear all progress and rounds.`)) return;
     try {
       await resetAdminStudent(s.student_id);
-      
-      // Also reset odyssey progress and set a reset flag for the frontend to catch
       await supabase.from('odyssey_progress').update({ 
         current_round: 1, 
         round_1_state: { reset: true },
@@ -151,242 +145,131 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
 
       fetchStudentsGlobal();
       fetchOdyssey(); 
-    } catch (err: any) {
-      alert("Failed to reset: " + err.message);
-    }
+    } catch (err: any) { alert("Failed to reset: " + err.message); }
   };
 
-  const handleDelete = async (s: AdminStudent) => {
-    if (!confirm(`Permanently delete student ${s.name} and all their data?`)) return;
-    try {
-      await deleteAdminStudent(s.student_id);
-      fetchStudentsGlobal();
-    } catch (err: any) {
-      alert("Failed to delete: " + err.message);
-    }
-  };
-
-  // Merge students with their odyssey progress and filter for PyHunt participants
   const participants = students
     .map(s => {
       const progress = odysseyData.find(p => p.student_id === s.student_id);
+      const lastViol = violations.find(v => v.student_id === s.student_id);
       return {
         ...s,
-        pyhunt: progress || null
+        pyhunt: progress || null,
+        last_violation_record: lastViol || null
       };
     })
-    .filter(s => s.exam_name?.toLowerCase() === "pyhunt" || s.pyhunt !== null) // Show if in PyHunt session OR has odyssey progress
-    .sort((a, b) => {
-      // Sort by progress (highest round first)
-      const roundA = a.pyhunt?.current_round || 0;
-      const roundB = b.pyhunt?.current_round || 0;
-      if (roundB !== roundA) return roundB - roundA;
+    .filter(s => s.exam_name?.toLowerCase() === "pyhunt" || s.pyhunt !== null)
+    .sort((a, b) => (b.pyhunt?.current_round || 0) - (a.pyhunt?.current_round || 0));
 
-      // Tie-breaker: Total Time Taken (Lower is better)
-      const getTimeSeconds = (student: AdminStudent) => {
-        if (!student.started_at) return 9999999;
-        const start = new Date(student.started_at).getTime();
-        const end = (student.status === "submitted" && student.submitted_at) 
-          ? new Date(student.submitted_at).getTime() 
-          : Date.now();
-        return (end - start) / 1000;
-      };
-
-      return getTimeSeconds(a) - getTimeSeconds(b);
-    });
+  const TABS = [
+    { id: "clues", label: "🔑 Clues & Codes" },
+    { id: "mcq", label: "📄 MCQ Questions" },
+    { id: "jumble", label: "🧩 Code Jumble" },
+    { id: "r3", label: "🐍 Round 3 Code" },
+    { id: "r4", label: "🔢 Round 4 Code" },
+    { id: "live_status", label: "🏃 Live Status" },
+  ];
 
   return (
-    <div className={adminStyles.pyhuntShell}>
+    <div className={adminStyles.pyhuntShell} style={{ 
+      backgroundImage: 'linear-gradient(to bottom, rgba(2, 6, 23, 0.9), rgba(2, 6, 23, 0.95)), url("https://images.unsplash.com/photo-1511497584788-8767fe771d11?auto=format&fit=crop&q=80")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed'
+    }}>
       <header style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-            <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.03em' }}>🐍 PyHunt Observer</h2>
-            <div className={adminStyles.statusIndicator} title="Live Logic Stream Active" />
-            <span style={{ fontSize: 10, background: 'rgba(0, 242, 255, 0.1)', color: '#00f2ff', padding: '2px 8px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' }}>
-              SYNC: {new Date().toLocaleTimeString()} · V2.1
-            </span>
-          </div>
-          <p style={{ opacity: 0.5, fontSize: 14, margin: 0 }}>
-            Master Command Center for Logic Orbits ({participants.length} participants detected)
+          <h2 style={{ fontSize: 32, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ color: '#00f2ff' }}>🐍</span> PyHunt Configuration
+          </h2>
+          <p style={{ opacity: 0.6, fontSize: 14, marginTop: 8 }}>
+            Changes are saved to this device's localStorage and immediately visible to students using the same device / browser.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            className={`btn ${view === 'observer' ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setView('observer')}
-            style={{ borderRadius: 12, padding: '10px 24px', fontWeight: 700 }}
-          >
-            📡 Observer
-          </button>
-          <button
-            className={`btn ${view === 'config' ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setView('config')}
-            style={{ borderRadius: 12, padding: '10px 24px', fontWeight: 700 }}
-          >
-            ⚙️ Configuration
-          </button>
-        </div>
+        <button className={adminStyles.saveAllBtn} onClick={() => alert("All changes synchronized with local storage.")}>
+           💾 Save All Changes
+        </button>
       </header>
 
-      {view === 'observer' ? (
-        <div className={adminStyles.tableWrapper}>
-          {tableMissing && (
-            <div style={{ 
-              padding: '16px 24px', 
-              background: 'rgba(239, 68, 68, 0.15)', 
-              color: '#f87171', 
-              borderRadius: 12, 
-              marginBottom: 20, 
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              fontSize: 14,
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12
-            }}>
-              <span>⚠️</span>
-              <div>
-                <strong>Supabase Table Missing:</strong> The 'odyssey_progress' table was not found. 
-                Please execute the SQL in <code>supabase/odyssey_schema.sql</code> in your Supabase Dashboard SQL Editor.
-              </div>
-            </div>
-          )}
-          <table className={styles.table}>
-            <thead>
-              <tr style={{
-                borderBottom: '2px solid rgba(255,255,255,0.1)',
-                background: 'rgba(255, 255, 255, 0.05)' // Darker but consistent with shell
-              }}>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>STUDENT NODE</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>BRANCH</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>WARNINGS</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>ORBIT PROGRESS</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>MISSION SCORE</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>ELAPSED TIME</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>ENTROPY</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>LAST SIGNAL</th>
-                <th style={{ color: '#141313ff', fontWeight: 800, padding: '16px 20px' }}>INTERVENTION</th>
-              </tr>
-            </thead>
-            <tbody>
-              {participants.map(p => (
-                <tr key={p.student_id} style={{
-                  background: p.pyhunt ? 'rgba(0, 242, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                  transition: 'all 0.3s ease'
-                }}>
-                  <td style={{ opacity: p.pyhunt ? 1 : 0.7 }}>
-                    <div style={{ fontWeight: 800, fontSize: 15, color: '#fff' }}>{p.name}</div>
-                    <div style={{ fontSize: 12, opacity: 0.9, color: '#00f2ff', fontWeight: 600 }}>{p.usn}</div>
-                  </td>
-                  <td>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>{p.branch}</span>
-                  </td>
-                  <td>
-                    <WarningBadge count={p.warnings} />
-                  </td>
-                  <td>
-                    {p.pyhunt ? (
-                      <span style={{
-                        padding: '6px 16px',
-                        borderRadius: 30,
-                        fontSize: 11,
-                        fontWeight: 900,
-                        letterSpacing: '0.05em',
-                        background: p.pyhunt.current_round === 5 ? 'rgba(52, 211, 153, 0.15)' : 'rgba(0, 242, 255, 0.1)',
-                        color: p.pyhunt.current_round === 5 ? '#34d399' : '#00f2ff',
-                        border: `1px solid ${p.pyhunt.current_round === 5 ? 'rgba(52, 211, 153, 0.3)' : 'rgba(0, 242, 255, 0.2)'}`
-                      }}>
-                        ROUND {p.pyhunt.current_round} / 5
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 800, letterSpacing: '0.05em' }}>NOT STARTED</span>
-                    )}
-                  </td>
-                  <td>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#34d399' }}>
-                      {p.score || 0} <span style={{ fontSize: 10, opacity: 0.6 }}>PTS</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>
-                      {p.started_at ? getElapsedTime(p.started_at, p.status === "submitted" ? p.submitted_at : null) : "—"}
-                    </div>
-                  </td>
-                  <td>
-                    {p.pyhunt ? (
-                      <span style={{ color: p.pyhunt.error_entropy > 5 ? '#ef4444' : '#fff', fontWeight: 700 }}>
-                        {p.pyhunt.error_entropy} Bits
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 800 }}>—</span>
-                    )}
-                  </td>
-                  <td>
-                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
-                      {p.pyhunt ? new Date(p.pyhunt.last_ping).toLocaleTimeString() : "—"}
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
-                      {p.pyhunt && p.pyhunt.current_round < 5 && (
-                        <button
-                          className="btn btn-outline"
-                          style={{ fontSize: 9, padding: '4px 6px', borderRadius: 6, color: '#00f2ff', borderColor: '#00f2ff', fontWeight: 900 }}
-                          onClick={() => handleForceUnlock(p.student_id, p.pyhunt.current_round + 1)}
-                          title="Force Next Round"
-                        >
-                          🚀 NEXT
-                        </button>
-                      )}
-                      <button
-                        className="btn btn-outline"
-                        style={{ 
-                          fontSize: 9, padding: '4px 6px', borderRadius: 6, 
-                          color: p.is_blocked ? '#4caf50' : '#f87171', 
-                          borderColor: p.is_blocked ? '#4caf50' : '#f87171',
-                          fontWeight: 900
-                        }}
-                        onClick={() => handleToggleStop(p)}
-                        title={p.is_blocked ? "Unblock Student" : "Stop/Block Student"}
-                      >
-                        {p.is_blocked ? "🔓 START" : "🛑 STOP"}
-                      </button>
-                      <button
-                        className="btn btn-outline"
-                        style={{ fontSize: 9, padding: '4px 6px', borderRadius: 6, color: '#fbbf24', borderColor: '#fbbf24', fontWeight: 900 }}
-                        onClick={() => handleReExam(p)}
-                        title="Reset & Re-exam"
-                      >
-                        🔄 RESET
-                      </button>
-                      <button
-                        className="btn btn-outline"
-                        style={{ fontSize: 9, padding: '4px 6px', borderRadius: 6, color: '#ef4444', borderColor: '#ef4444', fontWeight: 900 }}
-                        onClick={() => handleDelete(p)}
-                        title="Delete Student"
-                      >
-                        🗑️ DEL
-                      </button>
-                    </div>
-                  </td>
+      <div className={adminStyles.configTabs}>
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            className={`${adminStyles.configTab} ${activeTab === t.id ? adminStyles.configTabActive : ""}`}
+            onClick={() => setActiveTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'live_status' ? (
+        <div className={adminStyles.liveStatusCard}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+             <h3 style={{ fontSize: 18, fontWeight: 800, color: '#00f2ff', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+               🏃 REAL-TIME STUDENT PROGRESS
+             </h3>
+             <button className={adminStyles.refreshBtn} onClick={fetchOdyssey} disabled={loading}>
+                🔄 {loading ? "Syncing..." : "Refresh"}
+             </button>
+          </div>
+
+          <div className={adminStyles.tableWrapper}>
+            <table className={adminStyles.pyhuntTable}>
+              <thead>
+                <tr>
+                  <th>STUDENT NAME</th>
+                  <th>ROUND</th>
+                  <th>ROUND STATUS</th>
+                  <th>WARNINGS</th>
+                  <th>LAST VIOLATION</th>
+                  <th>LAST ACTIVE</th>
+                  <th>STATUS</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {participants.length === 0 && (
-            <div style={{ padding: 100, textAlign: 'center', opacity: 0.3, fontSize: 16 }}>No registered students detected in database.</div>
-          )}
+              </thead>
+              <tbody>
+                {participants.map(p => (
+                  <tr key={p.student_id} className={p.status === 'submitted' ? adminStyles.rowFinished : ""}>
+                    <td>
+                       <div style={{ fontWeight: 800, color: '#fff' }}>{p.name}</div>
+                       <div style={{ fontSize: 11, opacity: 0.5 }}>{p.usn}</div>
+                    </td>
+                    <td>
+                       <span className={adminStyles.roundBadge}>{p.pyhunt?.current_round || 1}</span>
+                    </td>
+                    <td>
+                       <span className={`${adminStyles.statusTag} ${p.status === 'submitted' ? adminStyles.tagSuccess : adminStyles.tagWarning}`}>
+                         {p.status === 'submitted' ? "COMPLETED" : "IN PROGRESS"}
+                       </span>
+                    </td>
+                    <td>
+                       <span className={adminStyles.warningCount}>{p.warnings}/3</span>
+                    </td>
+                    <td style={{ color: p.last_violation_record ? '#ff5252' : 'rgba(255,255,255,0.3)' }}>
+                       {p.last_violation_record?.type || "-"}
+                    </td>
+                    <td>
+                       {p.pyhunt ? new Date(p.pyhunt.last_ping).toLocaleTimeString() : "—"}
+                    </td>
+                    <td>
+                       <span className={`${adminStyles.liveStatus} ${p.status === 'active' ? adminStyles.statusActive : adminStyles.statusFinished}`}>
+                         {p.status === 'submitted' ? "FINISHED" : "ACTIVE"}
+                       </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
-        <PyHuntConfig />
+        <PyHuntConfig activeTab={activeTab} />
       )}
     </div>
   );
 }
 
-function PyHuntConfig() {
-  const [activeTab, setActiveTab] = useState("clues");
+function PyHuntConfig({ activeTab }: { activeTab: string }) {
   const [configs, setConfigs] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("pyhunt_config_local");
@@ -466,174 +349,124 @@ function PyHuntConfig() {
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: 32 }}>
-        <h3 style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginBottom: 8 }}>⚙️ Mission Parameters</h3>
-        <p style={{ opacity: 0.5, fontSize: 14 }}>Configure clues and logic gates for active hunting nodes.</p>
-      </div>
-
-      <div className={adminStyles.configTabs}>
-        {[
-          { id: "clues", label: "🔑 Clues & Codes" },
-          { id: "mcq", label: "📄 MCQ Logic" },
-          { id: "jumble", label: "🧩 Code Jumble" },
-          { id: "r3", label: "🐍 Orbit 3" },
-          { id: "r4", label: "📊 Orbit 4" },
-        ].map(t => (
-          <button
-            key={t.id}
-            className={`${adminStyles.configTab} ${activeTab === t.id ? adminStyles.configTabActive : ""}`}
-            onClick={() => setActiveTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div className={adminStyles.configContent}>
-        {activeTab === "clues" && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {/* ── Global Mission Parameters ── */}
-            <div className={adminStyles.configCard} style={{ border: '1px solid rgba(139, 92, 246, 0.4)', background: 'rgba(139, 92, 246, 0.05)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h4 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 800 }}>🔓 Mission Authorization</h4>
-                <div className={adminStyles.codeBadge} style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' }}>GLOBAL CONTROL</div>
+    <div className={adminStyles.configContent}>
+      {activeTab === "clues" && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div className={adminStyles.configCard}>
+            <h4 style={{ margin: '0 0 16px 0', color: '#00f2ff', fontSize: 16 }}>🌍 GLOBAL PROTOCOL</h4>
+            <div className={adminStyles.inputGroup}>
+              <label className={adminStyles.inputLabel}>INITIAL ACCESS CODE (ORBIT 0)</label>
+              <input
+                className={adminStyles.configInput}
+                value={globalAuth.startCode}
+                onChange={(e) => saveGlobalAuth({ ...globalAuth, startCode: e.target.value })}
+              />
+            </div>
+          </div>
+          {configs.map((c: any) => (
+            <div key={c.round} className={adminStyles.configCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h4 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 800 }}>Phase {c.round}: {c.name}</h4>
+                <div className={adminStyles.codeBadge}>🔒 GATE KEY: {c.code || "PENDING"}</div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>MISSION START CODE</label>
-                  <input
-                    type="text"
-                    className={adminStyles.configInput}
-                    value={globalAuth.startCode}
-                    onChange={(e) => saveGlobalAuth({ ...globalAuth, startCode: e.target.value.toUpperCase() })}
-                    placeholder="e.g. PYHUNT_2024"
-                  />
-                </div>
-                <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>AUTHORIZED USN(S) (COMMA SEPARATED, OPTIONAL)</label>
-                  <input
-                    type="text"
-                    className={adminStyles.configInput}
-                    value={globalAuth.authorizedUsns}
-                    onChange={(e) => saveGlobalAuth({ ...globalAuth, authorizedUsns: e.target.value })}
-                    placeholder="e.g. 1RV21CS001, 1RV21CS002"
-                  />
-                </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>TRANSMISSION HINT (VISIBLE AFTER ROUND)</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={c.clue}
+                  onChange={(e) => updateConfig(c.round, 'clue', e.target.value)}
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>ORBITAL UNLOCK CODE</label>
+                <input
+                  type="text"
+                  className={adminStyles.configInput}
+                  value={c.code}
+                  onChange={(e) => updateConfig(c.round, 'code', e.target.value)}
+                />
               </div>
             </div>
-            {configs.map((c: any) => (
-              <div key={c.round} className={adminStyles.configCard}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                  <h4 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 800 }}>Phase {c.round}: {c.name}</h4>
-                  <div className={adminStyles.codeBadge}>🔒 GATE KEY: {c.code || "PENDING"}</div>
-                </div>
+          ))}
+        </div>
+      )}
 
-                <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>TRANSMISSION HINT (VISIBLE AFTER ROUND)</label>
-                  <textarea
-                    className={adminStyles.configTextarea}
-                    value={c.clue}
-                    onChange={(e) => updateConfig(c.round, 'clue', e.target.value)}
-                    placeholder="Manifest location hint here..."
-                  />
-                </div>
-
-                <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>ORBITAL UNLOCK CODE</label>
-                  <input
-                    type="text"
-                    className={adminStyles.configInput}
-                    value={c.code}
-                    onChange={(e) => updateConfig(c.round, 'code', e.target.value)}
-                    placeholder="e.g. ALPHA_NINER"
-                  />
-                </div>
-              </div>
-            ))}
+      {activeTab === "mcq" && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ color: '#fff', margin: 0 }}>Active MCQ Set (Round 1)</h4>
+            <button className="btn btn-primary" onClick={addMcq} style={{ fontSize: 12, padding: '8px 16px' }}>+ Add Question</button>
           </div>
-        )}
-
-        {activeTab === "mcq" && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ color: '#fff', margin: 0 }}>Active MCQ Set (Round 1)</h4>
-              <button className="btn btn-primary" onClick={addMcq} style={{ fontSize: 12, padding: '8px 16px' }}>+ Add Question</button>
+          {mcqs.map((q: any, idx: number) => (
+            <div key={q.id} className={adminStyles.configCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span className={adminStyles.codeBadge}>QUESTION {idx + 1}</span>
+                <button onClick={() => removeMcq(q.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>QUESTION TEXT</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={q.question}
+                  onChange={(e) => updateMcq(q.id, 'question', e.target.value)}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                {q.options.map((opt: string, optIdx: number) => (
+                  <div key={optIdx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      type="radio"
+                      name={`ans-${q.id}`}
+                      checked={q.answer === optIdx}
+                      onChange={() => updateMcq(q.id, 'answer', optIdx)}
+                    />
+                    <input
+                      className={adminStyles.configInput}
+                      value={opt}
+                      onChange={(e) => {
+                        const newOpts = [...q.options];
+                        newOpts[optIdx] = e.target.value;
+                        updateMcq(q.id, 'options', newOpts);
+                      }}
+                      placeholder={`Option ${optIdx + 1}`}
+                      style={{ padding: '8px 12px', fontSize: 13 }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-            {mcqs.map((q: any, idx: number) => (
-              <div key={q.id} className={adminStyles.configCard}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <span className={adminStyles.codeBadge}>QUESTION {idx + 1}</span>
-                  <button onClick={() => removeMcq(q.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
-                </div>
-                <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>QUESTION TEXT</label>
-                  <input
-                    className={adminStyles.configInput}
-                    value={q.question}
-                    onChange={(e) => updateMcq(q.id, 'question', e.target.value)}
-                    placeholder="Enter the python question..."
-                  />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  {q.options.map((opt: string, optIdx: number) => (
-                    <div key={optIdx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <input
-                        type="radio"
-                        name={`ans-${q.id}`}
-                        checked={q.answer === optIdx}
-                        onChange={() => updateMcq(q.id, 'answer', optIdx)}
-                      />
-                      <input
-                        className={adminStyles.configInput}
-                        value={opt}
-                        onChange={(e) => {
-                          const newOpts = [...q.options];
-                          newOpts[optIdx] = e.target.value;
-                          updateMcq(q.id, 'options', newOpts);
-                        }}
-                        placeholder={`Option ${optIdx + 1}`}
-                        style={{ padding: '8px 12px', fontSize: 13 }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
+      )}
 
-        {activeTab === "jumble" && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <h4 style={{ color: '#fff', margin: 0 }}>Code Jumble Parameters (Round 2)</h4>
-            {jumbles.map((j: any) => (
-              <div key={j.id} className={adminStyles.configCard}>
-                <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>TARGET CODE STRUCTURE (USE NEWLINES)</label>
-                  <textarea
-                    className={adminStyles.configTextarea}
-                    value={j.target}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      saveJumbles(jumbles.map((item: any) => item.id === j.id ? { ...item, target: val, blocks: val.split('\n').filter((l: string) => l.trim()) } : item));
-                    }}
-                    placeholder="def hello():\n  print('world')"
-                    style={{ height: 200 }}
-                  />
-                  <p style={{ fontSize: 11, opacity: 0.5, marginTop: 8 }}>The system will automatically split this into blocks for the student to rearrange.</p>
-                </div>
+      {activeTab === "jumble" && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <h4 style={{ color: '#fff', margin: 0 }}>Code Jumble Parameters (Round 2)</h4>
+          {jumbles.map((j: any) => (
+            <div key={j.id} className={adminStyles.configCard}>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>TARGET CODE STRUCTURE (USE NEWLINES)</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={j.target}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    saveJumbles(jumbles.map((item: any) => item.id === j.id ? { ...item, target: val, blocks: val.split('\n').filter((l: string) => l.trim()) } : item));
+                  }}
+                  style={{ height: 200 }}
+                />
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
+      )}
 
-        {["r3", "r4"].includes(activeTab) && (
-          <div style={{ padding: 100, textAlign: 'center', opacity: 0.3 }}>
-            <h3 style={{ fontSize: 24, fontWeight: 900 }}>Module Calibrating</h3>
-            <p>Specific parameter configuration for this logic orbit is being integrated.</p>
-          </div>
-        )}
-      </div>
+      {["r3", "r4"].includes(activeTab) && (
+        <div style={{ padding: 100, textAlign: 'center', opacity: 0.3 }}>
+          <h3 style={{ fontSize: 24, fontWeight: 900 }}>Module Calibrating</h3>
+          <p>Specific parameter configuration for this logic orbit is being integrated.</p>
+        </div>
+      )}
     </div>
   );
 }
