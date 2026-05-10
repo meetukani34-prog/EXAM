@@ -103,31 +103,46 @@ async def report_violation(
         except Exception as e:
             print(f"[VIOLATION] History log failed: {e}")
 
-        # 3. Update exam_status
-        auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
-        update_data = {
-            "warnings": new_warnings,
-            "status": "submitted" if auto_submitted else "active",
-            "last_active": "now()",
-            "updated_at": "now()"
-        }
-        
-        if auto_submitted:
-            update_data["submitted_at"] = "now()"
-
+        # 3. Update exam_status with ATOMIC increment
+        # We use a raw RPC call or a clever update if supported. 
+        # Since we're using postgrest-py, we'll use the 'id' if we have it, or filters.
+        # To make it atomic in Postgrest without RPC, we use a single query that increments.
         try:
-            # Perform update specifically for this session
-            if record_id:
-                db.table("exam_status").update(update_data).eq("id", record_id).execute()
+            # Atomic increment: update warnings = warnings + 1
+            # Note: postgrest-py doesn't have a direct .inc(), so we use a RPC if available
+            # or a single UPDATE with a filter.
+            # However, for simplicity and reliability, we'll use an RPC 'increment_warnings'
+            rpc_res = db.rpc("increment_warnings", {
+                "t_student_id": student_id,
+                "t_exam_name": exam_title,
+                "t_threshold": AUTO_SUBMIT_THRESHOLD
+            }).execute()
+            
+            if rpc_res.data:
+                res_data = rpc_res.data
+                new_warnings = res_data.get("new_warnings", current_warnings + 1)
+                auto_submitted = res_data.get("auto_submitted", False)
             else:
-                # Fallback if record not found (shouldn't happen with proper start_exam)
-                db.table("exam_status").update(update_data)\
-                    .eq("student_id", student_id)\
-                    .eq("exam_name", exam_title)\
-                    .execute()
-            print(f"[VIOLATION] DB updated for {student_id}")
+                # Fallback to manual if RPC fails (e.g. not created)
+                new_warnings = current_warnings + 1
+                auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
+                update_data = {
+                    "warnings": new_warnings,
+                    "status": "submitted" if auto_submitted else "active",
+                    "updated_at": "now()"
+                }
+                if auto_submitted: update_data["submitted_at"] = "now()"
+                
+                if record_id:
+                    db.table("exam_status").update(update_data).eq("id", record_id).execute()
+                else:
+                    db.table("exam_status").update(update_data).eq("student_id", student_id).eq("exam_name", exam_title).execute()
+            
+            print(f"[VIOLATION] DB updated. Warnings: {new_warnings}")
         except Exception as e:
-            print(f"[VIOLATION] DB update failed: {e}")
+            print(f"[VIOLATION] DB update failed, falling back to manual: {e}")
+            new_warnings = current_warnings + 1
+            auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
 
         # 4. Response
         is_pyhunt = exam_title.lower() == "pyhunt"

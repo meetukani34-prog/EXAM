@@ -23,17 +23,21 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
 
   const triggerViolation = useCallback(
     async (type: string, metadata?: Record<string, unknown>) => {
-      if (isSubmitted || isReporting.current) return;
+      // 1. Block if already submitted, or if we are CURRENTLY showing a modal/reporting
+      if (isSubmitted || isReporting.current || showModal) return;
       
       const now = Date.now();
-      if (now - lastViolationTime.current < 3000) return; // Prevent rapid-fire reporting
-      lastViolationTime.current = now;
+      // 2. Strict Debounce: 5 seconds between ANY violation events
+      if (now - lastViolationTime.current < 5000) return; 
       
+      lastViolationTime.current = now;
       isReporting.current = true;
 
       try {
         const res = await reportViolation(type, examName, metadata);
         const count = res.warning_count;
+        
+        // 3. Fidelity Sync: Ensure state updates before showing modal
         setWarningCount(count);
         setModalMessage(res.message);
         setShowModal(true);
@@ -41,8 +45,9 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
         if (res.auto_submitted) {
           onAutoSubmit();
         }
-      } catch {
-        // Network error — increment locally and still show warning
+      } catch (err) {
+        console.error("Violation sync failed:", err);
+        // Fallback local increment if network fails
         setWarningCount((prev) => {
           const next = prev + 1;
           setModalMessage(
@@ -57,13 +62,13 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
           return next;
         });
       } finally {
-        // Unlock after a short delay to allow the modal to be seen
+        // Unlock after delay to ensure UI stability
         setTimeout(() => {
           isReporting.current = false;
-        }, 2000);
+        }, 1000);
       }
     },
-    [isSubmitted, onAutoSubmit]
+    [isSubmitted, onAutoSubmit, showModal]
   );
 
   // ── Sync status on focus ─────────────────────────────────
