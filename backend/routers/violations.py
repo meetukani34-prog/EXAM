@@ -7,7 +7,8 @@ from db.supabase_client import get_supabase
 
 router = APIRouter(prefix="/exam", tags=["violations"])
 
-VALID_VIOLATION_TYPES = {
+# These are the ONLY types the DB CHECK constraint allows
+DB_VALID_TYPES = {
     "tab_switch",
     "window_blur",
     "fullscreen_exit",
@@ -16,10 +17,10 @@ VALID_VIOLATION_TYPES = {
     "paste_attempt",
     "keyboard_shortcut",
     "auto_submitted",
-    "no_face_detected",
-    "face_not_front",
-    "multiple_faces",
 }
+# Extra types from FaceMonitor that we accept but map to a DB-safe type
+FACE_TYPES = {"no_face_detected", "face_not_front", "multiple_faces"}
+
 AUTO_SUBMIT_THRESHOLD = 3
 
 # Standard Messages
@@ -31,6 +32,14 @@ WARNING_3 = "⚠️ 3rd violation detected. Your exam has been auto-submitted."
 WARNING_1_PYHUNT = "🧬 LOGIC DESYNC: Warning 1. Maintain crystalline focus on the nodes."
 WARNING_2_PYHUNT = "☣️ CRITICAL INSTABILITY: Warning 2. One more desync will terminate the mission."
 WARNING_3_PYHUNT = "💀 SESSION DEAUTHORIZED: 3rd violation. Logic engine has been auto-submitted."
+
+
+def _safe_db_type(raw_type: str) -> str:
+    """Map any violation type to a DB-safe value that passes the CHECK constraint."""
+    if raw_type in DB_VALID_TYPES:
+        return raw_type
+    # Face-related violations → store as 'tab_switch' to pass CHECK, real type in metadata
+    return "tab_switch"
 
 
 @router.post("/report-violation", response_model=ReportViolationResponse)
@@ -50,13 +59,12 @@ async def report_violation(
     auto_submitted = False
 
     try:
-        # ─── Step 1: Read current warning count for THIS exam ───
+        # ─── Step 1: Read current warning count ───
+        # exam_status has UNIQUE on student_id, so there's only ONE row per student
         status_res = (
             db.table("exam_status")
-            .select("warnings, id, status")
+            .select("warnings, id, status, exam_name")
             .eq("student_id", student_id)
-            .eq("exam_name", exam_title)
-            .order("updated_at", desc=True)
             .limit(1)
             .execute()
         )
@@ -66,20 +74,26 @@ async def report_violation(
 
         if status_res.data:
             row = status_res.data[0]
+            record_exam = row.get("exam_name", "")
 
-            # Already submitted? Don't increment, just return.
-            if row.get("status") == "submitted":
+            # If this row is for a DIFFERENT exam that was already submitted,
+            # the student is starting a new exam — reset warnings to 0
+            if record_exam != exam_title and row.get("status") == "submitted":
+                current_warnings = 0
+            elif row.get("status") == "submitted" and record_exam == exam_title:
+                # Same exam already submitted — don't increment
                 return ReportViolationResponse(
                     warning_count=row.get("warnings", 3),
                     auto_submitted=True,
                     message=WARNING_3_PYHUNT if is_pyhunt else WARNING_3,
                 )
+            else:
+                current_warnings = row.get("warnings") or 0
 
-            current_warnings = row.get("warnings") or 0
             record_id = row.get("id")
-            print(f"[VIOLATION] Record {record_id} for '{exam_title}'. Current warnings: {current_warnings}")
+            print(f"[VIOLATION] Record {record_id}, exam='{record_exam}', warnings={current_warnings}")
         else:
-            print(f"[VIOLATION] No record for '{exam_title}'. Starting fresh at 0.")
+            print(f"[VIOLATION] No exam_status row for student. Starting at 0.")
 
         # ─── Step 2: Calculate new warning count ───
         new_warnings = current_warnings + 1
@@ -88,13 +102,18 @@ async def report_violation(
 
         # ─── Step 3: Log violation in history table ───
         try:
-            db_type = request.type if request.type in VALID_VIOLATION_TYPES else "tab_switch"
-            db.table("violations").insert({
+            safe_type = _safe_db_type(request.type)
+            # Build metadata — include original type if it was mapped
+            meta = request.metadata or {}
+            if request.type != safe_type:
+                meta["original_type"] = request.type
+
+            insert_data = {
                 "student_id": student_id,
-                "type": db_type,
-                "exam_name": exam_title,
-                "metadata": request.metadata,
-            }).execute()
+                "type": safe_type,
+                "metadata": meta,
+            }
+            db.table("violations").insert(insert_data).execute()
         except Exception as log_err:
             print(f"[VIOLATION] History log failed (non-fatal): {log_err}")
 
@@ -103,34 +122,27 @@ async def report_violation(
         update_data = {
             "warnings": new_warnings,
             "updated_at": now_ts,
+            "exam_name": exam_title,
+            "last_active": now_ts,
         }
         if auto_submitted:
             update_data["status"] = "submitted"
             update_data["submitted_at"] = now_ts
-        
+
         try:
             if record_id:
-                # We have an exact record — update by ID
                 db.table("exam_status").update(update_data).eq("id", record_id).execute()
             else:
-                # No record found — try update by student+exam, then insert if nothing matched
-                res = (
-                    db.table("exam_status")
-                    .update(update_data)
-                    .eq("student_id", student_id)
-                    .eq("exam_name", exam_title)
-                    .execute()
-                )
-                # If update matched nothing, insert a new row
-                if not res.data:
-                    db.table("exam_status").insert({
-                        "student_id": student_id,
-                        "exam_name": exam_title,
-                        "warnings": new_warnings,
-                        "status": "submitted" if auto_submitted else "active",
-                        "updated_at": now_ts,
-                        **({"submitted_at": now_ts} if auto_submitted else {}),
-                    }).execute()
+                # No row exists — insert one
+                db.table("exam_status").insert({
+                    "student_id": student_id,
+                    "exam_name": exam_title,
+                    "warnings": new_warnings,
+                    "status": "submitted" if auto_submitted else "active",
+                    "updated_at": now_ts,
+                    "last_active": now_ts,
+                    **({"submitted_at": now_ts} if auto_submitted else {}),
+                }).execute()
             print(f"[VIOLATION] DB updated. Warnings: {new_warnings}")
         except Exception as db_err:
             print(f"[VIOLATION] DB update failed (non-fatal): {db_err}")
@@ -151,7 +163,6 @@ async def report_violation(
 
     except Exception as e:
         print(f"[VIOLATIONS] Critical Error: {e}")
-        # Even on crash, return a safe response — never let the API 500
         return ReportViolationResponse(
             warning_count=new_warnings,
             auto_submitted=auto_submitted,
