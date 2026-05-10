@@ -100,6 +100,18 @@ export default function PyHuntView() {
       });
 
       if (data) {
+        // Handle Admin Reset Signal
+        if (data.round_1_state && (data.round_1_state as any).reset) {
+          localStorage.removeItem(`pyhunt_mcq_map_${studentId}`);
+          localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
+          setMcqSelectionMap({});
+          setCode("");
+          
+          // Clear the reset flag in DB
+          await supabase.from('odyssey_progress')
+            .update({ round_1_state: {} })
+            .eq('student_id', studentId);
+        }
         setCurrentRound(data.current_round);
       } else {
         // Initialize for new student
@@ -222,23 +234,21 @@ export default function PyHuntView() {
 
   const handleExecute = async () => {
     if (currentRound === 1) {
-      // Check if ALL questions are answered correctly
       const allCorrect = mcqSet.every((q, idx) => mcqSelectionMap[idx] === q.correct);
-      
+      const answeredCount = Object.keys(mcqSelectionMap).length;
+
+      if (answeredCount < mcqSet.length) {
+        setOutput(`ERROR: Incomplete logic chain. Answer all ${mcqSet.length} nodes.`);
+        return;
+      }
+
       if (allCorrect) {
-        const savedConfigs = JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]");
-        const currentConfig = savedConfigs.find((c: any) => c.round === 1);
-        const code = currentConfig?.code || "LIBRARY42";
-        setUnlockCode(code);
-        setOutput("MATCH FOUND: Universal Logic Validated. Manifesting Key...");
-        setTimeout(() => setShowUnlockDialog(true), 1000);
+        // User must now enter the Orbital Unlock Code
+        setIsAtGate(true);
+        setGateError(false);
+        setOutput("");
       } else {
-        const answeredCount = Object.keys(mcqSelectionMap).length;
-        if (answeredCount < mcqSet.length) {
-          setOutput(`ERROR: Incomplete logic chain. Answer all ${mcqSet.length} nodes.`);
-        } else {
-          setOutput("ERROR: Logic mismatch in sequence. Transmission failed.");
-        }
+        setOutput("ERROR: Logic mismatch in sequence. Transmission failed.");
       }
       return;
     }
@@ -260,26 +270,8 @@ export default function PyHuntView() {
   };
 
   const handleMcqSelect = (idx: number, optIdx: number) => {
-    const newMap = { ...mcqSelectionMap, [idx]: optIdx };
-    setMcqSelectionMap(newMap);
-
-    // Auto-validate Round 1 sequence
-    if (currentRound === 1) {
-      const answeredCount = Object.keys(newMap).length;
-      if (answeredCount === mcqSet.length) {
-        const allCorrect = mcqSet.every((q, i) => newMap[i] === q.correct);
-        if (allCorrect) {
-          const savedConfigs = JSON.parse(localStorage.getItem("pyhunt_config_local") || "[]");
-          const currentConfig = savedConfigs.find((c: any) => c.round === 1);
-          const code = currentConfig?.code || "LIBRARY42";
-          setUnlockCode(code);
-          setOutput("MATCH FOUND: Universal Logic Validated. Manifesting Key...");
-          setTimeout(() => setShowUnlockDialog(true), 800);
-        } else {
-          setOutput("ERROR: Logic mismatch in sequence. Transmission failed.");
-        }
-      }
-    }
+    setMcqSelectionMap(prev => ({ ...prev, [idx]: optIdx }));
+    if (output.startsWith("ERROR")) setOutput("");
   };
 
   const validateRound = (round: number, stdout: string) => {
@@ -552,8 +544,14 @@ export default function PyHuntView() {
               </div>
 
               <div className={styles.controlPanel}>
-                 {/* Only show Execute button for coding rounds (Round 2+) */}
-                 {currentRound > 1 && (
+                 {currentRound === 1 ? (
+                   // Show Submit button for Round 1 if on last question and all answered
+                   (currentMcqIndex === mcqSet.length - 1 && Object.keys(mcqSelectionMap).length === mcqSet.length) && (
+                     <button onClick={handleExecute} className={styles.executeBtn}>
+                        Submit Mission Sequence
+                     </button>
+                   )
+                 ) : (
                    <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>
                      Execute Logic Protocol
                    </button>

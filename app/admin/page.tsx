@@ -136,6 +136,19 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     if (!confirm(`Reset exam for ${s.name}? This will clear all progress and rounds.`)) return;
     try {
       await resetAdminStudent(s.student_id);
+      
+      // Also reset odyssey progress and set a reset flag for the frontend to catch
+      await supabase.from('odyssey_progress').update({ 
+        current_round: 1, 
+        round_1_state: { reset: true },
+        round_2_state: {},
+        round_3_state: {},
+        round_4_state: {},
+        round_5_state: {},
+        is_completed: false,
+        error_entropy: 0
+      }).eq('student_id', s.student_id);
+
       fetchStudentsGlobal();
       fetchOdyssey(); 
     } catch (err: any) {
