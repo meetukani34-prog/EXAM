@@ -99,7 +99,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
       .from('odyssey_progress')
       .select('*')
       .order('last_ping', { ascending: false });
-    
+
     // Fetch last violations for each student
     const { data: violData } = await supabase
       .from('violation_history')
@@ -132,8 +132,8 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     if (!confirm(`Reset exam for ${s.name}? This will clear all progress and rounds.`)) return;
     try {
       await resetAdminStudent(s.student_id);
-      await supabase.from('odyssey_progress').update({ 
-        current_round: 1, 
+      await supabase.from('odyssey_progress').update({
+        current_round: 1,
         round_1_state: { reset: true },
         round_2_state: {},
         round_3_state: {},
@@ -144,7 +144,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
       }).eq('student_id', s.student_id);
 
       fetchStudentsGlobal();
-      fetchOdyssey(); 
+      fetchOdyssey();
     } catch (err: any) { alert("Failed to reset: " + err.message); }
   };
 
@@ -191,7 +191,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
   ];
 
   return (
-    <div className={adminStyles.pyhuntShell} style={{ 
+    <div className={adminStyles.pyhuntShell} style={{
       backgroundImage: 'linear-gradient(to bottom, rgba(2, 6, 23, 0.9), rgba(2, 6, 23, 0.95)), url("https://images.unsplash.com/photo-1511497584788-8767fe771d11?auto=format&fit=crop&q=80")',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
@@ -207,7 +207,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
           </p>
         </div>
         <button className={adminStyles.saveAllBtn} onClick={() => alert("All changes synchronized with local storage.")}>
-           💾 Save All Changes
+          💾 Save All Changes
         </button>
       </header>
 
@@ -226,12 +226,12 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
       {activeTab === 'live_status' ? (
         <div className={adminStyles.liveStatusCard}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-             <h3 style={{ fontSize: 18, fontWeight: 800, color: '#00f2ff', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
-               🏃 REAL-TIME STUDENT PROGRESS
-             </h3>
-             <button className={adminStyles.refreshBtn} onClick={fetchOdyssey} disabled={loading}>
-                🔄 {loading ? "Syncing..." : "Refresh"}
-             </button>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#00f2ff', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+              🏃 REAL-TIME STUDENT PROGRESS
+            </h3>
+            <button className={adminStyles.refreshBtn} onClick={fetchOdyssey} disabled={loading}>
+              🔄 {loading ? "Syncing..." : "Refresh"}
+            </button>
           </div>
 
           <div className={adminStyles.tableWrapper}>
@@ -252,39 +252,39 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
                 {participants.map(p => (
                   <tr key={p.student_id} className={p.status === 'submitted' ? adminStyles.rowFinished : ""}>
                     <td>
-                       <div style={{ fontWeight: 800, color: '#fff' }}>{p.name}</div>
-                       <div style={{ fontSize: 11, opacity: 0.5 }}>{p.usn}</div>
+                      <div style={{ fontWeight: 800, color: '#fff' }}>{p.name}</div>
+                      <div style={{ fontSize: 11, opacity: 0.5 }}>{p.usn}</div>
                     </td>
                     <td>
-                       <span className={adminStyles.roundBadge}>{p.pyhunt?.current_round || 1}</span>
+                      <span className={adminStyles.roundBadge}>{p.pyhunt?.current_round || 1}</span>
                     </td>
                     <td>
-                       <span className={`${adminStyles.statusTag} ${p.status === 'submitted' ? adminStyles.tagSuccess : adminStyles.tagWarning}`}>
-                         {p.status === 'submitted' ? "COMPLETED" : "IN PROGRESS"}
-                       </span>
+                      <span className={`${adminStyles.statusTag} ${p.status === 'submitted' ? adminStyles.tagSuccess : adminStyles.tagWarning}`}>
+                        {p.status === 'submitted' ? "COMPLETED" : "IN PROGRESS"}
+                      </span>
                     </td>
                     <td>
-                       <span className={adminStyles.warningCount}>{p.warnings}/3</span>
+                      <span className={adminStyles.warningCount}>{p.warnings}/3</span>
                     </td>
                     <td style={{ color: p.last_violation_record ? '#ff5252' : 'rgba(255,255,255,0.3)' }}>
-                       {p.last_violation_record?.type || "-"}
+                      {p.last_violation_record?.type || "-"}
                     </td>
                     <td>
-                       {p.pyhunt ? new Date(p.pyhunt.last_ping).toLocaleTimeString() : "—"}
+                      {p.pyhunt ? new Date(p.pyhunt.last_ping).toLocaleTimeString() : "—"}
                     </td>
                     <td>
-                       <span className={`${adminStyles.liveStatus} ${p.status === 'active' ? adminStyles.statusActive : adminStyles.statusFinished}`}>
-                         {p.status === 'submitted' ? "FINISHED" : (p.is_blocked ? "STOPPED" : "ACTIVE")}
-                       </span>
+                      <span className={`${adminStyles.liveStatus} ${p.status === 'active' ? adminStyles.statusActive : adminStyles.statusFinished}`}>
+                        {p.status === 'submitted' ? "FINISHED" : (p.is_blocked ? "STOPPED" : "ACTIVE")}
+                      </span>
                     </td>
                     <td>
-                       <div className={adminStyles.actionGroup}>
-                          <button className={`${adminStyles.actionBtn} ${adminStyles.btnReset}`} onClick={() => handleReExam(p)}>RESET</button>
-                          <button className={`${adminStyles.actionBtn} ${adminStyles.btnStop}`} onClick={() => handleToggleBlock(p)}>
-                             {p.is_blocked ? "RESUME" : "STOP"}
-                          </button>
-                          <button className={`${adminStyles.actionBtn} ${adminStyles.btnDelete}`} onClick={() => handleDeleteStudent(p)}>DELETE</button>
-                       </div>
+                      <div className={adminStyles.actionGroup}>
+                        <button className={`${adminStyles.actionBtn} ${adminStyles.btnReset}`} onClick={() => handleReExam(p)}>RESET</button>
+                        <button className={`${adminStyles.actionBtn} ${adminStyles.btnStop}`} onClick={() => handleToggleBlock(p)}>
+                          {p.is_blocked ? "RESUME" : "STOP"}
+                        </button>
+                        <button className={`${adminStyles.actionBtn} ${adminStyles.btnDelete}`} onClick={() => handleDeleteStudent(p)}>DELETE</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -327,6 +327,8 @@ function PyHuntConfig({ activeTab }: { activeTab: string }) {
         if (m) setMcqs(m);
         const a = data.find(c => c.config_key === 'auth')?.config_value;
         if (a) setGlobalAuth(a);
+        const j = data.find(c => c.config_key === 'jumbles')?.config_value;
+        if (j) setJumbles(j);
       }
     }
     fetchAllConfigs();
@@ -364,9 +366,9 @@ function PyHuntConfig({ activeTab }: { activeTab: string }) {
     saveMcqs(mcqs.filter((q: any) => q.id !== id));
   };
 
-  const saveJumbles = (newJumbles: any) => {
+  const saveJumbles = async (newJumbles: any) => {
     setJumbles(newJumbles);
-    localStorage.setItem("pyhunt_jumbles_local", JSON.stringify(newJumbles));
+    await supabase.from('pyhunt_global_config').upsert({ config_key: 'jumbles', config_value: newJumbles });
   };
 
   return (
@@ -391,7 +393,7 @@ function PyHuntConfig({ activeTab }: { activeTab: string }) {
                 <div className={adminStyles.codeBadge}>🔒 GATE KEY: {c.code || "PENDING"}</div>
               </div>
               <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>MISSION CLUE (VISIBLE AT GATE)</label>
+                <label className={adminStyles.inputLabel}>HINT (VISIBLE AT GATE)</label>
                 <textarea
                   className={adminStyles.configTextarea}
                   value={c.clue}
@@ -466,7 +468,7 @@ function PyHuntConfig({ activeTab }: { activeTab: string }) {
           {jumbles.map((j: any) => (
             <div key={j.id} className={adminStyles.configCard}>
               <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>TARGET CODE STRUCTURE (USE NEWLINES)</label>
+                <label className={adminStyles.inputLabel}>ROUND 2 JUMBLE CODE (FOR STUDENT TO ARRANGE)</label>
                 <textarea
                   className={adminStyles.configTextarea}
                   value={j.target}
@@ -1210,7 +1212,7 @@ export default function AdminPage() {
                       </td>
                       <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{s.email || "—"}</td>
                       <td><span className="badge badge-neutral">{s.branch}</span></td>
-                      <td><StatusBadge status={s.status} lastActive={s.last_active} /></td>
+                      <td><StatusBadge status={s.status} lastActive={s.last_active} isBlocked={s.is_blocked} /></td>
                       <td style={{ fontSize: 12 }}>{s.started_at ? new Date(s.started_at).toLocaleTimeString() : "—"}</td>
                       <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{getElapsedTime(s.started_at, s.submitted_at)}</td>
                       <td style={{ fontSize: 12, color: "var(--text-muted)" }}>
@@ -1368,7 +1370,8 @@ function ViolationAlertsFeed() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────
-function StatusBadge({ status, lastActive }: { status: string; lastActive: string | null }) {
+function StatusBadge({ status, lastActive, isBlocked }: { status: string; lastActive: string | null; isBlocked?: boolean }) {
+  if (isBlocked) return <span className="badge badge-danger">🛑 STOPPED</span>;
   const idle = lastActive ? (Date.now() - new Date(lastActive).getTime()) > 60_000 : false;
   if (status === "submitted") return <span className="badge badge-success">✓ Submitted</span>;
   if (status === "active" && idle) return <span className="badge badge-warning">⏸ Idle</span>;

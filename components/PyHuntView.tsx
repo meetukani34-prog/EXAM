@@ -152,6 +152,10 @@ export default function PyHuntView() {
              }));
              setMcqSet(mapped);
           }
+          const j = data.find(c => c.config_key === 'jumbles')?.config_value;
+          if (j && j.length > 0) {
+             setOriginalJumbleCode(j[0].target);
+          }
        }
     }
     fetchGlobalConfigs();
@@ -183,20 +187,16 @@ export default function PyHuntView() {
      }
   }, [mcqSelectionMap, student]);
 
-  // Load Admin MCQs & Round 2 Jumble Config
+  // Load Admin Jumble Config for Round 2
   useEffect(() => {
      if (typeof window !== "undefined") {
-        if (currentRound === 2 && globalConfigs.length > 0) {
-          const r2Config = globalConfigs.find((c: any) => c.round === 2);
-          if (r2Config && r2Config.code) {
-             const lines = r2Config.code.split('\n').filter((l: string) => l.trim() !== "");
-             setOriginalJumbleCode(r2Config.code);
-             const shuffled = [...lines].sort(() => Math.random() - 0.5);
-             setJumbledLines(shuffled);
-          }
+        if (currentRound === 2 && originalJumbleCode && jumbledLines.length === 0) {
+           const lines = originalJumbleCode.split('\n').filter((l: string) => l.trim() !== "");
+           const shuffled = [...lines].sort(() => Math.random() - 0.5);
+           setJumbledLines(shuffled);
         }
      }
-  }, [currentRound, globalConfigs]);
+  }, [currentRound, originalJumbleCode, jumbledLines.length]);
 
   // ── Handlers ──
   const handleAuthorize = async () => {
@@ -516,11 +516,11 @@ export default function PyHuntView() {
               <div className={styles.gateIcon}>🔒</div>
               <h2>ORBITAL UNLOCK REQUIRED</h2>
               <div className={styles.clueBox}>
-                <label>MISSION CLUE:</label>
+                <label>HINT:</label>
                 <p>{globalConfigs.find((c: any) => c.round === currentRound)?.clue || "Locate the physical node to find your code."}</p>
               </div>
               <div className={styles.gateInputGroup}>
-                <label>ENTER UNLOCK CODE</label>
+                <label>ORBITAL UNLOCK CODE</label>
                 <input 
                   type="text" 
                   value={gateInput} 
