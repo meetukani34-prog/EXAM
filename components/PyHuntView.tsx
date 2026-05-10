@@ -517,18 +517,23 @@ export default function PyHuntView() {
                 {currentRound === 1 ? (
                   <div className={styles.mcqWrapper}>
                     <div className={styles.mcqHeader}>
-                       <span className={styles.mcqProgress}>Node {currentMcqIndex + 1} of {mcqSet.length}</span>
-                       <p className={styles.mcqQuestion}>{mcqSet[currentMcqIndex].question}</p>
-                       {mcqSet[currentMcqIndex].imageUrl && (
-                         <div style={{ marginTop: 16, textAlign: 'center' }}>
-                            <img 
-                              src={mcqSet[currentMcqIndex].imageUrl} 
-                              alt="Question Visual" 
-                              style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)' }} 
-                            />
-                         </div>
-                       )}
+                      <span className={styles.mcqProgress}>Node {currentMcqIndex + 1} of {mcqSet.length}</span>
+                      <span className={styles.scoringBadge}>+1.0 / -0.25</span>
                     </div>
+                    
+                    <div className={styles.mcqQuestionSection}>
+                      <p className={styles.mcqQuestion}>{mcqSet[currentMcqIndex].question}</p>
+                      {mcqSet[currentMcqIndex].imageUrl && (
+                        <div style={{ marginTop: 16, textAlign: 'center' }}>
+                           <img 
+                             src={mcqSet[currentMcqIndex].imageUrl} 
+                             alt="Question Visual" 
+                             style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)' }} 
+                           />
+                        </div>
+                      )}
+                    </div>
+
                     <div className={styles.mcqOptions}>
                       {mcqSet[currentMcqIndex].options.map((opt: string, i: number) => (
                         <button
