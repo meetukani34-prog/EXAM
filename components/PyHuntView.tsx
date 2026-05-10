@@ -99,7 +99,28 @@ export default function PyHuntView() {
     }
   };
 
+  const [mcqSelection, setMcqSelection] = useState<number | null>(null);
+  const ROUND_1_QUESTIONS = [
+    {
+      id: 1,
+      question: "Which of the following is the correct way to manifest a string in Python?",
+      options: ["str = 'Manifested'", "string str = 'Manifested'", "var str = 'Manifested'", "Manifested : str"],
+      correct: 0,
+      output: "Key: Manifested"
+    }
+  ];
+
   const handleExecute = async () => {
+    if (currentRound === 1) {
+      if (mcqSelection === ROUND_1_QUESTIONS[0].correct) {
+        setOutput("MATCH FOUND: Sequence Validated. Manifesting Key...");
+        setTimeout(() => setIsAtGate(true), 1000);
+      } else {
+        setOutput("ERROR: Logic mismatch. Transmission failed.");
+      }
+      return;
+    }
+
     setOutput("Executing Logic...");
     const result = await runCode(code);
     
@@ -118,7 +139,7 @@ export default function PyHuntView() {
 
   const validateRound = (round: number, stdout: string) => {
     const out = stdout.trim();
-    if (round === 1) return out === "Key: Manifested";
+    if (round === 1) return true; // Handled in handleExecute
     if (round === 3) return out.toLowerCase().includes("palindrome: true");
     if (round === 4) return out.includes("1, 2, Fizz, 4, Buzz");
     return false;
@@ -137,6 +158,7 @@ export default function PyHuntView() {
       setGateError(false);
       setCode("");
       setOutput("");
+      setMcqSelection(null); // Reset MCQ for next rounds if any
 
       await supabase
         .from('odyssey_progress')
@@ -298,17 +320,37 @@ export default function PyHuntView() {
               </header>
 
               <div className={styles.editorContainer}>
-                 <textarea 
-                   className={styles.codeArea}
-                   value={code}
-                   onChange={(e) => setCode(e.target.value)}
-                   placeholder="# Manifest your Python logic here..."
-                   spellCheck={false}
-                   autoComplete="off"
-                   autoCorrect="off"
-                   autoCapitalize="off"
-                 />
-                 <div className={styles.editorGlow} />
+                {currentRound === 1 ? (
+                  <div className={styles.mcqWrapper}>
+                    <p className={styles.mcqQuestion}>{ROUND_1_QUESTIONS[0].question}</p>
+                    <div className={styles.mcqOptions}>
+                      {ROUND_1_QUESTIONS[0].options.map((opt, i) => (
+                        <button
+                          key={i}
+                          className={`${styles.mcqOption} ${mcqSelection === i ? styles.selected : ""}`}
+                          onClick={() => setMcqSelection(i)}
+                        >
+                          <span className={styles.optionLetter}>{String.fromCharCode(65 + i)}</span>
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <textarea 
+                      className={styles.codeArea}
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="# Manifest your Python logic here..."
+                      spellCheck={false}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                    />
+                    <div className={styles.editorGlow} />
+                  </>
+                )}
               </div>
 
               <div className={styles.controlPanel}>
