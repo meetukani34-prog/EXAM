@@ -282,16 +282,11 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
   ];
 
   return (
-    <div className={adminStyles.pyhuntShell} style={{
-      backgroundImage: 'linear-gradient(to bottom, rgba(2, 6, 23, 0.9), rgba(2, 6, 23, 0.95)), url("https://images.unsplash.com/photo-1511497584788-8767fe771d11?auto=format&fit=crop&q=80")',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'fixed'
-    }}>
+    <div className={adminStyles.pyhuntShell}>
       <header style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: 32, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ color: '#00f2ff' }}>🐍</span> PyHunt Configuration
+          <h2 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ color: 'var(--accent)' }}>🐍</span> PyHunt Configuration
           </h2>
           <p style={{ opacity: 0.6, fontSize: 14, marginTop: 8 }}>
             Changes are saved to the global database and immediately visible to all students in real-time.
@@ -346,7 +341,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
       {activeTab === 'live_status' ? (
         <div className={adminStyles.liveStatusCard}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#00f2ff', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
               🏃 REAL-TIME STUDENT PROGRESS
             </h3>
             <button className={adminStyles.refreshBtn} onClick={() => { fetchOdyssey(); fetchPyHuntStudents(); }} disabled={loading}>
@@ -372,7 +367,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                 {participants.map(p => (
                   <tr key={p.student_id} className={p.status === 'submitted' ? adminStyles.rowFinished : ""}>
                     <td>
-                      <div style={{ fontWeight: 800, color: '#fff' }}>{p.name}</div>
+                      <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{p.name}</div>
                       <div style={{ fontSize: 11, opacity: 0.5 }}>{p.usn}</div>
                     </td>
                     <td>
@@ -386,7 +381,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                     <td>
                       <span className={adminStyles.warningCount}>{p.warnings}/3</span>
                     </td>
-                    <td style={{ color: p.last_violation_record ? '#ff5252' : 'rgba(255,255,255,0.3)' }}>
+                    <td style={{ color: p.last_violation_record ? 'var(--danger)' : 'var(--text-muted)' }}>
                       {p.last_violation_record?.type || "-"}
                     </td>
                     <td>
@@ -444,7 +439,7 @@ function PyHuntConfig({
       {activeTab === "clues" && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div className={adminStyles.configCard}>
-            <h4 style={{ margin: '0 0 16px 0', color: '#00f2ff', fontSize: 16 }}>🌍 GLOBAL PROTOCOL</h4>
+            <h4 style={{ margin: '0 0 16px 0', color: 'var(--accent)', fontSize: 16 }}>🌍 GLOBAL PROTOCOL</h4>
             <div className={adminStyles.inputGroup}>
               <label className={adminStyles.inputLabel}>INITIAL ACCESS CODE (ORBIT 0)</label>
               <input
@@ -457,7 +452,7 @@ function PyHuntConfig({
           {configs.map((c: any) => (
             <div key={c.round} className={adminStyles.configCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h4 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 800 }}>Phase {c.round}: {c.name}</h4>
+                <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 18, fontWeight: 800 }}>Phase {c.round}: {c.name}</h4>
                 <div className={adminStyles.codeBadge}>🔒 GATE KEY: {c.code || "PENDING"}</div>
               </div>
               <div className={adminStyles.inputGroup}>
@@ -992,19 +987,19 @@ export default function AdminPage() {
             <input
               id="admin-password-input"
               type="password"
-              className={adminStyles.input}
               placeholder="Admin password"
               value={pass}
               onChange={(e) => setPass(e.target.value)}
               autoFocus
+              className={adminStyles.input}
               style={{
-                background: "rgba(255,255,255,0.08) !important",
-                border: "1px solid rgba(255,255,255,0.15)",
-                color: "#ffffff !important"
+                background: "var(--bg-input) !important",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary) !important"
               }}
             />
             {passError && <p className="text-danger" style={{ fontSize: 13 }}>{passError}</p>}
-            <button type="submit" className="btn btn-primary btn-lg" style={{ background: "linear-gradient(135deg, #8b5cf6, #3b82f6)", border: "none", borderRadius: 12 }}>
+            <button type="submit" className="btn btn-primary btn-lg" style={{ background: "var(--accent)", border: "none", borderRadius: 12 }}>
               Access Command Node
             </button>
           </form>
@@ -1162,8 +1157,8 @@ export default function AdminPage() {
             }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 14,
-                background: "rgba(25,118,210,0.1)",
-                border: "1px solid rgba(25,118,210,0.2)",
+                background: "var(--accent-glow)",
+                border: "1px solid var(--accent)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 24, flexShrink: 0,
               }}>👥</div>
@@ -1191,8 +1186,8 @@ export default function AdminPage() {
             }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 14,
-                background: "rgba(237,108,2,0.1)",
-                border: "1px solid rgba(237,108,2,0.2)",
+                background: "var(--warning-bg)",
+                border: "1px solid var(--warning)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 24, flexShrink: 0,
               }}>⚠️</div>
@@ -1217,8 +1212,8 @@ export default function AdminPage() {
             }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 14,
-                background: "rgba(46,125,50,0.1)",
-                border: "1px solid rgba(46,125,50,0.2)",
+                background: "var(--success-bg)",
+                border: "1px solid var(--success)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 24, flexShrink: 0,
               }}>✅</div>
@@ -1256,8 +1251,8 @@ export default function AdminPage() {
                 const isActive = (q as any)?.is_active;
                 return (
                   <div key={name} style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: `1px solid ${isActive ? "rgba(52,211,153,0.15)" : "rgba(239,68,68,0.15)"}`,
+                    background: "var(--bg-secondary)",
+                    border: `1px solid ${isActive ? "var(--success)" : "var(--danger)"}`,
                     borderRadius: 12,
                     padding: "10px 16px",
                     display: "flex",
@@ -1269,8 +1264,8 @@ export default function AdminPage() {
                       width: 8,
                       height: 8,
                       borderRadius: "50%",
-                      background: isActive ? "#34d399" : "#ef4444",
-                      boxShadow: isActive ? "0 0 10px rgba(52,211,153,0.5)" : "none"
+                      background: isActive ? "var(--success)" : "var(--danger)",
+                      boxShadow: isActive ? "0 0 10px var(--success)" : "none"
                     }} />
                     <div style={{ display: "flex", flexDirection: "column" }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: isActive ? "var(--text-primary)" : "var(--text-muted)" }}>
@@ -1280,7 +1275,7 @@ export default function AdminPage() {
                         <span style={{ fontSize: 10, opacity: 0.6 }}>{q?.question_count || 0} Questions</span>
                         <span style={{
                           fontSize: 10,
-                          color: isActive ? "#34d399" : "#ef4444",
+                          color: isActive ? "var(--success)" : "var(--danger)",
                           fontWeight: 800,
                           letterSpacing: "0.02em"
                         }}>
@@ -1367,9 +1362,9 @@ export default function AdminPage() {
                           fontWeight: 800,
                           padding: '2px 8px',
                           borderRadius: 6,
-                          background: s.exam_name === "PyHunt" ? "rgba(0, 242, 255, 0.1)" : "rgba(139, 92, 246, 0.1)",
-                          color: s.exam_name === "PyHunt" ? "#00f2ff" : "#a78bfa",
-                          border: `1px solid ${s.exam_name === "PyHunt" ? "rgba(0, 242, 255, 0.2)" : "rgba(139, 92, 246, 0.2)"}`,
+                          background: s.exam_name === "PyHunt" ? "var(--accent-glow)" : "var(--bg-secondary)",
+                          color: s.exam_name === "PyHunt" ? "var(--accent)" : "var(--text-primary)",
+                          border: `1px solid ${s.exam_name === "PyHunt" ? "var(--accent)" : "var(--border)"}`,
                           textTransform: 'uppercase'
                         }}>
                           {s.exam_name || "—"}
@@ -1464,9 +1459,9 @@ function ViolationAlertsFeed() {
             fontSize: 12, fontWeight: 600,
             padding: "2px 10px",
             borderRadius: 999,
-            background: alerts.length > 0 ? "rgba(239, 68, 68, 0.1)" : "var(--bg-secondary)",
-            color: alerts.length > 0 ? "#f87171" : "var(--text-muted)",
-            border: alerts.length > 0 ? "1px solid rgba(239, 68, 68, 0.2)" : "1px solid var(--border)",
+            background: alerts.length > 0 ? "var(--danger-bg)" : "var(--bg-secondary)",
+            color: alerts.length > 0 ? "var(--danger)" : "var(--text-muted)",
+            border: alerts.length > 0 ? "1px solid var(--danger)" : "1px solid var(--border)",
           }}>
             {alerts.length} events logged
           </span>
@@ -1549,7 +1544,7 @@ function StatusBadge({ status, lastActive, isBlocked }: { status: string; lastAc
 function WarningBadge({ count }: { count: number }) {
   if (count === 0) return <span className="badge badge-neutral">0</span>;
   if (count === 1) return <span className="badge badge-warning">⚠ 1</span>;
-  if (count === 2) return <span className="badge" style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>⚠ 2</span>;
+  if (count === 2) return <span className="badge" style={{ background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid var(--warning)" }}>⚠ 2</span>;
   return <span className="badge badge-danger">🔴 {count}</span>;
 }
 
@@ -1762,10 +1757,10 @@ function QuestionsTab() {
 
   // Palette for category cards — cycles through 4 colors
   const CARD_PALETTE = [
-    { bg: "rgba(25,118,210,0.06)", border: "rgba(25,118,210,0.25)", accent: "#1565c0", icon: "📐", skillColor: "rgba(25,118,210,0.1)", skillText: "#1565c0" },
-    { bg: "rgba(103,58,183,0.06)", border: "rgba(103,58,183,0.25)", accent: "#6a1b9a", icon: "🧠", skillColor: "rgba(103,58,183,0.1)", skillText: "#6a1b9a" },
-    { bg: "rgba(27,153,105,0.06)", border: "rgba(27,153,105,0.25)", accent: "#1b5e20", icon: "📖", skillColor: "rgba(27,153,105,0.1)", skillText: "#1b5e20" },
-    { bg: "rgba(230,119,14,0.06)", border: "rgba(230,119,14,0.25)", accent: "#e65100", icon: "💻", skillColor: "rgba(230,119,14,0.1)", skillText: "#e65100" },
+    { bg: "var(--bg-secondary)", border: "var(--border)", accent: "var(--accent)", icon: "📐", skillColor: "var(--bg-primary)", skillText: "var(--text-primary)" },
+    { bg: "var(--bg-secondary)", border: "var(--border)", accent: "var(--violet)", icon: "🧠", skillColor: "var(--bg-primary)", skillText: "var(--text-primary)" },
+    { bg: "var(--bg-secondary)", border: "var(--border)", accent: "var(--success)", icon: "📖", skillColor: "var(--bg-primary)", skillText: "var(--text-primary)" },
+    { bg: "var(--bg-secondary)", border: "var(--border)", accent: "var(--warning)", icon: "💻", skillColor: "var(--bg-primary)", skillText: "var(--text-primary)" },
   ];
 
   function inferDifficulty(name: string): "Easy" | "Medium" | "Hard" {
@@ -1797,9 +1792,9 @@ function QuestionsTab() {
   }
 
   const DIFF_COLORS: Record<string, { bg: string; text: string }> = {
-    Easy: { bg: "rgba(46,125,50,0.1)", text: "#2e7d32" },
-    Medium: { bg: "rgba(237,108,2,0.1)", text: "#e65100" },
-    Hard: { bg: "rgba(211,47,47,0.1)", text: "#c62828" },
+    Easy: { bg: "var(--success-bg)", text: "var(--success)" },
+    Medium: { bg: "var(--warning-bg)", text: "var(--warning)" },
+    Hard: { bg: "var(--danger-bg)", text: "var(--danger)" },
   };
 
   return (
@@ -1832,9 +1827,9 @@ function QuestionsTab() {
             style={{
               padding: '8px 20px',
               borderRadius: 10,
-              border: selectedCategory === cat.key ? '2px solid #4f46e5' : '1px solid #e2e8f0',
-              background: selectedCategory === cat.key ? '#eef2ff' : '#fff',
-              color: selectedCategory === cat.key ? '#4f46e5' : '#64748b',
+              border: selectedCategory === cat.key ? '2px solid var(--accent)' : '1px solid var(--border)',
+              background: selectedCategory === cat.key ? 'var(--bg-secondary)' : 'var(--bg-card)',
+              color: selectedCategory === cat.key ? 'var(--accent)' : 'var(--text-secondary)',
               fontWeight: 700,
               fontSize: 13,
               cursor: 'pointer',
@@ -1863,9 +1858,9 @@ function QuestionsTab() {
             style={{
               padding: '6px 16px',
               borderRadius: 8,
-              border: selectedStatus === stat.key ? '2px solid #10b981' : '1px solid #e2e8f0',
-              background: selectedStatus === stat.key ? '#ecfdf5' : 'transparent',
-              color: selectedStatus === stat.key ? '#059669' : '#64748b',
+              border: selectedStatus === stat.key ? '2px solid var(--success)' : '1px solid var(--border)',
+              background: selectedStatus === stat.key ? 'var(--success-bg)' : 'transparent',
+              color: selectedStatus === stat.key ? 'var(--success)' : 'var(--text-secondary)',
               fontWeight: 600,
               fontSize: 12,
               cursor: 'pointer',
@@ -1905,17 +1900,17 @@ function QuestionsTab() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.35 }}
                     style={{
-                      background: palette.bg,
-                      border: `1.5px solid ${palette.border}`,
+                      background: "var(--bg-card)",
+                      border: `1.5px solid var(--border)`,
                       borderRadius: 18,
                       padding: "24px 24px 20px",
                       cursor: "pointer",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                      boxShadow: "var(--shadow-card)",
                       transition: "box-shadow 0.2s, transform 0.2s",
                       position: "relative",
                       overflow: "hidden",
                     }}
-                    whileHover={{ y: -3, boxShadow: `0 8px 24px ${palette.border}` }}
+                    whileHover={{ y: -3, boxShadow: `var(--shadow-elevated)` }}
                     onClick={() => toggleCluster(clusterKey)}
                   >
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
@@ -1937,20 +1932,20 @@ function QuestionsTab() {
                           const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
 
                           let statusLabel = "Active";
-                          let statusColor = "#34d399";
+                          let statusColor = "var(--success)";
                           let statusIcon = "🟢";
 
                           if (!isManualActive) {
                             statusLabel = "Inactive";
-                            statusColor = "#94a3b8";
+                            statusColor = "var(--text-muted)";
                             statusIcon = "🚫";
                           } else if (now < start) {
                             statusLabel = "Upcoming";
-                            statusColor = "#fbbf24";
+                            statusColor = "var(--warning)";
                             statusIcon = "🟡";
                           } else if (now > end) {
                             statusLabel = "Expired";
-                            statusColor = "#f87171";
+                            statusColor = "var(--danger)";
                             statusIcon = "⚪";
                           }
 
@@ -1963,8 +1958,8 @@ function QuestionsTab() {
                                 gap: 6,
                                 padding: "4px 12px",
                                 borderRadius: "12px",
-                                background: `${statusColor}15`,
-                                border: `1px solid ${statusColor}30`,
+                                background: `var(--bg-secondary)`,
+                                border: `1px solid var(--border)`,
                                 color: statusColor,
                                 fontSize: "11px",
                                 fontWeight: 700,
@@ -1977,10 +1972,10 @@ function QuestionsTab() {
                               {/* Manual Toggle Switch */}
                               <div style={{
                                 display: "flex",
-                                background: "rgba(0,0,0,0.04)",
+                                background: "var(--bg-secondary)",
                                 padding: "2px",
                                 borderRadius: "20px",
-                                border: "1px solid rgba(0,0,0,0.06)"
+                                border: "1px solid var(--border)"
                               }}>
                                 <button
                                   onClick={() => !isManualActive && toggleActivation(name, false)}
@@ -1992,8 +1987,8 @@ function QuestionsTab() {
                                     border: "none",
                                     cursor: "pointer",
                                     transition: "all 0.2s",
-                                    background: isManualActive ? "#10b981" : "transparent",
-                                    color: isManualActive ? "#fff" : "#64748b",
+                                    background: isManualActive ? "var(--success)" : "transparent",
+                                    color: isManualActive ? "#fff" : "var(--text-secondary)",
                                   }}
                                 >ON</button>
                                 <button
@@ -2006,8 +2001,8 @@ function QuestionsTab() {
                                     border: "none",
                                     cursor: "pointer",
                                     transition: "all 0.2s",
-                                    background: !isManualActive ? "#f43f5e" : "transparent",
-                                    color: !isManualActive ? "#fff" : "#64748b",
+                                    background: !isManualActive ? "var(--danger)" : "transparent",
+                                    color: !isManualActive ? "#fff" : "var(--text-secondary)",
                                   }}
                                 >OFF</button>
                               </div>
@@ -2224,9 +2219,9 @@ function QuestionsTab() {
                     height: "44px",
                     fontSize: "15px",
                     fontWeight: "600",
-                    background: "rgba(139, 92, 246, 0.12) !important",
-                    border: "1.5px solid rgba(139, 92, 246, 0.3)",
-                    color: "#ffffff",
+                    background: "var(--bg-secondary) !important",
+                    border: "1.5px solid var(--border)",
+                    color: "var(--text-primary)",
                     cursor: "pointer"
                   }}
                   value={formCategory}
@@ -2344,10 +2339,10 @@ function QuestionsTab() {
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
                 gap: "10px 20px",
-                background: "rgba(255,255,255,0.03)",
+                background: "var(--bg-secondary)",
                 padding: "20px",
                 borderRadius: "16px",
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid var(--border)",
                 maxHeight: "400px",
                 overflowY: "auto"
               }}>
@@ -2361,8 +2356,8 @@ function QuestionsTab() {
                       cursor: "pointer",
                       padding: "10px 12px",
                       borderRadius: "10px",
-                      background: isChecked ? "rgba(139, 92, 246, 0.15)" : "transparent",
-                      border: isChecked ? "1px solid rgba(139, 92, 246, 0.3)" : "1px solid transparent",
+                      background: isChecked ? "var(--accent-glow)" : "transparent",
+                      border: isChecked ? "1px solid var(--accent)" : "1px solid transparent",
                       transition: "all 0.2s ease"
                     }}>
                       <div style={{ paddingTop: 2 }}>
@@ -2508,7 +2503,7 @@ function StudentsTab({ students, load }: { students: AdminStudent[], load: (exam
                   <td><span className="badge badge-neutral">{s.branch || "CS"}</span></td>
                   <td>
                     {s.is_blocked ? (
-                      <span className="badge badge-danger" style={{ background: "rgba(211, 47, 47, 0.2)", color: "#ff5252", border: "1px solid #ff5252" }}>Blocked</span>
+                      <span className="badge badge-danger" style={{ background: "var(--danger-bg)", color: "var(--danger)", border: "1px solid var(--danger)" }}>Blocked</span>
                     ) : (
                       <StatusBadge status={s.status} lastActive={s.last_active} />
                     )}
@@ -2528,12 +2523,12 @@ function StudentsTab({ students, load }: { students: AdminStudent[], load: (exam
                       }}>Edit</button>
                       <button className="btn btn-outline" onClick={() => { const p = prompt("Enter new password:"); if (p) updateAdminStudent(s.student_id, { password: p }).then(() => alert("Password reset")); }}>Reset PW</button>
                       <button className="btn btn-outline" style={{ color: "var(--accent)", borderColor: "var(--accent)" }} onClick={() => handleResetExam(s.student_id)}>Re-Exam</button>
-                      <button className="btn btn-outline" style={{ color: "#00f2ff", borderColor: "#00f2ff" }} onClick={() => window.open(`/admin/students/${s.student_id}`, '_blank')}>View Pulse</button>
+                      <button className="btn btn-outline" style={{ color: "var(--accent)", borderColor: "var(--accent)" }} onClick={() => window.open(`/admin/students/${s.student_id}`, '_blank')}>View Pulse</button>
                       <button
                         className="btn btn-outline"
                         style={{
-                          color: s.is_blocked ? "#4caf50" : "#ff5252",
-                          borderColor: s.is_blocked ? "#4caf50" : "#ff5252",
+                          color: s.is_blocked ? "var(--success)" : "var(--danger)",
+                          borderColor: s.is_blocked ? "var(--success)" : "var(--danger)",
                           fontWeight: "bold"
                         }}
                         onClick={() => handleToggleBlock(s)}

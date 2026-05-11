@@ -10,10 +10,10 @@
   align-items: center;
   margin-bottom: 32px;
   padding: 24px 32px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 24px;
-  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-card);
 }
 
 .headerTitle {
@@ -28,8 +28,8 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 6px;
-  background: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 18px;
   margin-bottom: 24px;
   width: max-content;
@@ -51,25 +51,25 @@
 }
 
 .tab:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--bg-hover);
   color: var(--text-primary);
 }
 
 .tabActive {
-  background: linear-gradient(135deg, #8b5cf6, #6366f1) !important;
+  background: var(--accent) !important;
   color: #ffffff !important;
-  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 8px 20px var(--accent-glow);
 }
 
 /* -- PyHunt Configuration High-Fidelity Styles ------------------ */
 .pyhuntShell {
-  background: radial-gradient(circle at top right, #0a0a2a, #020617);
+  background: var(--bg-card);
   border-radius: 24px;
-  border: 1px solid rgba(0, 242, 255, 0.1);
+  border: 1px solid var(--border);
   padding: 32px;
-  color: #fff;
+  color: var(--text-primary);
   min-height: 80vh;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  box-shadow: var(--shadow-floating);
   animation: fadeIn 0.6s ease-out;
 }
 
@@ -77,10 +77,10 @@
   display: flex;
   gap: 8px;
   margin-bottom: 32px;
-  background: rgba(255,255,255,0.02);
+  background: var(--bg-secondary);
   padding: 6px;
   border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
   width: max-content;
 }
 
@@ -89,7 +89,7 @@
   background: transparent;
   border: none;
   border-radius: 10px;
-  color: rgba(255,255,255,0.7);
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -100,22 +100,22 @@
 }
 
 .configTab:hover {
-  background: rgba(255,255,255,0.05);
-  color: #fff;
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .configTabActive {
-  background: linear-gradient(135deg, #00f2ff, #0066ff) !important;
-  color: #000 !important;
-  box-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
+  background: var(--accent) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 20px var(--accent-glow);
 }
 
 .configCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(0, 242, 255, 0.15);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 32px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  box-shadow: var(--shadow-card);
   transition: all 0.3s;
 }
 
@@ -127,7 +127,7 @@
   display: block;
   font-size: 11px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
   opacity: 1;
   margin-bottom: 10px;
   text-transform: uppercase;
@@ -136,22 +136,21 @@
 
 .configInput, .configTextarea {
   width: 100%;
-  background: #000000 !important; /* Pure black for maximum contrast */
-  border: 1px solid rgba(0, 242, 255, 0.4) !important;
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 12px;
-  color: #ffffff !important; /* Pure white text forced */
+  color: var(--text-primary) !important;
   padding: 16px 20px !important;
   font-size: 16px !important;
-  font-family: 'JetBrains Mono', monospace !important;
+  font-family: var(--font-mono) !important;
   transition: all 0.3s;
   outline: none;
-  box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
 }
 
 .configInput:focus, .configTextarea:focus {
-  border-color: #00f2ff !important;
-  background: #050505 !important;
-  box-shadow: 0 0 20px rgba(0, 242, 255, 0.2), inset 0 2px 10px rgba(0,0,0,0.5);
+  border-color: var(--accent) !important;
+  background: var(--bg-card) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .configTextarea {
@@ -161,10 +160,10 @@
 
 .codeBadge {
   padding: 6px 16px;
-  background: rgba(0, 242, 255, 0.1);
-  border: 1px solid rgba(0, 242, 255, 0.3);
+  background: var(--accent-glow);
+  border: 1px solid var(--accent);
   border-radius: 30px;
-  color: #00f2ff;
+  color: var(--accent);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.1em;
@@ -175,14 +174,14 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 10px #34d399;
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success);
 }
 
 /* -- Table & Other Shared Styles -- */
 .tableWrapper {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 20px;
   overflow-x: auto;
 }
@@ -195,19 +194,19 @@
 .table th {
   text-align: left;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-secondary);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border);
 }
 
 .table td {
   padding: 16px 20px;
   font-size: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border);
 }
 
 @keyframes fadeIn {
@@ -222,16 +221,16 @@
 
 
 .saveAllBtn {
-  background: linear-gradient(135deg, #00f2ff, #0066ff);
+  background: var(--accent);
   border: none;
   border-radius: 12px;
   padding: 10px 24px;
-  color: #000;
+  color: #fff;
   font-weight: 800;
   font-size: 13px;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 4px 15px rgba(0, 242, 255, 0.3);
+  box-shadow: var(--shadow-card);
 }
 
 .saveAllBtn:hover {
@@ -240,19 +239,18 @@
 }
 
 .liveStatusCard {
-  background: rgba(13, 13, 26, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 32px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-floating);
   margin-top: 24px;
 }
 
 .refreshBtn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
   padding: 8px 16px;
   border-radius: 10px;
   font-size: 12px;
@@ -276,43 +274,43 @@
   text-align: left;
   font-size: 11px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
 
 .pyhuntTable tr {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-card);
   transition: all 0.3s;
 }
 
 .pyhuntTable tr:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
 }
 
 .pyhuntTable td {
   padding: 16px 20px;
   font-size: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .pyhuntTable td:first-child {
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 1px solid var(--border);
   border-top-left-radius: 12px;
   border-bottom-left-radius: 12px;
 }
 
 .pyhuntTable td:last-child {
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid var(--border);
   border-top-right-radius: 12px;
   border-bottom-right-radius: 12px;
 }
 
 .roundBadge {
-  background: rgba(0, 242, 255, 0.1);
-  color: #00f2ff;
-  border: 1px solid rgba(0, 242, 255, 0.2);
+  background: var(--accent-glow);
+  color: var(--accent);
+  border: 1px solid var(--accent);
   padding: 4px 12px;
   border-radius: 30px;
   font-size: 12px;
@@ -379,10 +377,10 @@
 
 .actionBtn {
   padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
   border-radius: 8px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 10px;
   font-weight: 800;
   cursor: pointer;
@@ -393,39 +391,39 @@
 }
 
 .actionBtn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--bg-hover);
+  border-color: var(--accent);
   transform: translateY(-1px);
 }
 
 .btnReset {
-  color: #fbbf24;
-  border-color: rgba(251, 191, 36, 0.2);
+  color: var(--warning);
+  border-color: var(--warning);
 }
 
 .btnReset:hover {
-  background: rgba(251, 191, 36, 0.1);
-  border-color: #fbbf24;
+  background: var(--warning-bg);
+  border-color: var(--warning);
 }
 
 .btnStop {
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.2);
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 .btnStop:hover {
-  background: rgba(248, 113, 113, 0.1);
-  border-color: #f87171;
+  background: var(--danger-bg);
+  border-color: var(--danger);
 }
 
 .btnDelete {
-  background: rgba(248, 113, 113, 0.1) !important;
-  color: #ff5252 !important;
-  border-color: #ff5252 !important;
+  background: var(--danger-bg) !important;
+  color: var(--danger) !important;
+  border-color: var(--danger) !important;
 }
 
 .btnDelete:hover {
-  background: #ff5252 !important;
+  background: var(--danger) !important;
   color: #fff !important;
 }
 
@@ -436,8 +434,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(10, 10, 20, 0.7);
-  backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -446,17 +444,15 @@
 }
 
 .modal {
-  background: rgba(15, 15, 30, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 28px;
   width: 100%;
   max-width: 800px;
   max-height: 90vh;
   padding: 40px;
   overflow-y: auto;
-  box-shadow: 
-    0 25px 60px rgba(0, 0, 0, 0.5),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-floating);
   animation: modalPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -470,11 +466,7 @@
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.03em;
-  background: linear-gradient(135deg, #a5b4fc, #818cf8);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+  color: var(--text-primary);
 }
 
 .formGroup {
@@ -487,7 +479,7 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6) !important;
+  color: var(--text-secondary) !important;
   margin-bottom: 8px;
 }
 
@@ -512,31 +504,29 @@
 .input {
   width: 100%;
   padding: 12px 16px;
-  background: var(--bg-input, rgba(255, 255, 255, 0.08)) !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15)) !important;
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 14px;
-  color: var(--text-primary, #f1f5f9) !important;
+  color: var(--text-primary) !important;
   font-size: 14px;
   font-weight: 500;
   outline: none;
   margin-bottom: 8px;
   transition: all 0.2s ease;
-  backdrop-filter: blur(5px);
 }
 
 .input:focus {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border-color: rgba(99, 102, 241, 0.5) !important;
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 select.input option {
-  background: #1e1b4b;
-  color: #ffffff !important;
+  background: var(--bg-card);
+  color: var(--text-primary) !important;
 }
 
 .input::placeholder {
-  color: rgba(255, 255, 255, 0.3) !important;
+  color: var(--text-muted) !important;
 }
 
 .modalActions {
@@ -545,7 +535,7 @@ select.input option {
   gap: 12px;
   margin-top: 32px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border);
 }
 
 /* ── Node Management Headers ── */
@@ -554,8 +544,8 @@ select.input option {
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  background: rgba(139, 92, 246, 0.08);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: var(--accent-glow);
+  border: 1px solid var(--accent);
   border-radius: 12px;
   margin-bottom: 24px;
   position: relative;
@@ -579,9 +569,9 @@ select.input option {
   max-height: 240px;
   overflow: hidden;
   border-radius: 12px;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid var(--border);
   margin-top: 8px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -601,16 +591,16 @@ select.input option {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(239, 68, 68, 0.9);
+  background: var(--danger);
   color: white;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   font-weight: bold;
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+  box-shadow: var(--shadow-card);
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -620,15 +610,15 @@ select.input option {
 }
 
 .uploadZone {
-  border: 2px dashed rgba(139, 92, 246, 0.3);
+  border: 2px dashed var(--border);
   border-radius: 16px;
   transition: all 0.3s ease;
-  background: rgba(139, 92, 246, 0.03);
+  background: var(--bg-secondary);
 }
 
 .uploadZone:hover {
-  background: rgba(139, 92, 246, 0.08);
-  border-color: rgba(139, 92, 246, 0.6);
+  background: var(--bg-hover);
+  border-color: var(--accent);
 }
 
 /* ── Floating Orbs (Identity Clusters) ───────────── */
@@ -653,27 +643,26 @@ select.input option {
   width: 140px;
   height: 140px;
   border-radius: 50%;
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  backdrop-filter: blur(12px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+  box-shadow: var(--shadow-card);
   animation: floating 4s ease-in-out infinite;
 }
 
 .orbNode:hover .orbCircle {
   transform: scale(1.08);
-  border-color: rgba(139, 92, 246, 0.8);
-  box-shadow: 0 0 40px rgba(139, 92, 246, 0.4);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-elevated);
 }
 
 .orbTitle {
   font-size: 15px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
@@ -682,7 +671,7 @@ select.input option {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #a78bfa;
+  color: var(--accent);
 }
 
 @keyframes floating {
@@ -692,8 +681,8 @@ select.input option {
 
 .isolationView {
   width: 100%;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 32px;
   margin-top: 24px;

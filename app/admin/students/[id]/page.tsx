@@ -149,7 +149,7 @@ export default function StudentIdentityExplorer() {
       </div>
       <div className={styles.orbCard}>
         <div className={styles.orbTitle}>Entropy Level</div>
-        <div className={styles.orbValue} style={{ color: violations.length > 5 ? '#ff4d4d' : '#fff' }}>
+        <div className={styles.orbValue} style={{ color: violations.length > 5 ? 'var(--danger)' : 'var(--text-primary)' }}>
           {violations.length}
         </div>
         <div style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>Fidelity Deviations</div>
@@ -275,11 +275,11 @@ export default function StudentIdentityExplorer() {
                   <div style={{ padding: 40, opacity: 0.5 }}>Temporal mapping in progress...</div>
                 )}
                 {activeTab === "PyHunt" && (
-                   <div className={styles.statsGrid}>
-                      <div className={styles.orbCard} style={{ borderColor: 'rgba(0, 242, 255, 0.4)' }}>
-                        <div className={styles.orbTitle}>PyHunt Progress</div>
-                        <div className={styles.orbValue}>Round {selectedStudent.odyssey_progress?.current_round || 0}/5</div>
-                      </div>
+                    <div className={styles.statsGrid}>
+                       <div className={styles.orbCard} style={{ borderColor: 'var(--accent)' }}>
+                         <div className={styles.orbTitle}>PyHunt Progress</div>
+                         <div className={styles.orbValue}>Round {selectedStudent.odyssey_progress?.current_round || 0}/5</div>
+                       </div>
                       <div className={styles.orbCard}>
                         <div className={styles.orbTitle}>Completion Velocity</div>
                         <div className={styles.orbValue}>
