@@ -362,7 +362,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
               <thead>
                 <tr>
                   <th>STUDENT NAME</th>
-                  <th>ROUND</th>
+                  <th>ORBIT / PHASE</th>
                   <th>ROUND STATUS</th>
                   <th>WARNINGS</th>
                   <th>LAST VIOLATION</th>
@@ -379,7 +379,12 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                       <div style={{ fontSize: 11, opacity: 0.5 }}>{p.usn}</div>
                     </td>
                     <td>
-                      <span className={adminStyles.roundBadge}>{p.pyhunt?.current_round || 1}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className={adminStyles.roundBadge}>{p.pyhunt?.current_round || 1}</span>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                          {configs.find((c: any) => c.round === (p.pyhunt?.current_round || 1))?.name || "Entry"}
+                        </div>
+                      </div>
                     </td>
                     <td>
                       <span className={`${adminStyles.statusTag} ${p.status === 'submitted' ? adminStyles.tagSuccess : adminStyles.tagWarning}`}>
