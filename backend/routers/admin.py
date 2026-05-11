@@ -652,18 +652,22 @@ async def update_exam_config(request: ExamConfigUpdate, _: bool = Depends(verify
 
 
 @router.get("/exam/config/public")
-async def get_exam_config_public():
-    """Public exam config endpoint (no auth) — returns all configurations."""
+async def get_exam_config_public(branch: Optional[str] = Query(None)):
+    """Public exam config endpoint (no auth) — filtered by branch and active status."""
     db = get_supabase()
     try:
-        # Include all relevant fields for the student dashboard
-        result = db.table("exam_config").select(
-            "is_active, scheduled_start, scheduled_end, duration_minutes, exam_title, "
-            "marks_per_question, negative_marks, max_attempts, show_answers_after, branch"
-        ).execute()
+        # 1. Start with basic active filter
+        query = db.table("exam_config").select("*").eq("is_active", True)
+        
+        # 2. Add Branch-Level SQL Filtering (Optimized for 200+ students)
+        if branch:
+            # Match specific branch OR global "ALL" branch
+            query = query.or_(f"branch.eq.{branch.upper()},branch.eq.ALL,branch.is.null")
+        
+        result = query.execute()
         return result.data or []
     except Exception as e:
-        print(f"[ADMIN] Public config fetch failed: {e}")
+        print(f"[ADMIN] Public config SQL fetch failed: {e}")
         return []
 
 

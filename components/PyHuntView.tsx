@@ -99,13 +99,19 @@ export default function PyHuntView() {
       const studentId = info.id || info.student_id;
       if (!studentId) return;
       
-      const { data } = await withRetry(async () => {
+      const { data, error } = await withRetry(async () => {
         return await supabase
           .from('odyssey_progress')
           .select('*')
           .eq('student_id', studentId)
           .maybeSingle();
       });
+
+      if (error) {
+        console.error("[PYHUNT] Background sync failed:", error);
+        setLoading(false);
+        return;
+      }
 
       if (data) {
         setIsAuthorized(true); // If they have progress, they are authorized
@@ -223,43 +229,63 @@ export default function PyHuntView() {
         // Initialize PyHunt for this student ONLY NOW
         try {
           await withRetry(async () => {
-            const { data: existing } = await supabase
+            const { data: existing, error: selectError } = await supabase
               .from('odyssey_progress')
               .select('id')
               .eq('student_id', studentId)
               .maybeSingle();
             
+            if (selectError) {
+              console.error("[PYHUNT] Supabase progress check error:", selectError);
+              throw selectError;
+            }
+            
             if (!existing) {
-              await supabase.from('odyssey_progress').insert([{ student_id: studentId, current_round: 1 }]);
+              const { error: insertError } = await supabase
+                .from('odyssey_progress')
+                .insert([{ student_id: studentId, current_round: 1 }]);
+              if (insertError) {
+                console.error("[PYHUNT] Supabase progress initialization error:", insertError);
+                throw insertError;
+              }
             }
           });
           
-          await withRetry(() => startExam("PyHunt"));
-
-          // ── Reset Violations for Fresh Mission (Destructive Reset) ──
-          // We delete any existing status to clear 'submitted' locks and duplicates
-          await supabase.from('exam_status')
+          // ── Reset Status for Fresh Mission (Destructive Reset) ──
+          // We delete any existing status FIRST to clear 'submitted' locks
+          // This allows startExam to succeed even if the exam was previously completed.
+          const { error: deleteError } = await supabase.from('exam_status')
             .delete()
             .eq('student_id', studentId)
             .ilike('exam_name', 'PyHunt');
+            
+          if (deleteError) {
+            console.warn("[PYHUNT] Status reset failed (likely RLS):", deleteError);
+          }
 
+          // Now we can safely start/restart the exam
+          await withRetry(() => startExam("PyHunt"));
+
+          // Ensure a fresh active status is present
           const { error: resetError } = await supabase
             .from('exam_status')
-            .insert({ 
+            .upsert({ 
               student_id: studentId, 
               exam_name: 'PyHunt', 
               warnings: 0, 
               status: 'active',
               last_active: new Date().toISOString()
-            });
+            }, { onConflict: 'student_id,exam_name' });
           
           if (resetError) {
-            console.warn("[PYHUNT] Warning reset failed (non-critical):", resetError);
+            console.warn("[PYHUNT] Warning initialization failed (non-critical):", resetError);
           }
 
           sessionStorage.setItem(`pyhunt_auth_${studentId}`, "true");
         } catch (err: any) {
-          console.error("[PYHUNT] Init failed:", err);
+          console.error("[PYHUNT] Mission initialization failed:", err);
+          setAuthError(`Mission Failed: ${err.detail || err.message || "Logic Error"}`);
+          return;
         }
       }
 
