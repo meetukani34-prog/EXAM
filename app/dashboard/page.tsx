@@ -143,11 +143,17 @@ export default function DashboardPage() {
 
   const studentExams = useMemo(() => {
     if (!student) return [];
-    return allExams.filter(e => {
+    const filtered = allExams.filter(e => {
       const eBranch = (e.branch || "ALL").toUpperCase();
       const sBranch = (student.branch || "ALL").toUpperCase();
-      return eBranch === "ALL" || eBranch === sBranch || sBranch === "ALL";
+      const match = eBranch === "ALL" || eBranch === sBranch || sBranch === "ALL";
+      if (!match) {
+        console.log(`[Dashboard] Filtering out ${e.exam_name}: Branch mismatch (${eBranch} vs ${sBranch})`);
+      }
+      return match;
     });
+    console.log("[Dashboard] Filtered Student Exams:", filtered.length, filtered);
+    return filtered;
   }, [allExams, student]);
 
   useEffect(() => {
@@ -255,11 +261,22 @@ export default function DashboardPage() {
               {(() => {
                 const now = Date.now();
                 const topExams = studentExams.filter(e => {
-                  if (!e.is_active) return false;
+                  if (!e.is_active) {
+                    console.log(`[Dashboard] Filtering out ${e.exam_name}: Inactive`);
+                    return false;
+                  }
                   // If there's an end time, and it has passed, it's expired
                   if (e.scheduled_end) {
                     const end = new Date(e.scheduled_end).getTime();
-                    if (now > end) return false;
+                    if (now > end) {
+                      console.log(`[Dashboard] Filtering out ${e.exam_name}: Expired (End: ${e.scheduled_end})`);
+                      return false;
+                    }
+                  }
+                  // Check if already completed
+                  if (e.student_status === 'completed' && (e.attempts_count || 0) >= (e.max_attempts || 1)) {
+                    console.log(`[Dashboard] Filtering out ${e.exam_name}: Already completed (${e.attempts_count}/${e.max_attempts})`);
+                    return false;
                   }
                   return true; // Active and not yet expired (includes Live and Future)
                 });

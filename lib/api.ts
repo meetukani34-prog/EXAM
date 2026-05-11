@@ -462,8 +462,8 @@ export async function fetchPublicExamConfig(): Promise<ExamConfig[]> {
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
-    console.log(`[API] Fetching public exam config from: ${API_BASE}/api/admin/exam/config/public`);
-    const res = await fetch(`${API_BASE}/api/admin/exam/config/public`, {
+    console.log(`[API] Fetching public exam config from: ${API_BASE}/admin/exam/config/public`);
+    const res = await fetch(`${API_BASE}/admin/exam/config/public`, {
       signal: controller.signal,
       headers: { 'Cache-Control': 'no-cache' }
     });
