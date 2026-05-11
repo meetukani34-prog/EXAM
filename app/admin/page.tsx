@@ -1760,10 +1760,10 @@ function QuestionsTab() {
         exam_title: schedulingExam, 
         scheduled_start: s, 
         scheduled_end: e,
-        is_active: autoActive ? (s ? new Date(s) <= new Date() && (!e || new Date(e) > new Date()) : true) : undefined
+        is_active: autoActive ? true : undefined
       });
 
-      setConfigs(prev => prev.map(c => c.exam_title === schedulingExam ? { ...c, scheduled_start: s, scheduled_end: e } : c));
+      setConfigs(prev => prev.map(c => c.exam_title === schedulingExam ? { ...c, scheduled_start: s, scheduled_end: e, is_active: autoActive ? true : c.is_active } : c));
       setShowScheduleModal(false);
     } catch { alert("Failed to update schedule"); }
     finally { setLoading(false); }

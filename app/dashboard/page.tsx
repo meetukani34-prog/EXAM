@@ -248,19 +248,23 @@ export default function DashboardPage() {
             <>
               {(() => {
                 const now = Date.now();
-                const active = studentExams.filter(e => {
+                const topExams = studentExams.filter(e => {
                   if (!e.is_active) return false;
-                  if (!e.scheduled_start) return true;
-                  const start = new Date(e.scheduled_start).getTime();
-                  const end = e.scheduled_end ? new Date(e.scheduled_end).getTime() : null;
-                  return start <= now && (!end || end >= now);
+                  // If there's an end time, and it has passed, it's expired
+                  if (e.scheduled_end) {
+                    const end = new Date(e.scheduled_end).getTime();
+                    if (now > end) return false;
+                  }
+                  return true; // Active and not yet expired (includes Live and Future)
                 });
 
-                const inactive = studentExams.filter(e => {
+                const bottomExams = studentExams.filter(e => {
                   if (!e.is_active) return true;
-                  const start = new Date(e.scheduled_start || 0).getTime();
-                  const end = e.scheduled_end ? new Date(e.scheduled_end).getTime() : Infinity;
-                  return now < start || now > end;
+                  if (e.scheduled_end) {
+                    const end = new Date(e.scheduled_end).getTime();
+                    return now > end; // Expired
+                  }
+                  return false;
                 });
 
 
@@ -270,8 +274,8 @@ export default function DashboardPage() {
                     <div className={styles.sectionWrapper}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Active Exams</h2>
-                          <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Live assessments available right now</p>
+                          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>Available Exams</h2>
+                          <p style={{ opacity: 0.6, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Live or upcoming assessments</p>
                         </div>
                         <div className={styles.livePulse} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(52, 211, 153, 0.1)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(52, 211, 153, 0.2)' }}>
                            <div className={styles.pulseDot} />
@@ -295,11 +299,11 @@ export default function DashboardPage() {
                       </div>
 
                       <div className={styles.examsSection} style={{ marginTop: 24 }}>
-                        {active.length > 0 ? active.map(exam => (
+                        {topExams.length > 0 ? topExams.map(exam => (
                           <ExamCard key={exam.id} exam={exam} onLaunch={handleLaunchExam} />
                         )) : (
                           <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, width: '100%' }}>
-                            No exams are currently live.
+                            No exams are currently available.
                           </div>
                         )}
                       </div>
@@ -314,11 +318,11 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className={styles.examsSection} style={{ marginTop: 24, opacity: 0.6 }}>
-                        {inactive.length > 0 ? inactive.map(exam => (
+                        {bottomExams.length > 0 ? bottomExams.map(exam => (
                           <ExamCard key={exam.id} exam={exam} onLaunch={handleLaunchExam} />
                         )) : (
                           <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, width: '100%' }}>
-                            No inactive exams.
+                            No past or inactive exams.
                           </div>
                         )}
                       </div>
@@ -467,7 +471,10 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
   const pattern = exam.exam_name.toLowerCase().includes('programming') ? '/card_pattern_code.png' : '/card_pattern_neural.png';
   
   const [countdown, setCountdown] = useState("");
-  const [isLocked, setIsLocked] = useState(false);
+  const [isLocked, setIsLocked] = useState(() => {
+    if (!exam.scheduled_start) return false;
+    return new Date(exam.scheduled_start).getTime() > Date.now();
+  });
 
   useEffect(() => {
     if (!exam.scheduled_start) return;
@@ -495,8 +502,9 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
 
   const hasReachedLimit = (exam.attempts_count || 0) >= (exam.max_attempts || 1) && exam.student_status !== 'active';
 
+  const isExpired = exam.scheduled_end ? new Date(exam.scheduled_end).getTime() < Date.now() : false;
   const isInactive = !exam.is_active;
-  const isDisabled = isLocked || hasReachedLimit || isInactive;
+  const isDisabled = isLocked || hasReachedLimit || isInactive || isExpired;
 
   return (
     <div className={styles.examCard} style={{ opacity: isDisabled ? 0.8 : 1 }}>
@@ -504,8 +512,11 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
       <div style={{ position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <h3 className={styles.examTitle}>{exam.exam_name}</h3>
-          <span className={styles.statusBadge} style={{ background: isInactive ? 'rgba(239, 68, 68, 0.1)' : undefined, color: isInactive ? '#ef4444' : undefined }}>
-            {isInactive ? "Inactive" : (isLocked ? "Scheduled" : (exam.student_status === 'active' ? "Active" : (hasReachedLimit ? "Completed" : "Live")))}
+          <span className={styles.statusBadge} style={{ 
+            background: (isInactive || isExpired) ? 'rgba(239, 68, 68, 0.1)' : undefined, 
+            color: (isInactive || isExpired) ? '#ef4444' : undefined 
+          }}>
+            {isInactive ? "Inactive" : (isExpired ? "Expired" : (isLocked ? "Scheduled" : (exam.student_status === 'active' ? "Active" : (hasReachedLimit ? "Completed" : "Live"))))}
           </span>
         </div>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -556,10 +567,14 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
               border: hasReachedLimit ? '1px solid rgba(52, 211, 153, 0.2)' : (isInactive ? '1px solid rgba(239, 68, 68, 0.2)' : undefined)
             }}
           >
-            {isInactive ? "Closed" : (isLocked ? "Locked" : (exam.student_status === 'active' ? "Resume Exam" : (hasReachedLimit ? "Attempted" : "Start Exam")))}
+            {isInactive ? "Closed" : (isExpired ? "Expired" : (isLocked ? "Locked" : (exam.student_status === 'active' ? "Resume Exam" : (hasReachedLimit ? "Attempted" : "Start Exam"))))}
           </button>
-          <div style={{ fontSize: 13, fontWeight: 700, color: isInactive ? '#ef4444' : (isLocked ? 'var(--nexus-gold)' : (hasReachedLimit ? '#34d399' : 'var(--nexus-cyan)')) }}>
-            {isInactive ? "Inactive" : (exam.student_status === 'active' ? "In Progress" : (hasReachedLimit ? "Verified" : (countdown || "Ready")))}
+          <div style={{ 
+            fontSize: 13, 
+            fontWeight: 700, 
+            color: (isInactive || isExpired) ? '#ef4444' : (isLocked ? 'var(--nexus-gold)' : (hasReachedLimit ? '#34d399' : 'var(--nexus-cyan)')) 
+          }}>
+            {isInactive ? "Inactive" : (isExpired ? "Expired" : (exam.student_status === 'active' ? "In Progress" : (hasReachedLimit ? "Verified" : (countdown || "Ready"))))}
           </div>
         </div>
       </div>
