@@ -173,11 +173,11 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
       // 1. Clear odyssey progress
       await supabase.from('odyssey_progress').delete().eq('student_id', s.student_id);
       
-      // 2. Clear exam status for PyHunt
-      await supabase.from('exam_status').delete().eq('student_id', s.student_id).eq('exam_name', 'PyHunt');
+      // 2. Clear exam status for PyHunt (Case-insensitive robust delete)
+      await supabase.from('exam_status').delete().eq('student_id', s.student_id).ilike('exam_name', 'pyhunt');
       
       // 3. Clear exam results for PyHunt
-      await supabase.from('exam_results').delete().eq('student_id', s.student_id).eq('exam_name', 'PyHunt');
+      await supabase.from('exam_results').delete().eq('student_id', s.student_id).ilike('exam_name', 'pyhunt');
 
       fetchStudentsGlobal();
       fetchOdyssey();

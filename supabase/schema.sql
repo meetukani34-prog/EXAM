@@ -143,6 +143,12 @@ CREATE POLICY "Students read own results"
   ON exam_results FOR SELECT
   USING (auth.uid()::text = student_id::text);
 
+-- Monitoring tables: Allow public read for Admin Dashboard and AntiCheat sync
+-- (Since we use a custom JWT auth, Supabase auth.uid() is not available in frontend)
+ALTER TABLE exam_status DISABLE ROW LEVEL SECURITY;
+ALTER TABLE violations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE odyssey_progress DISABLE ROW LEVEL SECURITY;
+
 -- ============================================================
 -- REALTIME: Enable for admin dashboard live updates
 -- ============================================================

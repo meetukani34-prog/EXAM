@@ -169,12 +169,19 @@ async def get_all_students(exam: Optional[str] = Query(None), _: bool = Depends(
                 
                 latest = None
                 if exam:
-                    # Filter for specific exam (case-insensitive for robustness)
+                    # Filter for specific exam (case-insensitive)
                     specific = [e for e in e_statuses if (e.get("exam_name") or "").lower() == exam.lower()]
                     if specific:
-                        latest = specific[0]
+                        # Prioritize active/submitted over not_started, then by last_active
+                        def session_priority(s):
+                            priority = {"active": 2, "submitted": 1, "not_started": 0}
+                            return (priority.get(s.get("status"), -1), s.get("last_active") or "")
+                        
+                        sorted_specific = sorted(specific, key=session_priority, reverse=True)
+                        latest = sorted_specific[0]
                 else:
                     if e_statuses:
+                        # Global view: sort all sessions by last activity
                         sorted_sessions = sorted(e_statuses, key=lambda x: x.get("last_active") or "", reverse=True)
                         latest = sorted_sessions[0]
 
