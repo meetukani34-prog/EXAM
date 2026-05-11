@@ -1009,6 +1009,21 @@ async def reset_odyssey(student_id: str, _: bool = Depends(verify_admin)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/support-requests")
+async def get_support_requests(_: bool = Depends(verify_admin)):
+    """Fetch all support/help requests from students."""
+    db = get_supabase()
+    try:
+        res = db.table("support_requests").select("*").order("created_at", desc=True).execute()
+        return res.data or []
+    except Exception as e:
+        err_str = str(e)
+        if "PGRST" in err_str or "relation" in err_str:
+            # Table doesn't exist yet — return empty list instead of crashing
+            return []
+        print(f"[ADMIN] support_requests fetch failed: {e}")
+        return []
+
 @router.patch("/support-requests/{request_id}/status")
 async def update_support_status(request_id: str, request: dict, _: bool = Depends(verify_admin)):
     """Update status of a help ticket (open, resolved, closed)."""
