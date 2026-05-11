@@ -228,39 +228,11 @@ export default function PyHuntView() {
       if (studentId) {
         // Initialize PyHunt for this student ONLY NOW
         try {
-          // 1. Check if progress exists (Background sync handles loading state)
-          // We no longer attempt to INSERT from the frontend to avoid RLS violations.
-          // The backend 'startExam' now handles progress initialization.
-          
-          // ── Reset Status for Fresh Mission (Destructive Reset) ──
-          // We delete any existing status FIRST to clear 'submitted' locks
-          // This allows startExam to succeed even if the exam was previously completed.
-          const { error: deleteError } = await supabase.from('exam_status')
-            .delete()
-            .eq('student_id', studentId)
-            .ilike('exam_name', 'PyHunt');
-            
-          if (deleteError) {
-            console.warn("[PYHUNT] Status reset failed (non-critical, likely RLS):", deleteError);
-          }
-
-          // Now we can safely start/restart the exam
+          // The backend handles EVERYTHING:
+          //   - Clearing old 'submitted' status (bypasses RLS)
+          //   - Creating odyssey_progress if missing
+          //   - Setting fresh 'active' status with warnings=0
           await withRetry(() => startExam("PyHunt"));
-
-          // Ensure a fresh active status is present
-          const { error: resetError } = await supabase
-            .from('exam_status')
-            .upsert({ 
-              student_id: studentId, 
-              exam_name: 'PyHunt', 
-              warnings: 0, 
-              status: 'active',
-              last_active: new Date().toISOString()
-            }, { onConflict: 'student_id,exam_name' });
-          
-          if (resetError) {
-            console.warn("[PYHUNT] Warning initialization failed (non-critical):", resetError);
-          }
 
           sessionStorage.setItem(`pyhunt_auth_${studentId}`, "true");
         } catch (err: any) {
