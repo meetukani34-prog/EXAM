@@ -277,6 +277,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
         last_violation_record: lastViol || null
       };
     })
+    .filter(p => p.pyhunt !== null || (p.status !== 'not_started' && p.status !== ''))
     .sort((a, b) => (b.pyhunt?.current_round || 0) - (a.pyhunt?.current_round || 0));
 
   const TABS = [
@@ -310,10 +311,10 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
             try {
               // Re-sync all current local states via backend API
               await Promise.all([
-                 updatePyHuntConfig('rounds_config', configs),
-                 updatePyHuntConfig('mcqs', mcqs),
-                 updatePyHuntConfig('auth', globalAuth),
-                 updatePyHuntConfig('jumbles', jumbles)
+                updatePyHuntConfig('rounds_config', configs),
+                updatePyHuntConfig('mcqs', mcqs),
+                updatePyHuntConfig('auth', globalAuth),
+                updatePyHuntConfig('jumbles', jumbles)
               ]);
 
               btn.innerText = "✅ SYNCHRONIZED";
@@ -395,8 +396,8 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                       {p.pyhunt ? new Date(p.pyhunt.last_ping).toLocaleTimeString() : "—"}
                     </td>
                     <td>
-                      <span className={`${adminStyles.liveStatus} ${p.status === 'active' ? adminStyles.statusActive : adminStyles.statusFinished}`}>
-                        {p.status === 'submitted' ? "FINISHED" : (p.is_blocked ? "STOPPED" : "ACTIVE")}
+                      <span className={`${adminStyles.liveStatus} ${p.status === 'active' ? adminStyles.statusActive : (p.status === 'not_started' ? adminStyles.statusPending : adminStyles.statusFinished)}`}>
+                        {p.status === 'submitted' ? "FINISHED" : (p.is_blocked ? "STOPPED" : (p.status === 'not_started' ? "NOT STARTED" : "ACTIVE"))}
                       </span>
                     </td>
                     <td>
