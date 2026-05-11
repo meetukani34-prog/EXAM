@@ -1694,6 +1694,45 @@ function QuestionsTab() {
       setLoading(false);
     }
   };
+
+  const handleUpdateAttempts = async (title: string, current: number) => {
+    const val = prompt(`Set max attempts for ${title}:`, current.toString());
+    if (val === null) return;
+    const num = parseInt(val);
+    if (isNaN(num)) return alert("Invalid number");
+    try {
+      setLoading(true);
+      await updateExamConfig({ exam_title: title, max_attempts: num });
+      setConfigs(prev => prev.map(c => c.exam_title === title ? { ...c, max_attempts: num } : c));
+    } catch { alert("Failed to update attempts"); }
+    finally { setLoading(false); }
+  };
+
+  const handleUpdateTimings = async (title: string, current: number) => {
+    const val = prompt(`Set duration (minutes) for ${title}:`, current.toString());
+    if (val === null) return;
+    const num = parseInt(val);
+    if (isNaN(num)) return alert("Invalid number");
+    try {
+      setLoading(true);
+      await updateExamConfig({ exam_title: title, duration_minutes: num });
+      setConfigs(prev => prev.map(c => c.exam_title === title ? { ...c, duration_minutes: num } : c));
+    } catch { alert("Failed to update timings"); }
+    finally { setLoading(false); }
+  };
+
+  const handleUpdateSchedule = async (title: string, start: string | null, end: string | null) => {
+    const s = prompt(`Set start time (ISO or YYYY-MM-DD HH:MM) for ${title}:`, start || "");
+    if (s === null) return;
+    const e = prompt(`Set end time (ISO or YYYY-MM-DD HH:MM) for ${title}:`, end || "");
+    if (e === null) return;
+    try {
+      setLoading(true);
+      await updateExamConfig({ exam_title: title, scheduled_start: s || null, scheduled_end: e || null });
+      setConfigs(prev => prev.map(c => c.exam_title === title ? { ...c, scheduled_start: s || null, scheduled_end: e || null } : c));
+    } catch { alert("Failed to update schedule"); }
+    finally { setLoading(false); }
+  };
   // ── Category classification ──
   function getCategory(examName: string): "aptitude" | "programming" | "other" {
     const n = examName.toLowerCase();
@@ -1921,112 +1960,82 @@ function QuestionsTab() {
                         </div>
                       </div>
 
-                      {/* Activation & Status Indicators */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 12 }} onClick={e => e.stopPropagation()}>
+                      {/* Control Panel Integration */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }} onClick={e => e.stopPropagation()}>
                         {(() => {
                           const conf = configs.find((c: any) => c.exam_title === name);
                           const isManualActive = conf ? conf.is_active : true;
+                          const attempts = conf?.max_attempts || 1;
+                          const duration = conf?.duration_minutes || 60;
+                          const start = conf?.scheduled_start;
+                          const end = conf?.scheduled_end;
 
-                          const now = Date.now();
-                          const start = conf?.scheduled_start ? new Date(conf.scheduled_start).getTime() : 0;
-                          const end = conf?.scheduled_end ? new Date(conf.scheduled_end).getTime() : Infinity;
-
-                          let statusLabel = "Active";
-                          let statusColor = "var(--success)";
-                          let statusIcon = "🟢";
-
-                          if (!isManualActive) {
-                            statusLabel = "Inactive";
-                            statusColor = "var(--text-muted)";
-                            statusIcon = "🚫";
-                          } else if (now < start) {
-                            statusLabel = "Upcoming";
-                            statusColor = "var(--warning)";
-                            statusIcon = "🟡";
-                          } else if (now > end) {
-                            statusLabel = "Expired";
-                            statusColor = "var(--danger)";
-                            statusIcon = "⚪";
-                          }
-
-                          return (
-                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              {/* Real-time Status Badge */}
-                              <div style={{
+                          const ControlBtn = ({ label, icon, color, onClick, variant = "ghost" }: any) => (
+                            <button
+                              onClick={onClick}
+                              style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: 6,
-                                padding: "4px 12px",
-                                borderRadius: "12px",
-                                background: `var(--bg-secondary)`,
-                                border: `1px solid var(--border)`,
-                                color: statusColor,
-                                fontSize: "11px",
+                                gap: 5,
+                                fontSize: "10px",
                                 fontWeight: 700,
+                                padding: "5px 12px",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                                background: variant === "solid" ? color : `var(--bg-secondary)`,
+                                color: variant === "solid" ? "#fff" : color,
+                                border: `1px solid ${variant === "solid" ? color : "var(--border)"}`,
                                 textTransform: "uppercase",
                                 letterSpacing: "0.02em"
-                              }}>
-                                {statusIcon} {statusLabel}
-                              </div>
+                              }}
+                            >
+                              <span>{icon}</span> {label}
+                            </button>
+                          );
 
-                              {/* Manual Toggle Switch */}
-                              <div style={{
-                                display: "flex",
-                                background: "var(--bg-secondary)",
-                                padding: "2px",
-                                borderRadius: "20px",
-                                border: "1px solid var(--border)"
-                              }}>
-                                <button
-                                  onClick={() => !isManualActive && toggleActivation(name, false)}
-                                  style={{
-                                    fontSize: "9px",
-                                    fontWeight: 800,
-                                    padding: "3px 8px",
-                                    borderRadius: "16px",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    transition: "all 0.2s",
-                                    background: isManualActive ? "var(--success)" : "transparent",
-                                    color: isManualActive ? "#fff" : "var(--text-secondary)",
-                                  }}
-                                >ON</button>
-                                <button
-                                  onClick={() => isManualActive && toggleActivation(name, true)}
-                                  style={{
-                                    fontSize: "9px",
-                                    fontWeight: 800,
-                                    padding: "3px 8px",
-                                    borderRadius: "16px",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    transition: "all 0.2s",
-                                    background: !isManualActive ? "var(--danger)" : "transparent",
-                                    color: !isManualActive ? "#fff" : "var(--text-secondary)",
-                                  }}
-                                >OFF</button>
-                              </div>
+                          return (
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              <ControlBtn
+                                icon="🔢"
+                                label={`Attempts: ${attempts}`}
+                                color="var(--warning)"
+                                onClick={() => handleUpdateAttempts(name, attempts)}
+                              />
+                              
+                              <ControlBtn
+                                icon={isManualActive ? "🟢" : "🔘"}
+                                label="Active"
+                                color="var(--success)"
+                                variant={isManualActive ? "solid" : "ghost"}
+                                onClick={() => !isManualActive && toggleActivation(name, false)}
+                              />
+
+                              <ControlBtn
+                                icon={!isManualActive ? "🔴" : "🔘"}
+                                label="Deactivate"
+                                color="var(--danger)"
+                                variant={!isManualActive ? "solid" : "ghost"}
+                                onClick={() => isManualActive && toggleActivation(name, true)}
+                              />
+
+                              <ControlBtn
+                                icon="📅"
+                                label="Schedule"
+                                color="var(--accent)"
+                                onClick={() => handleUpdateSchedule(name, start ?? null, end ?? null)}
+                              />
+
+                              <ControlBtn
+                                icon="🕒"
+                                label={`Timings: ${duration}m`}
+                                color="var(--violet)"
+                                onClick={() => handleUpdateTimings(name, duration)}
+                              />
                             </div>
                           );
                         })()}
                       </div>
-
-                      {!expandedClusters[clusterKey] && (
-                        <div style={{ display: "flex", gap: 6 }} onClick={e => e.stopPropagation()}>
-                          <button
-                            style={{ fontSize: 11, padding: "3px 10px", borderRadius: 8, border: `1px solid ${palette.border}`, background: "transparent", color: palette.accent, cursor: "pointer", fontWeight: 600 }}
-                            onClick={(e) => { e.stopPropagation(); handleRenameFolder(name); }}
-                          >Rename</button>
-                          <button
-                            style={{ fontSize: 11, padding: "3px 10px", borderRadius: 8, border: `1px solid ${palette.border}`, background: "transparent", color: palette.accent, cursor: "pointer", fontWeight: 600 }}
-                            onClick={(e) => { e.stopPropagation(); handleEditBranchFolder(name); }}
-                          >Edit Branch</button>
-                          <button
-                            style={{ fontSize: 11, padding: "3px 10px", borderRadius: 8, border: "1px solid rgba(211,47,47,0.3)", background: "transparent", color: "var(--danger)", cursor: "pointer", fontWeight: 600 }}
-                            onClick={(e) => { e.stopPropagation(); handleDeleteFolder(name); }}
-                          >Delete</button>
-                        </div>
-                      )}
                     </div>
 
                     <div style={{ marginBottom: 12 }}>
@@ -2061,6 +2070,21 @@ function QuestionsTab() {
                           }}>{skill}</span>
                         ))}
                       </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 6, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }} onClick={e => e.stopPropagation()}>
+                      <button
+                        style={{ fontSize: 10, padding: "4px 10px", borderRadius: 6, border: `1px solid var(--border)`, background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontWeight: 600 }}
+                        onClick={(e) => { e.stopPropagation(); handleRenameFolder(name); }}
+                      >Rename</button>
+                      <button
+                        style={{ fontSize: 10, padding: "4px 10px", borderRadius: 6, border: `1px solid var(--border)`, background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontWeight: 600 }}
+                        onClick={(e) => { e.stopPropagation(); handleEditBranchFolder(name); }}
+                      >Edit Branch</button>
+                      <button
+                        style={{ fontSize: 10, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(211,47,47,0.2)", background: "transparent", color: "var(--danger)", cursor: "pointer", fontWeight: 600, marginLeft: "auto" }}
+                        onClick={(e) => { e.stopPropagation(); handleDeleteFolder(name); }}
+                      >Delete</button>
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: `1px solid ${palette.border}` }}>
