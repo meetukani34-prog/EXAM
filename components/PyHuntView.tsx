@@ -236,24 +236,25 @@ export default function PyHuntView() {
           
           await withRetry(() => startExam("PyHunt"));
 
-          // ── Reset Violations for Fresh Mission ──
+          // ── Reset Violations for Fresh Mission (Destructive Reset) ──
+          // We delete any existing status to clear 'submitted' locks and duplicates
+          await supabase.from('exam_status')
+            .delete()
+            .eq('student_id', studentId)
+            .ilike('exam_name', 'PyHunt');
+
           const { error: resetError } = await supabase
             .from('exam_status')
-            .upsert({ 
+            .insert({ 
               student_id: studentId, 
               exam_name: 'PyHunt', 
               warnings: 0, 
               status: 'active',
               last_active: new Date().toISOString()
-            }, { onConflict: 'student_id,exam_name' });
+            });
           
           if (resetError) {
             console.warn("[PYHUNT] Warning reset failed (non-critical):", resetError);
-            // If upsert fails due to missing constraint, try manual update as fallback
-            await supabase.from('exam_status')
-              .update({ warnings: 0, status: 'active' })
-              .eq('student_id', studentId)
-              .eq('exam_name', 'PyHunt');
           }
 
           sessionStorage.setItem(`pyhunt_auth_${studentId}`, "true");

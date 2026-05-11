@@ -45,7 +45,7 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit, onWarni
         await withRetry(async () => {
           const { data, error } = await supabase
             .from('exam_status')
-            .select('warnings, exam_name')
+            .select('warnings, exam_name, status')
             .eq('student_id', studentId);
           
           if (error) throw error;
@@ -56,7 +56,7 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit, onWarni
           
           if (record) {
             updateWarningCount(record.warnings || 0);
-            if ((record.warnings || 0) >= 3 && !hasAutoSubmitted.current) {
+            if ((record.status === 'submitted' || (record.warnings || 0) >= 3) && !hasAutoSubmitted.current) {
               hasAutoSubmitted.current = true;
               onAutoSubmit();
             }
