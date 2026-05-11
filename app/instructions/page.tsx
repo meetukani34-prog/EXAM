@@ -19,6 +19,9 @@ export default function InstructionsPage() {
   } | null>(null);
   const [starting, setStarting] = useState(false);
 
+  const [timeUntilStart, setTimeUntilStart] = useState<number>(0);
+  const [scheduledStart, setScheduledStart] = useState<string | null>(null);
+
   useEffect(() => {
     // Check authentication
     const token = localStorage.getItem("exam_token");
@@ -30,7 +33,10 @@ export default function InstructionsPage() {
     const studentData = localStorage.getItem("exam_student");
     const selectedTitle = localStorage.getItem("exam_selected_title");
     const selectedDuration = localStorage.getItem("exam_selected_duration");
+    const selectedStart = localStorage.getItem("exam_selected_start");
     
+    setScheduledStart(selectedStart);
+
     if (studentData) {
       try {
         const parsed = JSON.parse(studentData);
@@ -52,14 +58,20 @@ export default function InstructionsPage() {
         duration: selectedDuration ? parseInt(selectedDuration) : 20,
         totalQuestions: 30
       });
-    } else {
-      setStudentInfo({ 
-        name: "Student", 
-        usn: "Candidate", 
-        examTitle: "Online Assessment", 
-        duration: selectedDuration ? parseInt(selectedDuration) : 20,
-        totalQuestions: 30 
-      });
+    }
+
+    // ── Waiting Room Countdown Logic ──
+    if (selectedStart) {
+      const targetTime = new Date(selectedStart).getTime();
+      const updateTimer = () => {
+        const now = Date.now();
+        const diff = targetTime - now;
+        setTimeUntilStart(diff > 0 ? diff : 0);
+      };
+      
+      updateTimer();
+      const interval = setInterval(updateTimer, 1000);
+      return () => clearInterval(interval);
     }
   }, [router]);
 
@@ -231,13 +243,27 @@ export default function InstructionsPage() {
             <button 
               onClick={handleStartExam} 
               className={styles.startBtn}
-              disabled={starting}
+              disabled={starting || timeUntilStart > 0}
+              style={{ 
+                background: timeUntilStart > 0 ? 'rgba(255, 255, 255, 0.05)' : undefined,
+                color: timeUntilStart > 0 ? 'rgba(255, 255, 255, 0.3)' : undefined,
+                cursor: timeUntilStart > 0 ? 'not-allowed' : 'pointer',
+                borderColor: timeUntilStart > 0 ? 'rgba(255, 255, 255, 0.1)' : undefined
+              }}
             >
               {starting ? (
                 <div style={{ position: "relative", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                    <div className="skeleton" style={{ position: "absolute", inset: 0, opacity: 0.2, borderRadius: "12px" }} />
                    <span>Initializing...</span>
                 </div>
+              ) : timeUntilStart > 0 ? (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  Unlocking in {Math.floor(timeUntilStart / 60000)}:{(Math.floor(timeUntilStart / 1000) % 60).toString().padStart(2, '0')}
+                </>
               ) : (
                 <>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -248,6 +274,11 @@ export default function InstructionsPage() {
                 </>
               )}
             </button>
+            {timeUntilStart > 0 && (
+              <p style={{ marginTop: 12, fontSize: 13, opacity: 0.6, color: 'var(--nexus-cyan)' }}>
+                You are in the waiting room. The exam will unlock automatically.
+              </p>
+            )}
           </div>
         </div>
       </main>

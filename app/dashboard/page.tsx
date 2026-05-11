@@ -136,9 +136,27 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadExams();
-    const channel = supabase.channel("exam_config_rt").on("postgres_changes", { event: "*", schema: "public", table: "exam_config" }, () => loadExams()).subscribe();
-    const qChannel = supabase.channel("questions_rt").on("postgres_changes", { event: "*", schema: "public", table: "questions" }, () => loadExams()).subscribe();
-    return () => { supabase.removeChannel(channel); supabase.removeChannel(qChannel); };
+    
+    // Optimized Realtime with Jitter to prevent API spikes
+    const handleUpdate = () => {
+      // Add random delay between 0 and 5 seconds
+      const jitter = Math.random() * 5000;
+      console.log(`[Realtime] Update received. Scheduling reload in ${Math.round(jitter)}ms (Jitter)`);
+      setTimeout(() => loadExams(), jitter);
+    };
+
+    const channel = supabase.channel("exam_config_rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "exam_config" }, handleUpdate)
+      .subscribe();
+      
+    const qChannel = supabase.channel("questions_rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "questions" }, handleUpdate)
+      .subscribe();
+
+    return () => { 
+      supabase.removeChannel(channel); 
+      supabase.removeChannel(qChannel); 
+    };
   }, [loadExams]);
 
   const studentExams = useMemo(() => {
@@ -166,6 +184,7 @@ export default function DashboardPage() {
     if (!exam.is_active) return;
     localStorage.setItem("exam_selected_title", exam.exam_name);
     localStorage.setItem("exam_selected_duration", String(exam.duration_minutes));
+    localStorage.setItem("exam_selected_start", exam.scheduled_start || "");
     router.push("/instructions");
   };
 
@@ -525,9 +544,15 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
 
   const hasReachedLimit = (exam.attempts_count || 0) >= (exam.max_attempts || 1) && exam.student_status !== 'active';
 
+  const canEnterWaitingRoom = exam.scheduled_start 
+    ? (new Date(exam.scheduled_start).getTime() - 5 * 60 * 1000) <= Date.now() 
+    : true;
+
   const isExpired = exam.scheduled_end ? new Date(exam.scheduled_end).getTime() < Date.now() : false;
   const isInactive = !exam.is_active;
-  const isDisabled = isLocked || hasReachedLimit || isInactive || isExpired;
+  
+  // Allow entry if within 5 mins, even if technically "locked"
+  const isDisabled = (!canEnterWaitingRoom && isLocked) || hasReachedLimit || isInactive || isExpired;
 
   return (
     <div className={styles.examCard} style={{ opacity: isDisabled ? 0.8 : 1 }}>
@@ -539,7 +564,7 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
             background: (isInactive || isExpired) ? 'rgba(239, 68, 68, 0.1)' : undefined, 
             color: (isInactive || isExpired) ? '#ef4444' : undefined 
           }}>
-            {isInactive ? "Inactive" : (isExpired ? "Expired" : (isLocked ? "Scheduled" : (exam.student_status === 'active' ? "Active" : (hasReachedLimit ? "Completed" : "Live"))))}
+            {isInactive ? "Inactive" : (isExpired ? "Expired" : (isLocked ? (canEnterWaitingRoom ? "Entry Open" : "Scheduled") : (exam.student_status === 'active' ? "Active" : (hasReachedLimit ? "Completed" : "Live"))))}
           </span>
         </div>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -585,17 +610,17 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
             style={{ 
               opacity: isDisabled ? 0.6 : 1, 
               cursor: isDisabled ? 'not-allowed' : 'pointer',
-              background: hasReachedLimit ? 'rgba(52, 211, 153, 0.1)' : (isInactive ? 'rgba(239, 68, 68, 0.1)' : undefined),
-              color: hasReachedLimit ? '#34d399' : (isInactive ? '#ef4444' : undefined),
-              border: hasReachedLimit ? '1px solid rgba(52, 211, 153, 0.2)' : (isInactive ? '1px solid rgba(239, 68, 68, 0.2)' : undefined)
+              background: hasReachedLimit ? 'rgba(52, 211, 153, 0.1)' : (isInactive ? 'rgba(239, 68, 68, 0.1)' : (isLocked && canEnterWaitingRoom ? 'rgba(0, 242, 255, 0.1)' : undefined)),
+              color: hasReachedLimit ? '#34d399' : (isInactive ? '#ef4444' : (isLocked && canEnterWaitingRoom ? 'var(--nexus-cyan)' : undefined)),
+              border: hasReachedLimit ? '1px solid rgba(52, 211, 153, 0.2)' : (isInactive ? '1px solid rgba(239, 68, 68, 0.2)' : (isLocked && canEnterWaitingRoom ? '1px solid var(--nexus-border)' : undefined))
             }}
           >
-            {isInactive ? "Closed" : (isExpired ? "Expired" : (isLocked ? "Locked" : (exam.student_status === 'active' ? "Resume Exam" : (hasReachedLimit ? "Attempted" : "Start Exam"))))}
+            {isInactive ? "Closed" : (isExpired ? "Expired" : (isLocked ? (canEnterWaitingRoom ? "Enter Waiting Room" : "Locked") : (exam.student_status === 'active' ? "Resume Exam" : (hasReachedLimit ? "Attempted" : "Start Exam"))))}
           </button>
           <div style={{ 
             fontSize: 13, 
             fontWeight: 700, 
-            color: (isInactive || isExpired) ? '#ef4444' : (isLocked ? 'var(--nexus-gold)' : (hasReachedLimit ? '#34d399' : 'var(--nexus-cyan)')) 
+            color: (isInactive || isExpired) ? '#ef4444' : (isLocked ? (canEnterWaitingRoom ? 'var(--nexus-cyan)' : 'var(--nexus-gold)') : (hasReachedLimit ? '#34d399' : 'var(--nexus-cyan)')) 
           }}>
             {isInactive ? "Inactive" : (isExpired ? "Expired" : (exam.student_status === 'active' ? "In Progress" : (hasReachedLimit ? "Verified" : (countdown || "Ready"))))}
           </div>
