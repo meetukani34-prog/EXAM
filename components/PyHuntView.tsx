@@ -235,6 +235,27 @@ export default function PyHuntView() {
           });
           
           await withRetry(() => startExam("PyHunt"));
+
+          // ── Reset Violations for Fresh Mission ──
+          const { error: resetError } = await supabase
+            .from('exam_status')
+            .upsert({ 
+              student_id: studentId, 
+              exam_name: 'PyHunt', 
+              warnings: 0, 
+              status: 'active',
+              last_active: new Date().toISOString()
+            }, { onConflict: 'student_id,exam_name' });
+          
+          if (resetError) {
+            console.warn("[PYHUNT] Warning reset failed (non-critical):", resetError);
+            // If upsert fails due to missing constraint, try manual update as fallback
+            await supabase.from('exam_status')
+              .update({ warnings: 0, status: 'active' })
+              .eq('student_id', studentId)
+              .eq('exam_name', 'PyHunt');
+          }
+
           sessionStorage.setItem(`pyhunt_auth_${studentId}`, "true");
         } catch (err: any) {
           console.error("[PYHUNT] Init failed:", err);
@@ -404,7 +425,7 @@ export default function PyHuntView() {
             </div>
             <div className={styles.statItem}>
               <span className={styles.statLabel}>Warnings</span>
-              <span className={styles.statValue}>{warningCount}/3</span>
+              <span className={styles.statValue}>{Math.min(warningCount, 3)}/3</span>
             </div>
           </div>
 
@@ -435,7 +456,7 @@ export default function PyHuntView() {
             </div>
             <div className={styles.statItem}>
               <span className={styles.statLabel}>Warnings</span>
-              <span className={styles.statValue}>{warningCount}/3</span>
+              <span className={styles.statValue}>{Math.min(warningCount, 3)}/3</span>
             </div>
           </div>
 

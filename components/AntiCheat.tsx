@@ -54,7 +54,13 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit, onWarni
             (r.exam_name || "").trim().toLowerCase() === examName.toLowerCase()
           );
           
-          if (record) updateWarningCount(record.warnings || 0);
+          if (record) {
+            updateWarningCount(record.warnings || 0);
+            if ((record.warnings || 0) >= 3 && !hasAutoSubmitted.current) {
+              hasAutoSubmitted.current = true;
+              onAutoSubmit();
+            }
+          }
         });
       } catch (err) {
         console.warn("[ANTICHEAT] Failed to sync initial warnings after retries:", err);
@@ -74,21 +80,23 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit, onWarni
 
   const triggerViolation = useCallback(
     async (type: string, metadata?: Record<string, unknown>) => {
-      // HARD LOCK: Block if submitted, already reporting, already auto-submitted, or modal showing
+      // 1. HARD LOCK: Block if submitted, already reporting, already auto-submitted
       if (isSubmitted || isReporting.current || hasAutoSubmitted.current) {
-        console.log(`[ANTICHEAT] Blocking ${type} — already handled.`);
         return;
       }
+
+      // 2. IMMEDIATE LOCK
+      isReporting.current = true;
 
       const now = Date.now();
       // Reduced debounce from 8s to 3s to be more sensitive to rapid distinct violations (like Esc)
       if (now - lastViolationTime.current < 3000) {
         console.log(`[AntiCheat] Ignoring duplicate violation '${type}' (debounced)`);
+        isReporting.current = false;
         return;
       }
 
       lastViolationTime.current = now;
-      isReporting.current = true;
       setShowModal(true);
 
       try {
