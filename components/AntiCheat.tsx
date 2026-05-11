@@ -71,9 +71,9 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
       }
 
       const now = Date.now();
-      // Strict Debounce: 8 seconds between violation events
-      if (now - lastViolationTime.current < 8000) {
-        console.log(`[ANTICHEAT] Debouncing ${type}`);
+      // Reduced debounce from 8s to 3s to be more sensitive to rapid distinct violations (like Esc)
+      if (now - lastViolationTime.current < 3000) {
+        console.log(`[AntiCheat] Ignoring duplicate violation '${type}' (debounced)`);
         return;
       }
 
@@ -150,12 +150,16 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
     window.addEventListener("blur", handleBlur);
     document.addEventListener("fullscreenchange", handleFsChange);
     document.addEventListener("webkitfullscreenchange", handleFsChange);
+    document.addEventListener("mozfullscreenchange", handleFsChange);
+    document.addEventListener("MSFullscreenChange", handleFsChange);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("blur", handleBlur);
       document.removeEventListener("fullscreenchange", handleFsChange);
       document.removeEventListener("webkitfullscreenchange", handleFsChange);
+      document.removeEventListener("mozfullscreenchange", handleFsChange);
+      document.removeEventListener("MSFullscreenChange", handleFsChange);
     };
   }, [triggerViolation, isSubmitted, isStabilized]);
 
@@ -171,6 +175,14 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
     if (isSubmitted) return;
 
     const handleKey = (e: KeyboardEvent) => {
+      // Specific check for Escape to catch fullscreen exits immediately
+      if (e.key === "Escape") {
+        const isFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).mozFullScreenElement || (document as any).msFullscreenElement);
+        if (isFs) {
+          triggerViolation("keyboard_shortcut");
+        }
+      }
+
       const ctrl = e.ctrlKey || e.metaKey;
       const blocked = ["c", "v", "a", "u", "s", "p"];
       if (ctrl && blocked.includes(e.key.toLowerCase())) {
