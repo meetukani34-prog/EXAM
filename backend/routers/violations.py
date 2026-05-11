@@ -79,6 +79,7 @@ async def report_violation(
             
             # If already submitted for THIS exam, reject further processing
             if row.get("status") == "submitted":
+                print(f"[VIOLATION] Student {student_id} already submitted {exam_title}. Ignoring.")
                 return ReportViolationResponse(
                     warning_count=row.get("warnings", 3),
                     auto_submitted=True,
@@ -93,7 +94,7 @@ async def report_violation(
         # ─── Step 2: Calculate new warning count ───
         new_warnings = current_warnings + 1
         auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
-        print(f"[VIOLATION] Incrementing: {current_warnings} → {new_warnings} (auto_submit={auto_submitted})")
+        print(f"[VIOLATION] Student: {student_id} | Exam: {exam_title} | Action: {current_warnings} -> {new_warnings}")
 
         # ─── Step 3: Log violation in history table ───
         # NOTE: The violations table does NOT have an exam_name column.

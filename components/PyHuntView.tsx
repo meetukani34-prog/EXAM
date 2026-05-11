@@ -88,7 +88,8 @@ export default function PyHuntView() {
     setAuthForm(prev => ({ ...prev, usn: info.usn || "" }));
 
     async function syncProgress() {
-      const studentId = info.id;
+      const studentId = info.id || info.student_id;
+      if (!studentId) return;
       
       const { data } = await withRetry(async () => {
         return await supabase
@@ -99,6 +100,7 @@ export default function PyHuntView() {
       });
 
       if (data) {
+        setIsAuthorized(true); // If they have progress, they are authorized
         if (data.round_1_state && (data.round_1_state as any).reset) {
           localStorage.removeItem(`pyhunt_mcq_map_${studentId}`);
           localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
@@ -115,22 +117,6 @@ export default function PyHuntView() {
           if (savedCode) setCode(savedCode);
         }
         setCurrentRound(data.current_round);
-      } else {
-        await withRetry(async () => {
-          return await supabase.from('odyssey_progress').insert([{ student_id: studentId, current_round: 1 }]);
-        });
-        setCurrentRound(1);
-      }
-
-      try {
-        await withRetry(() => startExam("PyHunt"));
-      } catch (err: any) {
-        if (err.message?.includes("already submitted") || (err instanceof ApiError && err.status === 403)) {
-          setCurrentRound(6); 
-          setIsAuthorized(true);
-          setLoading(false);
-          return;
-        }
       }
       setLoading(false);
     }
@@ -223,8 +209,31 @@ export default function PyHuntView() {
             return;
          }
       }
+      
+      const studentId = student?.id || student?.student_id;
+      if (studentId) {
+        // Initialize PyHunt for this student ONLY NOW
+        try {
+          await withRetry(async () => {
+            const { data: existing } = await supabase
+              .from('odyssey_progress')
+              .select('id')
+              .eq('student_id', studentId)
+              .maybeSingle();
+            
+            if (!existing) {
+              await supabase.from('odyssey_progress').insert([{ student_id: studentId, current_round: 1 }]);
+            }
+          });
+          
+          await withRetry(() => startExam("PyHunt"));
+          sessionStorage.setItem(`pyhunt_auth_${studentId}`, "true");
+        } catch (err: any) {
+          console.error("[PYHUNT] Init failed:", err);
+        }
+      }
+
       setIsAuthorized(true);
-      if (student?.id) sessionStorage.setItem(`pyhunt_auth_${student.id}`, "true");
       setAuthError("");
     } else {
       setAuthError("Invalid Mission Authorization Code.");
@@ -332,7 +341,7 @@ export default function PyHuntView() {
   };
 
   const handleGateUnlock = async () => {
-    const studentId = student.id;
+    const studentId = student?.id || student?.student_id;
     const currentConfig = globalConfigs.find((c: any) => c.round === currentRound);
     const targetCode = currentConfig?.code || (currentRound === 1 ? "LIBRARY42" : "ALPHA");
 
@@ -354,7 +363,7 @@ export default function PyHuntView() {
         const { error } = await supabase
           .from('odyssey_progress')
           .update({ current_round: next, last_ping: new Date().toISOString() })
-          .eq('student_id', studentId);
+          .eq('student_id', studentId || student?.student_id);
         if (error) throw error;
       });
     } else {

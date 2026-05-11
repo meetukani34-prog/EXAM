@@ -31,7 +31,8 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
     async function syncViolationState() {
       const raw = localStorage.getItem("exam_student");
       if (!raw) return;
-      const studentId = JSON.parse(raw).id;
+      const studentInfo = JSON.parse(raw);
+      const studentId = studentInfo.id || studentInfo.student_id;
       if (!studentId) return;
 
       try {
