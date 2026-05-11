@@ -478,15 +478,19 @@ async def start_exam(
     started_at = None
     record_id = None
     try:
-        # Use composite check
-        status_res = db.table("exam_status").select("*").eq("student_id", student_id).eq("exam_name", title).limit(1).execute()
-        if status_res.data:
-            data = status_res.data[0]
-            record_id = data.get("id")
-            attempts_count = data.get("attempts_count", 0) or 0
-            status_str = data.get("status", "not_started")
-            started_at = data.get("started_at")
-    except Exception: pass
+        # Use robust check to find existing record case-insensitively
+        status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
+        
+        for r in (status_res.data or []):
+            db_exam_name = (r.get("exam_name") or "").strip().lower()
+            if db_exam_name == title.lower():
+                record_id = r.get("id")
+                attempts_count = r.get("attempts_count", 0) or 0
+                status_str = r.get("status", "not_started")
+                started_at = r.get("started_at")
+                break
+    except Exception as e:
+        print(f"[EXAM] Status check error: {e}")
 
     # 3. If already active for this exam, KEEP existing warnings and started_at.
     # This prevents students from resetting warnings by refreshing.

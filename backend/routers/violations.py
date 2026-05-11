@@ -54,29 +54,29 @@ async def report_violation(
 
     print(f"[VIOLATION] Reporting {request.type} for {student_id} on {exam_title}")
 
-    # ── Initialize defaults so they are ALWAYS defined ──
-    new_warnings = 1
-    auto_submitted = False
-
     try:
         # ─── Step 1: Read current exam_status for THIS specific exam ───
-        # After Migration V9, student_id + exam_name is the composite primary key
+        # Fetch all statuses for student and find matching exam case-insensitively
+        # to be 100% robust against casing mismatches (PyHunt vs pyhunt)
         status_res = (
             db.table("exam_status")
-            .select("warnings, id, status, exam_name")
+            .select("*")
             .eq("student_id", student_id)
-            .eq("exam_name", exam_title)
-            .limit(1)
             .execute()
         )
 
         current_warnings = 0
         record_id = None
+        row = None
 
-        if status_res.data:
-            row = status_res.data[0]
+        for r in (status_res.data or []):
+            db_exam_name = (r.get("exam_name") or "").strip().lower()
+            if db_exam_name == exam_title.lower():
+                row = r
+                break
+
+        if row:
             record_id = row.get("id")
-            
             # If already submitted for THIS exam, reject further processing
             if row.get("status") == "submitted":
                 print(f"[VIOLATION] Student {student_id} already submitted {exam_title}. Ignoring.")

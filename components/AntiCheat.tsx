@@ -39,13 +39,16 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
         await withRetry(async () => {
           const { data, error } = await supabase
             .from('exam_status')
-            .select('warnings')
-            .eq('student_id', studentId)
-            .eq('exam_name', examName)
-            .limit(1)
-            .maybeSingle();
+            .select('warnings, exam_name')
+            .eq('student_id', studentId);
+          
           if (error) throw error;
-          if (data) setWarningCount(data.warnings || 0);
+          
+          const record = (data || []).find(r => 
+            (r.exam_name || "").trim().toLowerCase() === examName.toLowerCase()
+          );
+          
+          if (record) setWarningCount(record.warnings || 0);
         });
       } catch (err) {
         console.warn("[ANTICHEAT] Failed to sync initial warnings after retries:", err);
