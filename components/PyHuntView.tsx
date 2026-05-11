@@ -228,28 +228,9 @@ export default function PyHuntView() {
       if (studentId) {
         // Initialize PyHunt for this student ONLY NOW
         try {
-          await withRetry(async () => {
-            const { data: existing, error: selectError } = await supabase
-              .from('odyssey_progress')
-              .select('id')
-              .eq('student_id', studentId)
-              .maybeSingle();
-            
-            if (selectError) {
-              console.error("[PYHUNT] Supabase progress check error:", selectError);
-              throw selectError;
-            }
-            
-            if (!existing) {
-              const { error: insertError } = await supabase
-                .from('odyssey_progress')
-                .insert([{ student_id: studentId, current_round: 1 }]);
-              if (insertError) {
-                console.error("[PYHUNT] Supabase progress initialization error:", insertError);
-                throw insertError;
-              }
-            }
-          });
+          // 1. Check if progress exists (Background sync handles loading state)
+          // We no longer attempt to INSERT from the frontend to avoid RLS violations.
+          // The backend 'startExam' now handles progress initialization.
           
           // ── Reset Status for Fresh Mission (Destructive Reset) ──
           // We delete any existing status FIRST to clear 'submitted' locks
@@ -260,7 +241,7 @@ export default function PyHuntView() {
             .ilike('exam_name', 'PyHunt');
             
           if (deleteError) {
-            console.warn("[PYHUNT] Status reset failed (likely RLS):", deleteError);
+            console.warn("[PYHUNT] Status reset failed (non-critical, likely RLS):", deleteError);
           }
 
           // Now we can safely start/restart the exam
