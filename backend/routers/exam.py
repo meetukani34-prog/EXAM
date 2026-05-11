@@ -190,21 +190,22 @@ def save_answer(
     db = get_supabase()
     student_id = current["student_id"]
 
-    # Guard: reject if already submitted
+    exam_name = request.exam_name or "General Assessment"
+    
+    # Guard: reject if THIS specific exam is already submitted
     status_row = (
         db.table("exam_status")
         .select("status")
         .eq("student_id", student_id)
+        .eq("exam_name", exam_name)
         .limit(1)
         .execute()
     )
     if status_row.data and status_row.data[0].get("status") == "submitted":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Exam already submitted. Cannot save answers.",
+            detail=f"Exam '{exam_name}' already submitted. Cannot save answers.",
         )
-
-    exam_name = request.exam_name or "General Assessment"
 
     # Fetch existing answers for THIS specific exam
     existing = (

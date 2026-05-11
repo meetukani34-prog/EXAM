@@ -40,6 +40,8 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
             .from('exam_status')
             .select('warnings')
             .eq('student_id', studentId)
+            .eq('exam_name', examName)
+            .limit(1)
             .maybeSingle();
           if (error) throw error;
           if (data) setWarningCount(data.warnings || 0);

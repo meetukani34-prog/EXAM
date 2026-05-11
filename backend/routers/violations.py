@@ -59,12 +59,13 @@ async def report_violation(
     auto_submitted = False
 
     try:
-        # ─── Step 1: Read current exam_status for this student ───
-        # Schema: exam_status has UNIQUE on student_id (single row per student)
+        # ─── Step 1: Read current exam_status for THIS specific exam ───
+        # After Migration V9, student_id + exam_name is the composite primary key
         status_res = (
             db.table("exam_status")
             .select("warnings, id, status, exam_name")
             .eq("student_id", student_id)
+            .eq("exam_name", exam_title)
             .limit(1)
             .execute()
         )
@@ -75,31 +76,24 @@ async def report_violation(
         if status_res.data:
             row = status_res.data[0]
             record_id = row.get("id")
-            record_exam = row.get("exam_name", "")
-
-            # If the existing record is for THIS exam and already submitted, reject
-            if record_exam == exam_title and row.get("status") == "submitted":
+            
+            # If already submitted for THIS exam, reject further processing
+            if row.get("status") == "submitted":
                 return ReportViolationResponse(
                     warning_count=row.get("warnings", 3),
                     auto_submitted=True,
                     message=WARNING_3_PYHUNT if is_pyhunt else WARNING_3,
                 )
 
-            # If the existing record is for a DIFFERENT exam that was submitted,
-            # the student is starting a new exam — reset warnings to 0
-            if record_exam != exam_title and row.get("status") == "submitted":
-                current_warnings = 0
-            else:
-                current_warnings = row.get("warnings") or 0
-
-            print(f"[VIOLATION] Record {record_id}, exam='{record_exam}', warnings={current_warnings}")
+            current_warnings = row.get("warnings") or 0
+            print(f"[VIOLATION] Found session {record_id} for '{exam_title}', current warnings={current_warnings}")
         else:
-            print(f"[VIOLATION] No exam_status row for student. Starting at 0.")
+            print(f"[VIOLATION] No active session for '{exam_title}'. Starting at 0.")
 
         # ─── Step 2: Calculate new warning count ───
         new_warnings = current_warnings + 1
         auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
-        print(f"[VIOLATION] {current_warnings} → {new_warnings} (auto_submit={auto_submitted})")
+        print(f"[VIOLATION] Incrementing: {current_warnings} → {new_warnings} (auto_submit={auto_submitted})")
 
         # ─── Step 3: Log violation in history table ───
         # NOTE: The violations table does NOT have an exam_name column.
