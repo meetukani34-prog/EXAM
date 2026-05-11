@@ -143,12 +143,18 @@ export default function DashboardPage() {
 
   const studentExams = useMemo(() => {
     if (!student) return [];
-    return allExams.filter(e => 
-      e.branch === "ALL" || 
-      e.branch === student.branch || 
-      student.branch === "ALL"
-    );
+    return allExams.filter(e => {
+      const eBranch = (e.branch || "ALL").toUpperCase();
+      const sBranch = (student.branch || "ALL").toUpperCase();
+      return eBranch === "ALL" || eBranch === sBranch || sBranch === "ALL";
+    });
   }, [allExams, student]);
+
+  useEffect(() => {
+    console.log("[Dashboard] Student:", student);
+    console.log("[Dashboard] All Exams:", allExams);
+    console.log("[Dashboard] Filtered Student Exams:", studentExams);
+  }, [student, allExams, studentExams]);
 
   const handleLaunchExam = (exam: ExamNode) => {
     if (!exam.is_active) return;

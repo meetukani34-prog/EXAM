@@ -76,6 +76,14 @@ try:
     app.include_router(ingest.router,      prefix="/api")
     app.include_router(leaderboard.router, prefix="/api")
 
+    # 2. Legacy / compatibility routes (no /api prefix)
+    app.include_router(auth.router)
+    app.include_router(exam.router)
+    app.include_router(violations.router)
+    app.include_router(admin.router)
+    app.include_router(ingest.router)
+    app.include_router(leaderboard.router)
+
     # ── Cron Endpoint ──────────────────────────────────────────────
     @app.get("/api/cron/evict", tags=["cron"])
     @app.get("/cron/evict", tags=["cron"])
