@@ -55,10 +55,10 @@ async def report_violation(request: ReportViolationRequest, current: dict = Depe
     try:
         # 1. Try the atomic RPC (Gold Standard)
         rpc_res = db.rpc("report_student_violation", {
-            "target_student_id": student_id,
-            "target_exam_name": exam_title,
-            "violation_type": _safe_db_type(request.type),
-            "violation_metadata": request.metadata or {}
+            "p_student_id": student_id,
+            "p_exam_name": exam_title,
+            "p_violation_type": _safe_db_type(request.type),
+            "p_violation_metadata": request.metadata or {}
         }).execute()
 
         if rpc_res.data and len(rpc_res.data) > 0:
@@ -69,7 +69,7 @@ async def report_violation(request: ReportViolationRequest, current: dict = Depe
                 auto_submitted=result["is_auto_submitted"]
             )
     except Exception as e:
-        print(f"[VIOLATION] RPC failed, falling back to manual: {e}")
+        print(f"[VIOLATION] RPC failed: {e}")
 
     # 2. Fallback: Robust Manual Logic
     try:
@@ -83,7 +83,6 @@ async def report_violation(request: ReportViolationRequest, current: dict = Depe
         now_ts = datetime.now(timezone.utc).isoformat()
         
         if matches:
-            # Sort by warnings DESC and then by last_active DESC to find the most "advanced" record
             matches.sort(key=lambda x: (x.get("warnings", 0) or 0, x.get("last_active") or ""), reverse=True)
             row = matches[0]
             
@@ -111,16 +110,23 @@ async def report_violation(request: ReportViolationRequest, current: dict = Depe
                 "updated_at": now_ts
             }).execute()
 
-        # Log violation history
+        # Log violation history (Auxiliary - Don't let it crash the response)
         try:
             meta = request.metadata or {}
             meta["exam_name"] = exam_title
-            db.table("violations").insert({
+            log_payload = {
                 "student_id": student_id,
                 "type": _safe_db_type(request.type),
-                "metadata": meta,
-                "exam_name": exam_title
-            }).execute()
+                "metadata": meta
+            }
+            # Only add exam_name if we suspect it exists, or just try it
+            try:
+                log_payload["exam_name"] = exam_title
+                db.table("violations").insert(log_payload).execute()
+            except Exception:
+                # Fallback if exam_name column is missing
+                del log_payload["exam_name"]
+                db.table("violations").insert(log_payload).execute()
         except Exception: pass
 
         # Prepare messages
@@ -139,7 +145,6 @@ async def report_violation(request: ReportViolationRequest, current: dict = Depe
 
     except Exception as fatal_e:
         print(f"[VIOLATION] Fatal error in fallback: {fatal_e}")
-        # Final emergency response to keep frontend working
         return ReportViolationResponse(
             warning_count=1,
             message="⚠️ Focus desync detected. Please stay on the exam screen.",
