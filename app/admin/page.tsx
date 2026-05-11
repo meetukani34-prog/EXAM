@@ -1571,6 +1571,15 @@ function QuestionsTab() {
   });
   const [folderBranchModal, setFolderBranchModal] = useState<{ name: string, branches: string[] } | null>(null);
   const [formCategory, setFormCategory] = useState<"aptitude" | "programming" | "other">("other");
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [schedulingExam, setSchedulingExam] = useState<string | null>(null);
+  const [scheduleData, setScheduleData] = useState({
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+    autoActive: true
+  });
 
 
   const load = useCallback(async () => {
@@ -1721,15 +1730,41 @@ function QuestionsTab() {
     finally { setLoading(false); }
   };
 
-  const handleUpdateSchedule = async (title: string, start: string | null, end: string | null) => {
-    const s = prompt(`Set start time (ISO or YYYY-MM-DD HH:MM) for ${title}:`, start || "");
-    if (s === null) return;
-    const e = prompt(`Set end time (ISO or YYYY-MM-DD HH:MM) for ${title}:`, end || "");
-    if (e === null) return;
+  const handleUpdateSchedule = (title: string, start: string | null, end: string | null) => {
+    setSchedulingExam(title);
+    let sDate = "", sTime = "", eDate = "", eTime = "";
+    if (start) {
+      const d = new Date(start);
+      sDate = d.toISOString().split('T')[0];
+      sTime = d.toTimeString().slice(0, 5);
+    }
+    if (end) {
+      const d = new Date(end);
+      eDate = d.toISOString().split('T')[0];
+      eTime = d.toTimeString().slice(0, 5);
+    }
+    setScheduleData({ startDate: sDate, startTime: sTime, endDate: eDate, endTime: eTime, autoActive: true });
+    setShowScheduleModal(true);
+  };
+
+  const handleSaveSchedule = async () => {
+    if (!schedulingExam) return;
     try {
       setLoading(true);
-      await updateExamConfig({ exam_title: title, scheduled_start: s || null, scheduled_end: e || null });
-      setConfigs(prev => prev.map(c => c.exam_title === title ? { ...c, scheduled_start: s || null, scheduled_end: e || null } : c));
+      const { startDate, startTime, endDate, endTime, autoActive } = scheduleData;
+      
+      const s = (startDate && startTime) ? new Date(`${startDate}T${startTime}`).toISOString() : null;
+      const e = (endDate && endTime) ? new Date(`${endDate}T${endTime}`).toISOString() : null;
+
+      await updateExamConfig({ 
+        exam_title: schedulingExam, 
+        scheduled_start: s, 
+        scheduled_end: e,
+        is_active: autoActive ? (s ? new Date(s) <= new Date() && (!e || new Date(e) > new Date()) : true) : undefined
+      });
+
+      setConfigs(prev => prev.map(c => c.exam_title === schedulingExam ? { ...c, scheduled_start: s, scheduled_end: e } : c));
+      setShowScheduleModal(false);
     } catch { alert("Failed to update schedule"); }
     finally { setLoading(false); }
   };
@@ -2416,6 +2451,95 @@ function QuestionsTab() {
               <button className="btn btn-outline" onClick={() => setFolderBranchModal(null)}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSaveFolderBranch}>Sync Branches</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showScheduleModal && (
+        <div className={adminStyles.modalOverlay} onClick={() => setShowScheduleModal(false)}>
+          <div className={adminStyles.modal} style={{ maxWidth: 450, padding: 32, borderRadius: 24, background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,0.1)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+              <span style={{ fontSize: 32 }}>📅</span>
+              <h3 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Auto Schedule</h3>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, padding: '12px 16px', background: 'rgba(124, 58, 237, 0.1)', borderRadius: 12 }}>
+              <input 
+                type="checkbox" 
+                id="autoActive"
+                checked={scheduleData.autoActive} 
+                onChange={(e) => setScheduleData({ ...scheduleData, autoActive: e.target.checked })}
+                style={{ width: 20, height: 20, accentColor: '#8b5cf6' }}
+              />
+              <label htmlFor="autoActive" style={{ fontSize: 15, fontWeight: 500, color: '#a78bfa', cursor: 'pointer' }}>
+                Enable Automatic Activation
+              </label>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 8 }}>Start Date</label>
+                <input 
+                  type="date" 
+                  className={adminStyles.input}
+                  value={scheduleData.startDate}
+                  onChange={(e) => setScheduleData({ ...scheduleData, startDate: e.target.value })}
+                  style={{ borderRadius: 16, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 8 }}>Start Time</label>
+                <input 
+                  type="time" 
+                  className={adminStyles.input}
+                  value={scheduleData.startTime}
+                  onChange={(e) => setScheduleData({ ...scheduleData, startTime: e.target.value })}
+                  style={{ borderRadius: 16, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 32 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 8 }}>End Date</label>
+                <input 
+                  type="date" 
+                  className={adminStyles.input}
+                  value={scheduleData.endDate}
+                  onChange={(e) => setScheduleData({ ...scheduleData, endDate: e.target.value })}
+                  style={{ borderRadius: 16, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 8 }}>End Time</label>
+                <input 
+                  type="time" 
+                  className={adminStyles.input}
+                  value={scheduleData.endTime}
+                  onChange={(e) => setScheduleData({ ...scheduleData, endTime: e.target.value })}
+                  style={{ borderRadius: 16, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                />
+              </div>
+            </div>
+
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSaveSchedule}
+              style={{ 
+                width: '100%', 
+                padding: '16px', 
+                borderRadius: 16, 
+                fontSize: 16, 
+                fontWeight: 600,
+                background: 'linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)',
+                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+                border: 'none',
+                color: '#fff',
+                cursor: 'pointer'
+              }}
+            >
+              Confirm Schedule
+            </button>
           </div>
         </div>
       )}
