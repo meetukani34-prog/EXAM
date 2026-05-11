@@ -168,14 +168,21 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
   };
 
   const handleDeleteStudent = async (s: AdminStudent) => {
-    if (!confirm(`DANGER: Permanently delete ${s.name} (${s.usn})? This cannot be undone.`)) return;
+    if (!confirm(`Are you sure you want to remove ${s.name} from PyHunt? This will clear their PyHunt progress but keep their student account intact.`)) return;
     try {
-      await deleteAdminStudent(s.student_id);
+      // 1. Clear odyssey progress
       await supabase.from('odyssey_progress').delete().eq('student_id', s.student_id);
+      
+      // 2. Clear exam status for PyHunt
+      await supabase.from('exam_status').delete().eq('student_id', s.student_id).eq('exam_name', 'PyHunt');
+      
+      // 3. Clear exam results for PyHunt
+      await supabase.from('exam_results').delete().eq('student_id', s.student_id).eq('exam_name', 'PyHunt');
+
       fetchStudentsGlobal();
       fetchOdyssey();
       fetchPyHuntStudents();
-    } catch (err: any) { alert("Failed to delete: " + err.message); }
+    } catch (err: any) { alert("Failed to remove from PyHunt: " + err.message); }
   };
 
   // ── PyHunt Configuration State ──
