@@ -54,6 +54,9 @@ export default function PyHuntView() {
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(true);
   const [student, setStudent] = useState<any>(null);
+  const [startTime] = useState(Date.now());
+  const [wrongAttempts, setWrongAttempts] = useState(0);
+  const [warningCount, setWarningCount] = useState(0);
 
   // Lazy load pyodide only for round 2+
   const { runCode, loading: pyLoading } = usePyodide(currentRound > 1);
@@ -78,6 +81,11 @@ export default function PyHuntView() {
   const handleAutoSubmit = useCallback(() => {
     setIsAutoSubmitted(true);
   }, []);
+
+  const formatTime = (ms: number) => {
+    const mins = Math.floor(ms / 60000);
+    return `${mins}m`;
+  };
 
   // ── Initialization & Sync ──
   useEffect(() => {
@@ -253,6 +261,7 @@ export default function PyHuntView() {
         setGateError(false);
         setOutput("");
       } else {
+        setWrongAttempts(prev => prev + 1);
         setOutput("ERROR: Logic mismatch in sequence. Transmission failed.");
       }
       return;
@@ -267,6 +276,7 @@ export default function PyHuntView() {
         setGateError(false);
         setOutput("");
       } else {
+        setWrongAttempts(prev => prev + 1);
         setOutput("ERROR: Execution sequence invalid. Logic flow interrupted.");
       }
       return;
@@ -287,6 +297,7 @@ export default function PyHuntView() {
          setIsAtGate(true);
        }, 1000);
     } else {
+       setWrongAttempts(prev => prev + 1);
        setHint("Drift detected. Check your logic pattern (formatting is ignored).");
        setTimeout(() => setHint(""), 4000);
     }
@@ -367,6 +378,7 @@ export default function PyHuntView() {
         if (error) throw error;
       });
     } else {
+      setWrongAttempts(prev => prev + 1);
       setGateError(true);
       setTimeout(() => setGateError(false), 2000);
     }
@@ -374,14 +386,63 @@ export default function PyHuntView() {
 
   if (loading) return <div className={styles.levitate}>Igniting PyHunt Engines...</div>;
 
+  if (isAutoSubmitted) {
+    return (
+      <div className={styles.terminationOverlay}>
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={styles.terminationCard}>
+          <div className={styles.terminationIcon}>🚫</div>
+          <h2 className={styles.terminationTitle}>SESSION TERMINATED</h2>
+          
+          <div className={styles.statGrid}>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Total Time</span>
+              <span className={styles.statValue}>{formatTime(Date.now() - startTime)}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Wrong Attempts</span>
+              <span className={styles.statValue}>{wrongAttempts}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Warnings</span>
+              <span className={styles.statValue}>{warningCount}/3</span>
+            </div>
+          </div>
+
+          <p className={styles.terminationDesc}>
+            Your PyHunt session was automatically terminated due to excessive security violations. Please contact your facilitator.
+          </p>
+          <button className={styles.proceedBtn} onClick={() => window.location.href = "/dashboard"}>Return to Dashboard</button>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (currentRound > ROUNDS.length) {
     return (
-      <div className={styles.successOverlay} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.95)' }}>
+      <div className={styles.successOverlay}>
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={styles.successCard}>
           <div className={styles.successIcon}>🏆</div>
-          <h2>MISSION ACCOMPLISHED</h2>
-          <p>You have successfully decoded all logic nodes and reached the final coordinate.</p>
-          <div className={styles.codeDisplay}>TRANSMISSION COMPLETE</div>
+          <h2 className={styles.successTitle}>PYHUNT COMPLETE!</h2>
+          
+          <div className={styles.statGrid}>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Total Time</span>
+              <span className={styles.statValue}>{formatTime(Date.now() - startTime)}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Wrong Attempts</span>
+              <span className={styles.statValue}>{wrongAttempts}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Warnings</span>
+              <span className={styles.statValue}>{warningCount}/3</span>
+            </div>
+          </div>
+
+          <p className={styles.successDesc}>
+            🏆 Congratulations! You've conquered PyHunt! You are a true Python treasure hunter!
+          </p>
+          <div className={styles.codeDisplay}>MISSION ACCOMPLISHED</div>
           <button className={styles.proceedBtn} onClick={() => window.location.href = "/dashboard"}>Return to Dashboard</button>
         </motion.div>
       </div>
@@ -473,7 +534,7 @@ export default function PyHuntView() {
 
   return (
     <div className={styles.pyhuntShell}>
-      <AntiCheat isSubmitted={currentRound > 5} examName="PyHunt" onAutoSubmit={handleAutoSubmit} />
+      <AntiCheat isSubmitted={currentRound > ROUNDS.length || isAutoSubmitted} examName="PyHunt" onAutoSubmit={handleAutoSubmit} onWarningUpdate={setWarningCount} />
       
       {showSuccessRipple && (
         <div className={styles.successRipple}>

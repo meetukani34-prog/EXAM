@@ -12,10 +12,16 @@ interface AntiCheatProps {
   isSubmitted: boolean;
   examName: string;
   onAutoSubmit: () => void;
+  onWarningUpdate?: (count: number) => void;
 }
 
-export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiCheatProps) {
+export default function AntiCheat({ isSubmitted, examName, onAutoSubmit, onWarningUpdate }: AntiCheatProps) {
   const [warningCount, setWarningCount] = useState(0);
+
+  const updateWarningCount = useCallback((count: number) => {
+    setWarningCount(count);
+    if (onWarningUpdate) onWarningUpdate(count);
+  }, [onWarningUpdate]);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const { enter: enterFullscreen } = useFullscreen();
@@ -48,7 +54,7 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
             (r.exam_name || "").trim().toLowerCase() === examName.toLowerCase()
           );
           
-          if (record) setWarningCount(record.warnings || 0);
+          if (record) updateWarningCount(record.warnings || 0);
         });
       } catch (err) {
         console.warn("[ANTICHEAT] Failed to sync initial warnings after retries:", err);
@@ -91,7 +97,7 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
 
         // Update state with actual count from backend
         const count = res.warning_count ?? 1;
-        setWarningCount(count);
+        updateWarningCount(count);
         setModalMessage(res.message);
 
         if (res.auto_submitted && !hasAutoSubmitted.current) {
@@ -100,21 +106,18 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit }: AntiC
         }
       } catch (err) {
         console.error("[ANTICHEAT] Sync failed:", err);
-        setWarningCount((prev) => {
-          const next = prev + 1;
-          setModalMessage(
-            next >= 3
-              ? "⚠️ Exam auto-submitted due to repeated violations."
-              : next === 2
-              ? "🚨 Final warning! One more violation will submit your exam."
-              : "⚠️ Warning: Please stay on the exam tab."
-          );
-          if (next >= 3 && !hasAutoSubmitted.current) {
-            hasAutoSubmitted.current = true;
-            onAutoSubmit();
-          }
-          return next;
-        });
+        updateWarningCount(Math.min(warningCount + 1, 3));
+        setModalMessage(
+          (warningCount + 1) >= 3
+            ? "⚠️ Exam auto-submitted due to repeated violations."
+            : (warningCount + 1) === 2
+            ? "🚨 Final warning! One more violation will submit your exam."
+            : "⚠️ Warning: Please stay on the exam tab."
+        );
+        if ((warningCount + 1) >= 3 && !hasAutoSubmitted.current) {
+          hasAutoSubmitted.current = true;
+          onAutoSubmit();
+        }
       } finally {
         // Unlock after delay
         setTimeout(() => {
