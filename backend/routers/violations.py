@@ -73,16 +73,20 @@ async def report_violation(request: ReportViolationRequest, current: dict = Depe
 
     # 2. Fallback: Robust Manual Logic
     try:
-        # Fetch all statuses for student and find matching exam case-insensitively
+        # 1. Fetch all matching statuses for student and exam
         status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
-        row = None
+        matches = []
         for r in (status_res.data or []):
             if (r.get("exam_name") or "").strip().lower() == exam_title.lower():
-                row = r
-                break
-
+                matches.append(r)
+        
         now_ts = datetime.now(timezone.utc).isoformat()
-        if row:
+        
+        if matches:
+            # Sort by warnings DESC and then by last_active DESC to find the most "advanced" record
+            matches.sort(key=lambda x: (x.get("warnings", 0) or 0, x.get("last_active") or ""), reverse=True)
+            row = matches[0]
+            
             record_id = row.get("id")
             new_warnings = (row.get("warnings", 0) or 0) + 1
             auto_submitted = new_warnings >= AUTO_SUBMIT_THRESHOLD
