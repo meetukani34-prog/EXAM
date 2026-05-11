@@ -277,6 +277,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
         last_violation_record: lastViol || null
       };
     })
+    .filter(p => p.pyhunt || p.status !== 'not_started')
     .sort((a, b) => (b.pyhunt?.current_round || 0) - (a.pyhunt?.current_round || 0));
 
   const TABS = [
