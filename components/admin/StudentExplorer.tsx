@@ -144,10 +144,10 @@ export default function StudentExplorer() {
           </div>
           <div className={styles.orbCard}>
             <div className={styles.orbTitle}>Entropy Level</div>
-            <div className={styles.orbValue} style={{ color: violations.length > 5 ? '#ff4d4d' : '#fff' }}>
+            <div className={styles.orbValue} style={{ color: violations.length > 5 ? 'var(--danger)' : 'var(--text-primary)' }}>
               {violations.length}
             </div>
-            <div style={{ fontSize: 11, opacity: 0.5, marginTop: 4 }}>Fidelity Deviations</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Fidelity Deviations</div>
           </div>
         </div>
 
@@ -198,7 +198,7 @@ export default function StudentExplorer() {
             <div key={i} className={styles.timelineNode} style={{ animationDelay: `${i * 100}ms` }}>
               <div>
                 <div style={{ fontWeight: 800, fontSize: 16 }}>{res.exam_name}</div>
-                <div style={{ fontSize: 12, opacity: 0.5 }}>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                    Submitted: {new Date(res.submitted_at).toLocaleString()}
                 </div>
               </div>
@@ -348,14 +348,15 @@ export default function StudentExplorer() {
               </footer>
             </motion.div>
           ) : syncError ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff4d4d' }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)' }}>
               <div style={{ textAlign: 'center', maxWidth: 400 }}>
                 <div style={{ fontSize: 60, marginBottom: 20 }}>📡</div>
                 <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 10 }}>Identity Sync Failure</div>
-                <div style={{ opacity: 0.7, fontSize: 14, marginBottom: 24 }}>{syncError}</div>
+                <div style={{ color: "var(--text-muted)", fontSize: 14, marginBottom: 24 }}>{syncError}</div>
                 <button 
                   onClick={() => selectedId && loadStudentDetails(selectedId)}
-                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '10px 24px', borderRadius: 12, fontWeight: 700, cursor: 'pointer' }}
+                  className="btn btn-outline"
+                  style={{ padding: '10px 24px', borderRadius: 12, fontWeight: 700 }}
                 >
                   Retry Manifestation
                 </button>

@@ -1,20 +1,20 @@
 .page {
   min-height: calc(100vh - 120px);
-  background: #0a0a0c;
-  color: #fff;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   display: flex;
   overflow: hidden;
   font-family: 'Inter', sans-serif;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
 }
 
 /* ── Registry Node (Sidebar) ── */
 .registryNode {
   width: 340px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-card);
   backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -23,7 +23,7 @@
 
 .registryHeader {
   padding: 24px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+  background: linear-gradient(180deg, var(--bg-secondary) 0%, transparent 100%);
 }
 
 .searchContainer {
@@ -33,20 +33,20 @@
 
 .searchField {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px 16px 10px 40px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 13px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .searchField:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.08);
-  border-color: #00f2ff;
-  box-shadow: 0 0 20px rgba(0, 242, 255, 0.15);
+  background: var(--bg-card);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
 }
 
 .registryList {
@@ -68,19 +68,19 @@
 }
 
 .studentCard:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-secondary);
 }
 
 .studentCardActive {
-  background: rgba(0, 242, 255, 0.1) !important;
-  border-color: rgba(0, 242, 255, 0.3);
+  background: var(--accent-glow) !important;
+  border-color: var(--accent);
 }
 
 .avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #00f2ff, #0066ff);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -93,7 +93,7 @@
 .fidelityVista {
   flex: 1;
   position: relative;
-  background: radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.03) 0%, transparent 70%);
+  background: radial-gradient(circle at 50% 50%, var(--accent-glow) 0%, transparent 70%);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -116,13 +116,14 @@
   width: 80px;
   height: 80px;
   border-radius: 20px;
-  background: linear-gradient(135deg, #00f2ff, #0066ff);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 28px;
   font-weight: 900;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-card);
+  color: #fff;
 }
 
 .statsGrid {
@@ -133,12 +134,13 @@
 }
 
 .orbCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 20px;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 
 .orbCard::before {
@@ -148,7 +150,7 @@
   left: 0;
   width: 100%;
   height: 3px;
-  background: #00f2ff;
+  background: var(--accent);
   opacity: 0.5;
 }
 
@@ -157,14 +159,14 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 
 .orbValue {
   font-size: 28px;
   font-weight: 900;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 /* ── Tabs ── */
@@ -176,11 +178,11 @@
 }
 
 .tabButton {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   padding: 8px 20px;
   border-radius: 100px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -188,9 +190,9 @@
 }
 
 .tabButtonActive {
-  background: #fff !important;
-  color: #000 !important;
-  border-color: #fff;
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-color: var(--accent);
 }
 
 /* ── Timeline ── */
@@ -202,13 +204,14 @@
 }
 
 .timelineNode {
-  background: rgba(255, 255, 255, 0.02);
-  border-left: 3px solid #00f2ff;
+  background: var(--bg-card);
+  border-left: 3px solid var(--accent);
   padding: 16px;
   border-radius: 0 12px 12px 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-shadow: var(--shadow-card);
 }
 
 /* ── Commands ── */
@@ -216,14 +219,14 @@
   position: sticky;
   bottom: 0;
   padding: 20px 32px;
-  background: linear-gradient(0deg, #0a0a0c 0%, transparent 100%);
+  background: linear-gradient(0deg, var(--bg-primary) 0%, transparent 100%);
   display: flex;
   gap: 12px;
   z-index: 5;
 }
 
 .crystallizeBtn {
-  background: linear-gradient(135deg, #00f2ff, #0066ff);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   border: none;
   color: #fff;
   padding: 12px 24px;
@@ -231,13 +234,13 @@
   font-weight: 800;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 10px 20px rgba(0, 242, 255, 0.2);
+  box-shadow: var(--shadow-card);
 }
 
 .lockdownBtn {
-  background: rgba(255, 77, 77, 0.1);
-  border: 1px solid rgba(255, 77, 77, 0.3);
-  color: #ff4d4d;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger);
+  color: var(--danger);
   padding: 12px 20px;
   border-radius: 10px;
   font-weight: 800;
@@ -246,9 +249,9 @@
 }
 
 .resetBtn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
   padding: 12px 20px;
   border-radius: 10px;
   font-weight: 800;

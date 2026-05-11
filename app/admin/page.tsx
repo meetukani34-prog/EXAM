@@ -1349,7 +1349,7 @@ export default function AdminPage() {
                 <thead>
                   <tr>
                     <th>#</th><th>USN NO.</th><th>Name</th><th>Exam</th><th>Email</th>
-                    <th>Branch</th><th>Status</th><th>Start Time</th><th>Total Time</th>
+                    <th>Branch</th><th>Warnings</th><th>Status</th><th>Start Time</th><th>Total Time</th>
                     <th>Submitted At</th><th>Actions</th>
                   </tr>
                 </thead>
@@ -1377,6 +1377,7 @@ export default function AdminPage() {
                       </td>
                       <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{s.email || "—"}</td>
                       <td><span className="badge badge-neutral">{s.branch}</span></td>
+                      <td><WarningBadge count={s.warnings} /></td>
                       <td><StatusBadge status={s.status} lastActive={s.last_active} isBlocked={s.is_blocked} /></td>
                       <td style={{ fontSize: 12 }}>{s.started_at ? new Date(s.started_at).toLocaleTimeString() : "—"}</td>
                       <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{getElapsedTime(s.started_at, s.submitted_at)}</td>
@@ -1489,7 +1490,7 @@ function ViolationAlertsFeed() {
                   gap: 14,
                   padding: "14px 20px",
                   borderBottom: i < alerts.length - 1 ? "1px solid var(--border)" : "none",
-                  background: i % 2 === 0 ? "var(--bg-card)" : "rgba(255,255,255,0.02)",
+                  background: i % 2 === 0 ? "var(--bg-card)" : "var(--bg-secondary)",
                   transition: "background 0.2s",
                 }}
               >
@@ -1506,21 +1507,22 @@ function ViolationAlertsFeed() {
 
                 {/* Content */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 2 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)", marginBottom: 2 }}>
                     {alert.student_name}
                     <span style={{ fontWeight: 400, fontSize: 12, color: "var(--text-muted)", marginLeft: 8 }}>{alert.usn}</span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#f87171", fontWeight: 600, marginBottom: 2 }}>
+                  <div style={{ fontSize: 13, color: "var(--danger)", fontWeight: 600, marginBottom: 2 }}>
                     {alert.type.replace(/_/g, ' ').toUpperCase()}
                   </div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                     Mission: {alert.exam_name} • {new Date(alert.created_at).toLocaleTimeString()}
                   </div>
                 </div>
 
                 {/* Counter index (descending) */}
                 <div style={{
-                  fontSize: 10, fontWeight: 800, color: "rgba(255,255,255,0.2)",
+                  fontSize: 10, fontWeight: 800, color: "var(--text-muted)",
+                  opacity: 0.8,
                   fontFamily: "monospace"
                 }}>
                   #{alerts.length - i}
@@ -2377,7 +2379,7 @@ function QuestionsTab() {
                         />
                       </div>
                       <span style={{
-                        color: isChecked ? "#ffffff" : "rgba(255,255,255,0.6)",
+                        color: isChecked ? "var(--text-primary)" : "var(--text-secondary)",
                         fontWeight: isChecked ? 600 : 400,
                         fontSize: 13,
                         lineHeight: 1.4,

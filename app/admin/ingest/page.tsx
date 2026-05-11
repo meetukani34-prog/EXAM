@@ -68,9 +68,9 @@ function formatBytes(b: number) {
 function ConfidenceOrb({ confidence }: { confidence: number }) {
   const pct = Math.round(confidence * 100);
   const color =
-    pct >= 90 ? "#10b981" :
-      pct >= 70 ? "#f59e0b" :
-        "#ef4444";
+    pct >= 90 ? "var(--success)" :
+      pct >= 70 ? "var(--warning)" :
+        "var(--danger)";
   return (
     <span
       className={styles.confidenceOrb}
@@ -308,7 +308,7 @@ export default function IngestPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             className={styles.warningBox}
-            style={{ borderColor: "rgba(239,68,68,0.4)", color: "#f87171", background: "rgba(239,68,68,0.08)", marginBottom: 24 }}
+            style={{ borderColor: "var(--danger)", color: "var(--danger)", background: "var(--danger-bg)", marginBottom: 24 }}
           >
             ⚠️ {error}
           </motion.div>
@@ -378,7 +378,7 @@ export default function IngestPage() {
               value={maxQuestions}
               onChange={(e) => setMaxQuestions(e.target.value ? parseInt(e.target.value) : "")}
             />
-            <div style={{ fontSize: 10, opacity: 0.5, marginTop: 4, textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4, textAlign: "center" }}>
               If specified, we will pick random questions from your file.
             </div>
           </div>
@@ -522,9 +522,9 @@ export default function IngestPage() {
                   className={`${styles.qCard} ${review ? styles.qCardReview : ""}`}
                   style={{
                     animationDelay: `${Math.min(i * 40, 600)}ms`,
-                    "--conf-glow": conf >= 0.9 ? "rgba(16,185,129,0.15)" :
-                      conf >= 0.7 ? "rgba(245,158,11,0.15)" :
-                        "rgba(239,68,68,0.15)",
+                    "--conf-glow": conf >= 0.9 ? "var(--success-bg)" :
+                      conf >= 0.7 ? "var(--warning-bg)" :
+                        "var(--danger-bg)",
                   } as React.CSSProperties}
                   whileHover={{ scale: 1.01 }}
                 >
@@ -532,7 +532,11 @@ export default function IngestPage() {
                     Q{i + 1}
                     <span className="badge badge-neutral">{q.marks} mark{q.marks > 1 ? "s" : ""}</span>
                     <span className={styles.branchTag}>{selectedBranch}</span>
-                    <span className={styles.branchTag} style={{ background: selectedCategory === 'aptitude' ? 'rgba(139,92,246,0.1)' : selectedCategory === 'programming' ? 'rgba(59,130,246,0.1)' : 'rgba(107,114,128,0.1)', color: selectedCategory === 'aptitude' ? '#7c3aed' : selectedCategory === 'programming' ? '#2563eb' : '#6b7280' }}>
+                    <span className={styles.branchTag} style={{ 
+                      background: selectedCategory === 'aptitude' ? 'var(--accent-bg)' : selectedCategory === 'programming' ? 'var(--info-bg)' : 'var(--bg-secondary)', 
+                      color: selectedCategory === 'aptitude' ? 'var(--accent)' : selectedCategory === 'programming' ? 'var(--info)' : 'var(--text-muted)',
+                      borderColor: selectedCategory === 'aptitude' ? 'var(--accent)' : selectedCategory === 'programming' ? 'var(--info)' : 'var(--border)'
+                    }}>
                       {selectedCategory === 'aptitude' ? '🧠 Aptitude' : selectedCategory === 'programming' ? '💻 Programming' : '📂 Other'}
                     </span>
                     {aiPowered && <ConfidenceOrb confidence={conf} />}

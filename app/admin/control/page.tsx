@@ -305,28 +305,28 @@ export default function OrbitalControlPage() {
               value={questionCount}
               label="Total Questions"
               sublabel="Questions in bank"
-              color="rgba(59,130,246,0.25)"
+              color="var(--info-bg)"
             />
             <StatCard
               icon="🎯"
               value={config.is_active ? 1 : 0}
               label="Active Quizzes"
               sublabel={config.is_active ? `Live: ${config.exam_title}` : `Standby: ${config.exam_title}`}
-              color="rgba(16,185,129,0.25)"
+              color="var(--success-bg)"
             />
             <StatCard
               icon="👥"
               value={studentCount}
               label="Candidates Registered"
               sublabel="Total registered"
-              color="rgba(139,92,246,0.25)"
+              color="var(--accent-bg)"
             />
             <StatCard
               icon="⚠️"
               value={violationCount}
               label="Violations"
               sublabel={violationCount === 0 ? "No violations detected" : `${violationCount} alerts`}
-              color="rgba(239,68,68,0.25)"
+              color="var(--danger-bg)"
             />
           </div>
 
@@ -385,7 +385,7 @@ export default function OrbitalControlPage() {
                   icon="➕"
                   title="Add Question"
                   desc="Create new"
-                  color="rgba(59,130,246,0.2)"
+                  color="var(--info-bg)"
                   onClick={() => {
                     const tabs = Array.from(document.querySelectorAll('button'));
                     const targetTab = tabs.find(t => t.textContent?.includes('Questions'));
@@ -396,7 +396,7 @@ export default function OrbitalControlPage() {
                   icon="📤"
                   title="Upload CSV/Excel"
                   desc="Bulk import"
-                  color="rgba(16,185,129,0.2)"
+                  color="var(--success-bg)"
                   onClick={() => {
                     const tabs = Array.from(document.querySelectorAll('button'));
                     const targetTab = tabs.find(t => t.textContent?.includes('Harvester'));
@@ -407,7 +407,7 @@ export default function OrbitalControlPage() {
                   icon="🔖"
                   title="Question Bank"
                   desc={`${questionCount} Questions`}
-                  color="rgba(139,92,246,0.2)"
+                  color="var(--accent-bg)"
                   onClick={() => {
                     const tabs = Array.from(document.querySelectorAll('button'));
                     const targetTab = tabs.find(t => t.textContent?.includes('Questions'));
@@ -418,7 +418,7 @@ export default function OrbitalControlPage() {
                   icon="⚙️"
                   title="Quiz Settings"
                   desc="Status & Schedule"
-                  color="rgba(245,158,11,0.2)"
+                  color="var(--warning-bg)"
                   onClick={() => setActiveView("settings")}
                 />
               </div>
@@ -446,14 +446,14 @@ export default function OrbitalControlPage() {
                     width: "60px",
                     height: "32px",
                     borderRadius: "999px",
-                    background: config.is_active ? "rgba(6,182,212,0.15)" : "rgba(255,255,255,0.05)",
-                    border: `1px solid ${config.is_active ? "rgba(6,182,212,0.3)" : "rgba(255,255,255,0.1)"}`,
+                    background: config.is_active ? "var(--success-bg)" : "var(--bg-secondary)",
+                    border: `1px solid ${config.is_active ? "var(--success)" : "var(--border)"}`,
                     position: "relative",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     padding: "4px",
-                    boxShadow: config.is_active ? "0 0 15px rgba(6,182,212,0.2)" : "none",
+                    boxShadow: config.is_active ? "var(--shadow-sm)" : "none",
                     transition: "all 0.3s ease",
                   }}
                   onClick={() => setConfig(c => ({ ...c, is_active: !c.is_active }))}
@@ -461,8 +461,8 @@ export default function OrbitalControlPage() {
                   <motion.div
                     animate={{ 
                       x: config.is_active ? 28 : 0,
-                      boxShadow: config.is_active ? "0 0 12px #06b6d4, inset 0 0 4px #fff" : "0 0 0px transparent",
-                      backgroundColor: config.is_active ? "#06b6d4" : "#475569"
+                      boxShadow: config.is_active ? "0 0 12px var(--success)" : "none",
+                      backgroundColor: config.is_active ? "var(--success)" : "var(--text-muted)"
                     }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     style={{
@@ -473,10 +473,10 @@ export default function OrbitalControlPage() {
                   />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "14px", fontWeight: 700, color: config.is_active ? "#06b6d4" : "rgba(148,163,184,0.7)", letterSpacing: "0.02em" }}>
+                  <span style={{ fontSize: "14px", fontWeight: 700, color: config.is_active ? "var(--success)" : "var(--text-muted)", letterSpacing: "0.02em" }}>
                     {config.is_active ? "Luminous (Active)" : "Latent (Deactivated)"}
                   </span>
-                  <span style={{ fontSize: "11px", color: "rgba(148,163,184,0.5)" }}>
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                     {config.is_active ? "Students can discover this exam." : "Exam is invisible to students."}
                   </span>
                 </div>
