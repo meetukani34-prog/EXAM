@@ -156,7 +156,7 @@ async def upload_question_image(
 # ── Students Management ───────────────────────────────────────
 
 @router.get("/students", response_model=list[StudentStatus])
-async def get_all_students(_: bool = Depends(verify_admin)):
+async def get_all_students(exam: Optional[str] = Query(None), _: bool = Depends(verify_admin)):
     try:
         db = get_supabase()
         # Query students joined with ALL their exam_status records
@@ -167,7 +167,18 @@ async def get_all_students(_: bool = Depends(verify_admin)):
             for s in result.data:
                 e_statuses = s.get("exam_status") or []
                 
-                if not e_statuses:
+                latest = None
+                if exam:
+                    # Filter for specific exam (case-insensitive for robustness)
+                    specific = [e for e in e_statuses if (e.get("exam_name") or "").lower() == exam.lower()]
+                    if specific:
+                        latest = specific[0]
+                else:
+                    if e_statuses:
+                        sorted_sessions = sorted(e_statuses, key=lambda x: x.get("last_active") or "", reverse=True)
+                        latest = sorted_sessions[0]
+
+                if not latest:
                     rows.append(StudentStatus(
                         student_id=s["id"],
                         usn=s.get("usn") or s.get("roll_number") or "UNKNOWN",
@@ -180,13 +191,9 @@ async def get_all_students(_: bool = Depends(verify_admin)):
                         submitted_at=None,
                         started_at=None,
                         is_blocked=s.get("is_blocked", False),
-                        exam_name=None
+                        exam_name=exam
                     ))
                     continue
-
-                # Consolidate: if student has multiple sessions, only show the most recent one
-                sorted_sessions = sorted(e_statuses, key=lambda x: x.get("last_active") or "", reverse=True)
-                latest = sorted_sessions[0]
 
                 rows.append(StudentStatus(
                     student_id=s["id"],
@@ -206,6 +213,7 @@ async def get_all_students(_: bool = Depends(verify_admin)):
     except Exception as e:
         print(f"CRITICAL get_all_students: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
 
 @router.get("/students/{student_id}/fidelity", response_model=StudentFidelity)
 async def get_student_fidelity(student_id: str, _: bool = Depends(verify_admin)):

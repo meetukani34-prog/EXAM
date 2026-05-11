@@ -91,12 +91,22 @@ function getStoredAuth(): boolean {
 
 // ── PyHunt Observer Component ──────────────────────────────────
 // ── PyHunt Observer Component ──────────────────────────────────
-function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStudent[], fetchStudentsGlobal: () => void }) {
+function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examName?: string) => void }) {
   const [activeTab, setActiveTab] = useState('live_status');
+  const [localStudents, setLocalStudents] = useState<AdminStudent[]>([]);
   const [odysseyData, setOdysseyData] = useState<any[]>([]);
   const [violations, setViolations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [tableMissing, setTableMissing] = useState(false);
+
+  const fetchPyHuntStudents = useCallback(async () => {
+    try {
+      const data = await fetchAdminStudents("PyHunt");
+      setLocalStudents(data || []);
+    } catch (err) {
+      console.error("Failed to fetch PyHunt students", err);
+    }
+  }, []);
 
   const fetchOdyssey = useCallback(async () => {
     setLoading(true);
@@ -121,9 +131,13 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
 
   useEffect(() => {
     fetchOdyssey();
-    const sub = supabase.channel('odyssey_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'odyssey_progress' }, () => fetchOdyssey()).subscribe();
+    fetchPyHuntStudents();
+    const sub = supabase.channel('odyssey_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'odyssey_progress' }, () => {
+      fetchOdyssey();
+      fetchPyHuntStudents();
+    }).subscribe();
     return () => { supabase.removeChannel(sub); };
-  }, [fetchOdyssey]);
+  }, [fetchOdyssey, fetchPyHuntStudents]);
 
   const handleForceUnlock = async (studentId: string, nextRound: number) => {
     await supabase.rpc('force_unlock_round', { target_student_id: studentId, next_round: nextRound });
@@ -138,6 +152,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
 
       fetchStudentsGlobal();
       fetchOdyssey();
+      fetchPyHuntStudents();
     } catch (err: any) { alert("Failed to reset: " + err.message); }
   };
 
@@ -148,6 +163,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
       if (s.is_blocked) await unblockAdminStudent(s.student_id);
       else await blockAdminStudent(s.student_id);
       fetchStudentsGlobal();
+      fetchPyHuntStudents();
     } catch (err: any) { alert(`Failed to ${action}: ` + err.message); }
   };
 
@@ -158,6 +174,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
       await supabase.from('odyssey_progress').delete().eq('student_id', s.student_id);
       fetchStudentsGlobal();
       fetchOdyssey();
+      fetchPyHuntStudents();
     } catch (err: any) { alert("Failed to delete: " + err.message); }
   };
 
@@ -243,7 +260,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
     }
   };
 
-  const participants = students
+  const participants = localStudents
     .map(s => {
       const progress = odysseyData.find(p => p.student_id === s.student_id);
       const lastViol = violations.find(v => v.student_id === s.student_id);
@@ -253,7 +270,6 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
         last_violation_record: lastViol || null
       };
     })
-    .filter(s => s.exam_name?.toLowerCase() === "pyhunt" || s.pyhunt !== null)
     .sort((a, b) => (b.pyhunt?.current_round || 0) - (a.pyhunt?.current_round || 0));
 
   const TABS = [
@@ -333,7 +349,7 @@ function PyHuntObserver({ students, fetchStudentsGlobal }: { students: AdminStud
             <h3 style={{ fontSize: 18, fontWeight: 800, color: '#00f2ff', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
               🏃 REAL-TIME STUDENT PROGRESS
             </h3>
-            <button className={adminStyles.refreshBtn} onClick={fetchOdyssey} disabled={loading}>
+            <button className={adminStyles.refreshBtn} onClick={() => { fetchOdyssey(); fetchPyHuntStudents(); }} disabled={loading}>
               🔄 {loading ? "Syncing..." : "Refresh"}
             </button>
           </div>
@@ -826,9 +842,9 @@ export default function AdminPage() {
     }
   };
 
-  const fetchStudents = useCallback(async () => {
+  const fetchStudents = useCallback(async (examName?: string) => {
     try {
-      const data = await fetchAdminStudents();
+      const data = await fetchAdminStudents(examName);
       setStudents(data || []);
       setLastUpdate(new Date());
       const violations = (data || []).filter((s: any) => s.status === "active").reduce((a: number, s: any) => a + (s.warnings || 0), 0);
@@ -895,7 +911,7 @@ export default function AdminPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "exam_status" }, () => fetchStudents())
       .subscribe();
 
-    const statusInterval = setInterval(fetchStudents, 5000);
+    const statusInterval = setInterval(() => fetchStudents(quizFilter === "all" ? undefined : quizFilter), 5000);
     const discoveryInterval = setInterval(syncEverything, 30000);
 
     return () => {
@@ -903,7 +919,7 @@ export default function AdminPage() {
       clearInterval(statusInterval);
       clearInterval(discoveryInterval);
     };
-  }, [authed, fetchStudents]);
+  }, [authed, fetchStudents, quizFilter]);
 
   const handleCleanup = async () => {
     if (!confirm("This will reset all sessions idle for > 4 hours to 'Not Started'. Continue?")) return;
@@ -911,7 +927,7 @@ export default function AdminPage() {
     try {
       const { count } = await cleanupStaleSessions();
       alert(`Successfully cleaned up ${count} stale sessions.`);
-      fetchStudents();
+      fetchStudents(quizFilter === "all" ? undefined : quizFilter);
     } catch (err: any) {
       alert("Cleanup failed: " + err.message);
     } finally {
@@ -923,7 +939,7 @@ export default function AdminPage() {
     if (!confirm(`Force submit exam for ${s.name}? This will calculate score based on currently saved answers.`)) return;
     try {
       await forceSubmitAdminStudent(s.student_id);
-      fetchStudents();
+      fetchStudents(quizFilter === "all" ? undefined : quizFilter);
     } catch (err: any) {
       alert("Force submit failed: " + err.message);
     }
@@ -1127,7 +1143,7 @@ export default function AdminPage() {
 
       {/* ── PyHunt Observer Node ── */}
       {activeTab === "pyhunt" && (
-        <PyHuntObserver students={students} fetchStudentsGlobal={fetchStudents} />
+        <PyHuntObserver fetchStudentsGlobal={fetchStudents} />
       )}
       {activeTab === "monitor" && (
         <>
@@ -1374,7 +1390,7 @@ export default function AdminPage() {
                               Submit
                             </button>
                           )}
-                          <button className="btn btn-outline" style={{ fontSize: 10, padding: "4px 8px" }} onClick={() => resetAdminStudent(s.student_id).then(fetchStudents)}>
+                          <button className="btn btn-outline" style={{ fontSize: 10, padding: "4px 8px" }} onClick={() => resetAdminStudent(s.student_id).then(() => fetchStudents(quizFilter === "all" ? undefined : quizFilter))}>
                             Reset
                           </button>
                         </div>
@@ -2388,7 +2404,7 @@ function QuestionsTab() {
 }
 
 // ── Students Tab ──────────────────────────────────────────────
-function StudentsTab({ students, load }: { students: AdminStudent[], load: () => Promise<void> }) {
+function StudentsTab({ students, load }: { students: AdminStudent[], load: (examName?: string) => Promise<void> }) {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AdminStudent | null>(null);

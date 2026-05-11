@@ -318,8 +318,9 @@ export async function deleteAdminQuestion(id: string): Promise<void> {
   await adminFetch(`/admin/questions/${id}`, { method: "DELETE" });
 }
 
-export async function fetchAdminStudents(): Promise<AdminStudent[]> {
-  return adminFetch<AdminStudent[]>("/admin/students");
+export async function fetchAdminStudents(examName?: string): Promise<AdminStudent[]> {
+  const query = examName ? `?exam=${encodeURIComponent(examName)}` : "";
+  return adminFetch<AdminStudent[]>(`/admin/students${query}`);
 }
 
 export async function fetchStudentFidelity(studentId: string): Promise<any> {
