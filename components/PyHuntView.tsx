@@ -118,6 +118,7 @@ export default function PyHuntView() {
   const [scratchCode, setScratchCode] = useState("");
   const [showScratchpad, setShowScratchpad] = useState(false);
   const [scratchOutput, setScratchOutput] = useState("");
+  const [round4Passed, setRound4Passed] = useState(false);
 
   const handleAutoSubmit = useCallback(() => {
     setIsAutoSubmitted(true);
@@ -358,10 +359,16 @@ export default function PyHuntView() {
     const isValid = validateRound(currentRound, result.stdout);
     if (isValid) {
        setShowSuccessRipple(true);
-       setTimeout(() => {
-         setShowSuccessRipple(false);
-         setIsAtGate(true);
-       }, 1000);
+       if (currentRound === 4) {
+         // Round 4 passed — show Submit button, skip gate
+         setTimeout(() => setShowSuccessRipple(false), 1000);
+         setRound4Passed(true);
+       } else {
+         setTimeout(() => {
+           setShowSuccessRipple(false);
+           setIsAtGate(true);
+         }, 1000);
+       }
     } else {
        setWrongAttempts(prev => prev + 1);
        setHint("Drift detected. Check your logic pattern (formatting is ignored).");
@@ -743,8 +750,18 @@ export default function PyHuntView() {
                      <button onClick={handleExecute} className={styles.executeBtn}>SUBMIT MISSION SEQUENCE</button>
                    )
                  )}
-                 {currentRound > 2 && currentRound < 5 && (
+                 {currentRound > 2 && currentRound < 5 && !round4Passed && (
                    <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>EXECUTE LOGIC PROTOCOL</button>
+                 )}
+                 {currentRound === 4 && round4Passed && (
+                   <button 
+                     onClick={handleFinalSubmit} 
+                     disabled={loading} 
+                     className={styles.finalSubmitBtn}
+                     style={{ width: '100%', marginTop: 8 }}
+                   >
+                     {loading ? "TRANSMITTING..." : "🛸 SUBMIT MISSION"}
+                   </button>
                  )}
               </div>
 
