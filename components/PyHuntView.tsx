@@ -413,20 +413,43 @@ export default function PyHuntView() {
     return input.split('\n').map(line => line.trim()).filter(line => line.length > 0).join('\n').toLowerCase();
   };
 
+  const normalizeTokens = (input: string) => {
+    if (!input) return [];
+    return input
+      .toLowerCase()
+      .split(/[\n,]+/)           // split on newlines and commas
+      .map(t => t.trim())         // trim whitespace
+      .filter(t => t.length > 0); // remove empties
+  };
+
   const validateRound = (round: number, stdout: string) => {
-    const userOutput = atmosphericCrystallize(stdout);
     const roundConfig = globalConfigs.find((c: any) => c.round === round);
     if (!roundConfig) return false;
-    const target = atmosphericCrystallize(roundConfig.target_output || "");
-    if (round === 3) {
-       const expected = target || "palindrome: true";
-       return userOutput.includes(expected) || userOutput === expected;
+
+    const userTokens = normalizeTokens(stdout);
+    const targetRaw = roundConfig.target_output || "";
+    const targetTokens = normalizeTokens(targetRaw);
+
+    // Fallback defaults if no config target
+    const fallbackTargets: Record<number, string[]> = {
+      3: ["palindrome: true"],
+      4: ["1", "2", "fizz", "4", "buzz"],
+    };
+
+    const expected = targetTokens.length > 0 ? targetTokens : (fallbackTargets[round] || []);
+
+    // Token-based comparison: user tokens must contain all expected tokens in order
+    if (userTokens.length === 0 || expected.length === 0) return false;
+
+    // Exact token list match
+    if (userTokens.length === expected.length && userTokens.every((t, i) => t === expected[i])) {
+      return true;
     }
-    if (round === 4) {
-       const expected = target || "1\n2\nfizz\n4\nbuzz";
-       return userOutput.includes(expected) || userOutput === expected;
-    }
-    return false;
+
+    // Fallback: check if user output includes the joined expected string
+    const userFlat = userTokens.join(' ');
+    const expectedFlat = expected.join(' ');
+    return userFlat.includes(expectedFlat);
   };
 
   const handleGateUnlock = async () => {
