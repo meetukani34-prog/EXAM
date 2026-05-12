@@ -314,14 +314,16 @@ export default function PyHuntView() {
         setOutput(`ERROR: Incomplete logic chain. Answer all ${mcqSet.length} nodes.`);
         return;
       }
-      if (allCorrect) {
-        setIsAtGate(true);
-        setGateError(false);
-        setOutput("");
-      } else {
+      
+      if (!allCorrect) {
         setWrongAttempts(prev => prev + 1);
-        setOutput("ERROR: Logic mismatch in sequence. Transmission failed.");
+        setOutput("Logic sequence discrepancies detected. Mission bypass authorized.");
+      } else {
+        setOutput("");
       }
+
+      setIsAtGate(true);
+      setGateError(false);
       return;
     }
 
