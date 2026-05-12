@@ -550,8 +550,8 @@ export default function PyHuntView() {
           <div key={r.id} className={`${styles.orbitNode} ${currentRound >= r.id ? styles.active : ""} ${currentRound === r.id ? styles.pulsing : ""}`}>
             <div className={styles.orbitNumber}>{r.id}</div>
             <div className={styles.orbitMeta}>
-               <div className={styles.orbitName}>{labelConfig.phase} {r.id}</div>
-               {currentRound === r.id && <div className={styles.orbitDesc}>{ROUNDS[currentRound-1].description}</div>}
+               <div className={styles.orbitName}>{labelConfig.phase} {r.id}: {globalConfigs.find((c: any) => c.round === r.id)?.name || r.name}</div>
+               {currentRound === r.id && <div className={styles.orbitDesc}>{globalConfigs.find((c: any) => c.round === r.id)?.description || r.description}</div>}
             </div>
           </div>
         ))}
@@ -567,7 +567,7 @@ export default function PyHuntView() {
               style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
             >
               <header className={styles.chamberHeader}>
-                 <h2>{labelConfig.orbit} {currentRound}: {ROUNDS[currentRound-1].name}</h2>
+                 <h2>{labelConfig.orbit} {currentRound}: {globalConfigs.find((c: any) => c.round === currentRound)?.name || ROUNDS[currentRound-1].name}</h2>
                  <div className={styles.engineStatus}>
                    <div className={styles.pulseDot} />
                    {pyLoading ? "Caching Logic Engine..." : "Engine Ready"}

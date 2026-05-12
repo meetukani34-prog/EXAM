@@ -187,10 +187,10 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
 
   // ── PyHunt Configuration State ──
   const [configs, setConfigs] = useState<any[]>([
-    { round: 1, name: "MCQ", clue: "Locate the physical node to find your code.", code: "LIBRARY42" },
-    { round: 2, name: "Jumble", clue: "Order matters in logic.", code: "LAB2CO" },
-    { round: 3, name: "Palindrome", clue: "The mirror speaks the truth.", code: "HEX33" },
-    { round: 4, name: "FizzBuzz", clue: "Numbers dance in patterns.", code: "F1ZZ" },
+    { round: 1, name: "MCQ", clue: "Locate the physical node to find your code.", code: "LIBRARY42", description: "Validate the initial logic chain via multi-vector analysis." },
+    { round: 2, name: "Jumble", clue: "Order matters in logic.", code: "LAB2CO", description: "Arrange the corrupted code blocks into a functional sequence." },
+    { round: 3, name: "Palindrome", clue: "The mirror speaks the truth.", code: "HEX33", description: "Implement a recursion-stable symmetry check." },
+    { round: 4, name: "FizzBuzz", clue: "Numbers dance in patterns.", code: "F1ZZ", description: "Execute a multi-stage FizzBuzz data filter." },
   ]);
   const [mcqs, setMcqs] = useState<any[]>([
     { id: 1, question: "What is the output of print(2**3)?", options: ["6", "8", "9", "5"], answer: 1 },
@@ -499,6 +499,26 @@ function PyHuntConfig({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 18, fontWeight: 800 }}>{labelConfig.phase} {c.round}: {c.name}</h4>
                 <div className={adminStyles.codeBadge}>🔒 GATE KEY: {c.code || "PENDING"}</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>{labelConfig.phase.toUpperCase()} NAME</label>
+                  <input
+                    type="text"
+                    className={adminStyles.configInput}
+                    value={c.name}
+                    onChange={(e) => updateConfig(c.round, 'name', e.target.value)}
+                  />
+                </div>
+                <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>{labelConfig.phase.toUpperCase()} DESCRIPTION</label>
+                  <input
+                    type="text"
+                    className={adminStyles.configInput}
+                    value={c.description || ""}
+                    onChange={(e) => updateConfig(c.round, 'description', e.target.value)}
+                  />
+                </div>
               </div>
               <div className={adminStyles.inputGroup}>
                 <label className={adminStyles.inputLabel}>CLUE (VISIBLE AT GATE)</label>
