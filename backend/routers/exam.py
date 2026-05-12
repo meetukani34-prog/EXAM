@@ -524,10 +524,15 @@ async def start_exam(
                 detail="Exam already submitted. You cannot restart."
             )
     if (attempts_count or 0) >= max_attempts and status_str != "active":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Maximum attempts ({max_attempts}) reached for this assessment."
-        )
+        # PyHunt always allows restarts — skip the attempt limit
+        if title.lower() == "pyhunt":
+            print(f"[PYHUNT] Bypassing max-attempts check for {student_id} (attempts={attempts_count})")
+            attempts_count = 0  # Reset so the new attempt starts at 1
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Maximum attempts ({max_attempts}) reached for this assessment."
+            )
 
     # 5. Otherwise, set the start time NOW and determine attempt count
     new_start = datetime.now(timezone.utc).isoformat()
