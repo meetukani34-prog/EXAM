@@ -199,6 +199,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
     { id: 1, blocks: ["def hello():", "  print('world')", "hello()"], target: "def hello():\n  print('world')\nhello()" },
   ]);
   const [globalAuth, setGlobalAuth] = useState<any>({ startCode: "PYHUNT67", authorizedUsns: "" });
+  const [labelConfig, setLabelConfig] = useState<any>({ phase: "Phase", orbit: "Orbit" });
 
   const fetchAllConfigs = useCallback(async () => {
     try {
@@ -212,6 +213,8 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
         if (a) setGlobalAuth(a);
         const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
         if (j) setJumbles(j);
+        const l = data.find((c: any) => c.config_key === 'labels')?.config_value;
+        if (l) setLabelConfig(l || { phase: "Phase", orbit: "Orbit" });
       }
     } catch (error) {
       console.error("Fetch error:", error);
@@ -266,6 +269,14 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
       alert("Failed to save Jumble: " + err.message);
     }
   };
+  const saveLabelConfig = async (newLabels: any) => {
+    setLabelConfig(newLabels);
+    try {
+      await updatePyHuntConfig('labels', newLabels);
+    } catch (err: any) {
+      alert("Failed to save Labels: " + err.message);
+    }
+  };
 
   const participants = localStudents
     .map(s => {
@@ -314,7 +325,8 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                 updatePyHuntConfig('rounds_config', configs),
                 updatePyHuntConfig('mcqs', mcqs),
                 updatePyHuntConfig('auth', globalAuth),
-                updatePyHuntConfig('jumbles', jumbles)
+                updatePyHuntConfig('jumbles', jumbles),
+                updatePyHuntConfig('labels', labelConfig)
               ]);
 
               btn.innerText = "✅ SYNCHRONIZED";
@@ -362,7 +374,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
               <thead>
                 <tr>
                   <th>STUDENT NAME</th>
-                  <th>ORBIT / PHASE</th>
+                  <th>{labelConfig.orbit.toUpperCase()} / {labelConfig.phase.toUpperCase()}</th>
                   <th>ROUND STATUS</th>
                   <th>WARNINGS</th>
                   <th>LAST VIOLATION</th>
@@ -437,6 +449,8 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
            removeMcq={removeMcq}
            saveGlobalAuth={saveGlobalAuth}
            saveJumbles={saveJumbles}
+           labelConfig={labelConfig}
+           saveLabelConfig={saveLabelConfig}
         />
       )}
     </div>
@@ -445,7 +459,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
 
 function PyHuntConfig({ 
   activeTab, configs, mcqs, jumbles, globalAuth, updateConfig, updateMcq, addMcq, removeMcq, 
-  saveGlobalAuth, saveJumbles 
+  saveGlobalAuth, saveJumbles, labelConfig, saveLabelConfig 
 }: any) {
   return (
     <div className={adminStyles.configContent}>
@@ -461,15 +475,33 @@ function PyHuntConfig({
                 onChange={(e) => saveGlobalAuth({ ...globalAuth, startCode: e.target.value })}
               />
             </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>{labelConfig.phase.toUpperCase()} LABEL</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={labelConfig.phase}
+                  onChange={(e) => saveLabelConfig({ ...labelConfig, phase: e.target.value })}
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>{labelConfig.orbit.toUpperCase()} LABEL</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={labelConfig.orbit}
+                  onChange={(e) => saveLabelConfig({ ...labelConfig, orbit: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
           {configs.map((c: any) => (
             <div key={c.round} className={adminStyles.configCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 18, fontWeight: 800 }}>Phase {c.round}: {c.name}</h4>
+                <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 18, fontWeight: 800 }}>{labelConfig.phase} {c.round}: {c.name}</h4>
                 <div className={adminStyles.codeBadge}>🔒 GATE KEY: {c.code || "PENDING"}</div>
               </div>
               <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>HINT (VISIBLE AT GATE)</label>
+                <label className={adminStyles.inputLabel}>CLUE (VISIBLE AT GATE)</label>
                 <textarea
                   className={adminStyles.configTextarea}
                   value={c.clue}
@@ -477,7 +509,7 @@ function PyHuntConfig({
                 />
               </div>
               <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>ORBITAL UNLOCK CODE</label>
+                <label className={adminStyles.inputLabel}>{labelConfig.orbit.toUpperCase()} UNLOCK CODE</label>
                 <input
                   type="text"
                   className={adminStyles.configInput}

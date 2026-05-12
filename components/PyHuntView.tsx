@@ -70,6 +70,7 @@ export default function PyHuntView() {
   const [showSuccessRipple, setShowSuccessRipple] = useState(false);
   
   const [globalConfigs, setGlobalConfigs] = useState<any[]>([]);
+  const [labelConfig, setLabelConfig] = useState<any>({ phase: "Phase", orbit: "Orbit" });
   const [mcqSet, setMcqSet] = useState<any[]>(ROUND_1_QUESTIONS);
   const [mcqSelectionMap, setMcqSelectionMap] = useState<Record<number, number>>({});
   const [currentMcqIndex, setCurrentMcqIndex] = useState(0);
@@ -160,6 +161,8 @@ export default function PyHuntView() {
           if (j && j.length > 0) {
              setOriginalJumbleCode(j[0].target);
           }
+          const l = data.find((c: any) => c.config_key === 'labels')?.config_value;
+          if (l) setLabelConfig(l);
        }
     }
     fetchGlobalConfigs();
@@ -547,7 +550,7 @@ export default function PyHuntView() {
           <div key={r.id} className={`${styles.orbitNode} ${currentRound >= r.id ? styles.active : ""} ${currentRound === r.id ? styles.pulsing : ""}`}>
             <div className={styles.orbitNumber}>{r.id}</div>
             <div className={styles.orbitMeta}>
-               <div className={styles.orbitName}>{r.name}</div>
+               <div className={styles.orbitName}>{labelConfig.phase} {r.id}</div>
                {currentRound === r.id && <div className={styles.orbitDesc}>{ROUNDS[currentRound-1].description}</div>}
             </div>
           </div>
@@ -564,7 +567,7 @@ export default function PyHuntView() {
               style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
             >
               <header className={styles.chamberHeader}>
-                 <h2>Orbit {currentRound}: {ROUNDS[currentRound-1].name}</h2>
+                 <h2>{labelConfig.orbit} {currentRound}: {ROUNDS[currentRound-1].name}</h2>
                  <div className={styles.engineStatus}>
                    <div className={styles.pulseDot} />
                    {pyLoading ? "Caching Logic Engine..." : "Engine Ready"}
@@ -701,13 +704,13 @@ export default function PyHuntView() {
           <div className={styles.gateModalOverlay}>
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className={styles.gateCard}>
               <div className={styles.gateIcon}>🔒</div>
-              <h2>ORBITAL UNLOCK REQUIRED</h2>
+              <h2>{labelConfig.orbit.toUpperCase()} UNLOCK REQUIRED</h2>
               <div className={styles.clueBox}>
-                <label>HINT:</label>
+                <label>CLUE:</label>
                 <p>{globalConfigs.find((c: any) => c.round === currentRound)?.clue || "Locate the physical node to find your code."}</p>
               </div>
               <div className={styles.gateInputGroup}>
-                <label>ORBITAL UNLOCK CODE</label>
+                <label>{labelConfig.orbit.toUpperCase()} UNLOCK CODE</label>
                 <input 
                   type="text" 
                   value={gateInput} 
@@ -720,7 +723,7 @@ export default function PyHuntView() {
                 {gateError && <div className={styles.errorMsg}>Invalid Unlock Code. Transmission Rejected.</div>}
               </div>
               <div className={styles.gateActions}>
-                <button onClick={handleGateUnlock} className={styles.unlockBtn}>🔓 UNLOCK NEXT ORBIT</button>
+                <button onClick={handleGateUnlock} className={styles.unlockBtn}>🔓 UNLOCK NEXT {labelConfig.orbit.toUpperCase()}</button>
                 <button onClick={() => setIsAtGate(false)} className={styles.cancelBtn}>RETURN</button>
               </div>
             </motion.div>
