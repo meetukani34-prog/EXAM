@@ -910,3 +910,86 @@
   }
 }
 
+/* -- History Dashboard -- */
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.historyItem {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.historyItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--nexus-cyan);
+  transform: translateX(8px);
+  box-shadow: -5px 0 20px rgba(0, 242, 255, 0.1);
+}
+
+.historyItemIcon {
+  width: 56px;
+  height: 56px;
+  background: rgba(0, 242, 255, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--nexus-cyan);
+}
+
+.historyItemInfo {
+  flex: 1;
+}
+
+.historyItemName {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.historyItemDate {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.historyItemScore {
+  text-align: right;
+  padding: 0 32px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.historyBadge {
+  padding: 6px 14px;
+  background: rgba(52, 211, 153, 0.1);
+  color: #34d399;
+  font-size: 12px;
+  font-weight: 800;
+  border-radius: 8px;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+  .historyItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .historyItemScore {
+    text-align: left;
+    padding: 0;
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 16px;
+    width: 100%;
+  }
+}

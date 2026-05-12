@@ -40,7 +40,7 @@ interface StudentInfo {
   examDurationMinutes: number;
 }
 
-type TabId = "home" | "profile" | "aptitude" | "programming" | "other" | "learning" | "insights" | "pyhunt";
+type TabId = "home" | "profile" | "aptitude" | "programming" | "other" | "history" | "insights" | "pyhunt";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -202,7 +202,7 @@ export default function DashboardPage() {
     { id: "programming", label: "Programming", icon: <CodeIcon /> },
     { id: "other", label: "Other Quiz", icon: <OtherIcon /> },
     { id: "profile", label: "Profile", icon: <ProfileIcon /> },
-    { id: "learning", label: "Learning Path", icon: <HistoryIcon /> },
+    { id: "history", label: "History", icon: <HistoryIcon /> },
     { id: "insights", label: "Skills Insights", icon: <InsightsIcon /> },
   ];
 
@@ -443,6 +443,7 @@ export default function DashboardPage() {
 
           {activeTab === "insights" && <InsightsTab exams={studentExams} />}
 
+          {activeTab === "history" && <HistoryTab exams={studentExams} />}
           {activeTab === "profile" && student && <ProfileTab student={student} />}
           {activeTab === "pyhunt" && <PyHuntView />}
         </main>
@@ -894,3 +895,57 @@ function RadarChart({ data }: { data: ExamNode[] }) {
     </svg>
   );
 }
+
+function HistoryTab({ exams }: { exams: ExamNode[] }) {
+  const completed = exams.filter(e => e.last_score !== undefined || e.student_status === 'submitted' || e.student_status === 'completed');
+
+  return (
+    <div className={styles.sectionWrapper}>
+       <div style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <div style={{ cursor: 'pointer', opacity: 0.6, display: 'flex', alignItems: 'center' }}>
+               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+            </div>
+            <h1 style={{ fontSize: 32, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>History</h1>
+          </div>
+          <p style={{ opacity: 0.6, fontSize: 16, color: 'rgba(255,255,255,0.7)' }}>Review your previous assessments</p>
+       </div>
+
+       <div className={styles.hologramPanel} style={{ padding: '40px' }}>
+          <div style={{ marginBottom: 32 }}>
+            <h3 style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 8 }}>Assessment History</h3>
+            <p style={{ opacity: 0.5, fontSize: 14 }}>Review your completed exams and scores</p>
+          </div>
+
+          <div className={styles.historyList}>
+             {completed.length > 0 ? completed.map(exam => (
+               <div key={exam.id} className={styles.historyItem}>
+                  <div className={styles.historyItemIcon}>
+                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+                  </div>
+                  <div className={styles.historyItemInfo}>
+                     <div className={styles.historyItemName}>{exam.exam_name}</div>
+                     <div className={styles.historyItemDate}>{exam.scheduled_start ? new Date(exam.scheduled_start).toLocaleDateString() : "5/13/2026"}</div>
+                  </div>
+                  <div className={styles.historyItemScore}>
+                     <div style={{ fontSize: 11, opacity: 0.5, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Final Score</div>
+                     <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--nexus-cyan)' }}>
+                        {exam.last_score || 0} <span style={{ opacity: 0.3, fontSize: 16 }}>/ {exam.last_total || 15}</span>
+                     </div>
+                  </div>
+                  <div className={styles.historyBadge}>
+                     COMPLETED
+                  </div>
+               </div>
+             )) : (
+               <div style={{ padding: '60px', textAlign: 'center', opacity: 0.4 }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" style={{ marginBottom: 16 }}><path d="M12 8v4l3 3" /><circle cx="12" cy="12" r="10" /></svg>
+                  <p>No assessment history found.</p>
+               </div>
+             )}
+          </div>
+       </div>
+    </div>
+  );
+}
+
