@@ -137,6 +137,7 @@ export default function PyHuntView() {
       const studentId = studentObj?.id || studentObj?.student_id;
 
       if (studentId) {
+        // Mark exam_status as submitted
         await supabase.from('exam_status')
           .update({ 
             status: 'submitted', 
@@ -146,6 +147,14 @@ export default function PyHuntView() {
           })
           .eq('student_id', studentId)
           .filter('exam_name', 'ilike', 'pyhunt');
+
+        // Mark odyssey_progress as completed
+        await supabase.from('odyssey_progress')
+          .update({ 
+            is_completed: true,
+            last_ping: new Date().toISOString()
+          })
+          .eq('student_id', studentId);
       }
       setCurrentRound(6);
     } catch (err) {

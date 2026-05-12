@@ -387,44 +387,62 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                   <th>{labelConfig.orbit.toUpperCase()} / {labelConfig.phase.toUpperCase()}</th>
                   <th>ROUND STATUS</th>
                   <th>WARNINGS</th>
-                  <th>LAST VIOLATION</th>
-                  <th>LAST ACTIVE</th>
+                  <th>TOTAL TIME</th>
+                  <th>POINTS</th>
                   <th>STATUS</th>
                   <th>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
-                {participants.map(p => (
-                  <tr key={p.student_id} className={p.status === 'submitted' ? adminStyles.rowFinished : ""}>
+                {participants.map(p => {
+                  const isCompleted = p.pyhunt?.is_completed === true || p.status === 'submitted';
+                  const currentRound = p.pyhunt?.current_round || 1;
+                  
+                  // Calculate total time
+                  let totalTime = "—";
+                  if (p.started_at) {
+                    const start = new Date(p.started_at).getTime();
+                    const end = p.submitted_at ? new Date(p.submitted_at).getTime() : Date.now();
+                    const diffMs = end - start;
+                    const mins = Math.floor(diffMs / 60000);
+                    const secs = Math.floor((diffMs % 60000) / 1000);
+                    totalTime = `${mins}m ${secs}s`;
+                  }
+
+                  // Points
+                  const points = p.score !== undefined && p.score !== null ? `${p.score}/${p.total_marks || 100}` : "—";
+
+                  return (
+                  <tr key={p.student_id} className={isCompleted ? adminStyles.rowFinished : ""}>
                     <td>
                       <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{p.name}</div>
                       <div style={{ fontSize: 11, opacity: 0.5 }}>{p.usn}</div>
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span className={adminStyles.roundBadge}>{p.pyhunt?.current_round || 1}</span>
+                        <span className={adminStyles.roundBadge}>{isCompleted ? "✓" : currentRound}</span>
                         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
-                          {configs.find((c: any) => c.round === (p.pyhunt?.current_round || 1))?.name || "Entry"}
+                          {isCompleted ? "ALL COMPLETE" : (configs.find((c: any) => c.round === currentRound)?.name || "Entry")}
                         </div>
                       </div>
                     </td>
                     <td>
-                      <span className={`${adminStyles.statusTag} ${p.status === 'submitted' ? adminStyles.tagSuccess : adminStyles.tagWarning}`}>
-                        {p.status === 'submitted' ? "COMPLETED" : "IN PROGRESS"}
+                      <span className={`${adminStyles.statusTag} ${isCompleted ? adminStyles.tagSuccess : adminStyles.tagWarning}`}>
+                        {isCompleted ? "COMPLETED" : "IN PROGRESS"}
                       </span>
                     </td>
                     <td>
                       <span className={adminStyles.warningCount}>{p.warnings}/3</span>
                     </td>
-                    <td style={{ color: p.last_violation_record ? 'var(--danger)' : 'var(--text-muted)' }}>
-                      {p.last_violation_record?.type || "-"}
+                    <td style={{ fontSize: 12, fontWeight: 600 }}>
+                      {totalTime}
+                    </td>
+                    <td style={{ fontSize: 12, fontWeight: 700, color: isCompleted ? 'var(--success, #22c55e)' : 'var(--text-muted)' }}>
+                      {points}
                     </td>
                     <td>
-                      {p.pyhunt ? new Date(p.pyhunt.last_ping).toLocaleTimeString() : "—"}
-                    </td>
-                    <td>
-                      <span className={`${adminStyles.liveStatus} ${p.status === 'active' ? adminStyles.statusActive : (p.status === 'not_started' ? adminStyles.statusPending : adminStyles.statusFinished)}`}>
-                        {p.status === 'submitted' ? "FINISHED" : (p.is_blocked ? "STOPPED" : (p.status === 'not_started' ? "NOT STARTED" : "ACTIVE"))}
+                      <span className={`${adminStyles.liveStatus} ${isCompleted ? adminStyles.statusFinished : (p.status === 'active' ? adminStyles.statusActive : adminStyles.statusPending)}`}>
+                        {isCompleted ? "FINISHED" : (p.is_blocked ? "STOPPED" : (p.status === 'not_started' ? "NOT STARTED" : "ACTIVE"))}
                       </span>
                     </td>
                     <td>
@@ -437,7 +455,8 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
