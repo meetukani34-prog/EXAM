@@ -216,3 +216,23 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+.homeBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: #475569;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 12px;
+}
+.homeBtn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #1e293b;
+}
