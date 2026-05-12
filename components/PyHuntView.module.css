@@ -1302,6 +1302,7 @@
   font-size: 14px;
   color: #fff;
   opacity: 0.9;
+  white-space: pre-wrap;
 }
 
 .jumbleActions {
@@ -1365,4 +1366,287 @@
 .submitOrderBtn:hover {
   transform: translateY(-2px);
   box-shadow: 0 15px 30px rgba(0, 242, 255, 0.4);
+}
+
+/* ── Final Submission UI ── */
+.finalSubmitWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 60px;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(0, 242, 255, 0.1);
+  border-radius: 32px;
+  backdrop-filter: blur(12px);
+  text-align: center;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.finalIcon {
+  font-size: 64px;
+  filter: drop-shadow(0 0 20px rgba(0, 242, 255, 0.4));
+  margin-bottom: 12px;
+}
+
+.finalSubmitWrapper h3 {
+  font-size: 32px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0;
+}
+
+.finalSubmitWrapper p {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.finalSubmitBtn {
+  padding: 20px 60px;
+  background: linear-gradient(135deg, #FF9D42, #FF5C00);
+  border: none;
+  border-radius: 16px;
+  color: #fff;
+  font-weight: 900;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(255, 92, 0, 0.3);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin-top: 20px;
+}
+
+.finalSubmitBtn:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 15px 40px rgba(255, 92, 0, 0.5);
+}
+
+/* ── Enhanced Success Screen ── */
+.successOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.95);
+  backdrop-filter: blur(20px);
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.successCard {
+  max-width: 550px;
+  width: 100%;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 48px;
+  padding: 60px 40px;
+  text-align: center;
+  box-shadow: 0 50px 100px rgba(0, 0, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+.successCard::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(0, 242, 255, 0.05) 0%, transparent 70%);
+  animation: rotateGlow 10s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rotateGlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.successIcon {
+  font-size: 80px;
+  margin-bottom: 24px;
+  filter: drop-shadow(0 0 30px rgba(0, 242, 255, 0.5));
+}
+
+.successTitle {
+  font-size: 36px;
+  font-weight: 900;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #fff, #00f2ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -1px;
+}
+
+.successSubtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.statItem {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.3s;
+}
+
+.statItem:hover {
+  background: rgba(0, 242, 255, 0.05);
+  border-color: rgba(0, 242, 255, 0.2);
+  transform: translateY(-5px);
+}
+
+.statLabel {
+  font-size: 10px;
+  font-weight: 900;
+  color: #00f2ff;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.redirectText {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 24px;
+  font-style: italic;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Jumble Scratchpad ── */
+.jumbleSplitLayout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  transition: all 0.5s ease;
+}
+
+.jumbleSplitLayout.withScratchpad {
+  grid-template-columns: 1.2fr 0.8fr;
+}
+
+.scratchpadContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 24px;
+  animation: slideInRight 0.4s ease-out;
+  height: 100%;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.scratchpadHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scratchpadTitle {
+  font-size: 12px;
+  font-weight: 800;
+  color: #00f2ff;
+  letter-spacing: 0.1em;
+}
+
+.scratchpadEditor {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  resize: none;
+  outline: none;
+  min-height: 250px;
+}
+
+.scratchpadActions {
+  display: flex;
+  gap: 12px;
+}
+
+.runScratchBtn {
+  padding: 10px 20px;
+  background: rgba(0, 242, 255, 0.1);
+  border: 1px solid rgba(0, 242, 255, 0.3);
+  border-radius: 8px;
+  color: #00f2ff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.runScratchBtn:hover {
+  background: rgba(0, 242, 255, 0.2);
+}
+
+.scratchOutput {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #00ffa3;
+  height: 100px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+.toggleScratchBtn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.toggleScratchBtn.active {
+  background: rgba(0, 242, 255, 0.2);
+  border-color: #00f2ff;
+  color: #00f2ff;
 }

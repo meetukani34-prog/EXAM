@@ -253,6 +253,16 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
     setMcqs(updated);
     await updatePyHuntConfig('mcqs', updated);
   };
+  const addJumble = async () => {
+    const updated = [...jumbles, { id: Date.now(), blocks: [], target: "" }];
+    setJumbles(updated);
+    await updatePyHuntConfig('jumbles', updated);
+  };
+  const removeJumble = async (id: number) => {
+    const updated = jumbles.filter((j: any) => j.id !== id);
+    setJumbles(updated);
+    await updatePyHuntConfig('jumbles', updated);
+  };
   const saveGlobalAuth = async (newAuth: any) => {
     setGlobalAuth(newAuth);
     try {
@@ -449,6 +459,8 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
            removeMcq={removeMcq}
            saveGlobalAuth={saveGlobalAuth}
            saveJumbles={saveJumbles}
+           addJumble={addJumble}
+           removeJumble={removeJumble}
            labelConfig={labelConfig}
            saveLabelConfig={saveLabelConfig}
         />
@@ -459,7 +471,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
 
 function PyHuntConfig({ 
   activeTab, configs, mcqs, jumbles, globalAuth, updateConfig, updateMcq, addMcq, removeMcq, 
-  saveGlobalAuth, saveJumbles, labelConfig, saveLabelConfig 
+  saveGlobalAuth, saveJumbles, addJumble, removeJumble, labelConfig, saveLabelConfig 
 }: any) {
   return (
     <div className={adminStyles.configContent}>
@@ -622,9 +634,16 @@ function PyHuntConfig({
 
       {activeTab === "jumble" && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <h4 style={{ color: '#fff', margin: 0 }}>Code Jumble Parameters (Round 2)</h4>
-          {jumbles.map((j: any) => (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ color: '#fff', margin: 0 }}>Code Jumble Parameters (Round 2)</h4>
+            <button className="btn btn-primary" onClick={addJumble} style={{ fontSize: 12, padding: '8px 16px' }}>+ Add Jumble</button>
+          </div>
+          {jumbles.map((j: any, idx: number) => (
             <div key={j.id} className={adminStyles.configCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span className={adminStyles.codeBadge}>JUMBLE CHALLENGE {idx + 1}</span>
+                <button onClick={() => removeJumble(j.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
+              </div>
               <div className={adminStyles.inputGroup}>
                 <label className={adminStyles.inputLabel}>ROUND 2 JUMBLE CODE (FOR STUDENT TO ARRANGE)</label>
                 <textarea

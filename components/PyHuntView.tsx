@@ -13,9 +13,9 @@ import { useFullscreen } from '@/hooks/useFullscreen';
 const ROUNDS = [
   { id: 1, name: "MCQ Logic", description: "Identify the correct Python syntax and logic from the given options.", target: "syntax" },
   { id: 2, name: "Code Jumble", description: "Rearrange the logical blocks to achieve the target state.", target: "structural" },
-  { id: 3, name: "Palindrome", description: "Master the strings. Implement a palindrome verifier.", target: "linguistic" },
-  { id: 4, name: "FizzBuzz", description: "Implement the FizzBuzz pattern (1-100) with maximum precision.", target: "algorithmic" },
-  { id: 5, name: "Final Transmission", description: "The ultimate sequence. Decrypt the final campus coordinate.", target: "visual" },
+  { id: 3, name: "Palindrome", description: "Symmetry Breach", target: "palindrome" },
+  { id: 4, name: "FizzBuzz", description: "Numerical Sequence", target: "fizzbuzz" },
+  { id: 5, name: "Final Transmission", description: "Mission Conclusion", target: null },
 ];
 
 const ROUND_1_QUESTIONS = [
@@ -42,6 +42,45 @@ const ROUND_1_QUESTIONS = [
   }
 ];
 
+function SuccessScreen({ startTime, warningCount, wrongAttempts }: { startTime: number, warningCount: number, wrongAttempts: number }) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className={styles.successOverlay}>
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={styles.successCard}>
+        <div className={styles.successIcon}>🏆</div>
+        <h2 className={styles.successTitle}>Congratulations! You've conquered PyHunt!</h2>
+        <p className={styles.successSubtitle}>You are a true Python treasure hunter!</p>
+        
+        <div className={styles.statGrid}>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Total Time</span>
+            <span className={styles.statValue}>{Math.floor((Date.now() - startTime) / 60000)}m</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Wrong Attempts</span>
+            <span className={styles.statValue}>{wrongAttempts}</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Warnings</span>
+            <span className={styles.statValue}>{Math.min(warningCount, 3)}/3</span>
+          </div>
+        </div>
+
+        <button className={styles.proceedBtn} onClick={() => window.location.href = "/dashboard"}>
+          Back to Dashboard
+        </button>
+        <p className={styles.redirectText}>Auto-redirecting in 3s...</p>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function PyHuntView() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -58,11 +97,9 @@ export default function PyHuntView() {
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [warningCount, setWarningCount] = useState(0);
 
-  // Lazy load pyodide only for round 2+
   const { runCode, loading: pyLoading } = usePyodide(currentRound > 1);
   const { enter: enterFullscreen } = useFullscreen();
   
-  // Gate State (Modal)
   const [isAtGate, setIsAtGate] = useState(false);
   const [gateInput, setGateInput] = useState("");
   const [gateError, setGateError] = useState(false);
@@ -74,10 +111,13 @@ export default function PyHuntView() {
   const [mcqSet, setMcqSet] = useState<any[]>(ROUND_1_QUESTIONS);
   const [mcqSelectionMap, setMcqSelectionMap] = useState<Record<number, number>>({});
   const [currentMcqIndex, setCurrentMcqIndex] = useState(0);
-
-  // Code Jumble (Round 2) State
   const [jumbledLines, setJumbledLines] = useState<string[]>([]);
+  const [jumbleSet, setJumbleSet] = useState<any[]>([]);
+  const [currentJumbleIndex, setCurrentJumbleIndex] = useState(0);
   const [originalJumbleCode, setOriginalJumbleCode] = useState("");
+  const [scratchCode, setScratchCode] = useState("");
+  const [showScratchpad, setShowScratchpad] = useState(false);
+  const [scratchOutput, setScratchOutput] = useState("");
 
   const handleAutoSubmit = useCallback(() => {
     setIsAutoSubmitted(true);
@@ -88,7 +128,33 @@ export default function PyHuntView() {
     return `${mins}m`;
   };
 
-  // ── Initialization & Sync ──
+  const handleFinalSubmit = async () => {
+    setLoading(true);
+    try {
+      const studentData = localStorage.getItem("exam_student");
+      const studentObj = studentData ? JSON.parse(studentData) : null;
+      const studentId = studentObj?.id || studentObj?.student_id;
+
+      if (studentId) {
+        await supabase.from('exam_status')
+          .update({ 
+            status: 'submitted', 
+            submitted_at: new Date().toISOString(),
+            last_score: 100,
+            last_total: 100
+          })
+          .eq('student_id', studentId)
+          .filter('exam_name', 'ilike', 'pyhunt');
+      }
+      setCurrentRound(6);
+    } catch (err) {
+      console.error("Submission error:", err);
+      setCurrentRound(6);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const raw = localStorage.getItem("exam_student");
     if (!raw) return;
@@ -109,22 +175,18 @@ export default function PyHuntView() {
       });
 
       if (error) {
-        console.error("[PYHUNT] Background sync failed:", error);
         setLoading(false);
         return;
       }
 
       if (data) {
-        setIsAuthorized(true); // If they have progress, they are authorized
+        setIsAuthorized(true);
         if (data.round_1_state && (data.round_1_state as any).reset) {
           localStorage.removeItem(`pyhunt_mcq_map_${studentId}`);
           localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
           setMcqSelectionMap({});
           setCode("");
-          
-          await supabase.from('odyssey_progress')
-            .update({ round_1_state: {} })
-            .eq('student_id', studentId);
+          await supabase.from('odyssey_progress').update({ round_1_state: {} }).eq('student_id', studentId);
         } else {
           const savedMap = localStorage.getItem(`pyhunt_mcq_map_${studentId}`);
           if (savedMap) setMcqSelectionMap(JSON.parse(savedMap));
@@ -137,13 +199,11 @@ export default function PyHuntView() {
     }
     syncProgress();
 
-    // Fetch Global Configs
     async function fetchGlobalConfigs() {
        const data = await fetchPublicPyHuntConfig();
        if (data && data.length > 0) {
           const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
           if (rounds) setGlobalConfigs(rounds);
-
           const mcqs = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
           if (mcqs) {
               const mapped = mcqs.map((m: any) => ({
@@ -157,17 +217,14 @@ export default function PyHuntView() {
               }));
               setMcqSet(mapped);
           }
-          const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
-          if (j && j.length > 0) {
-             setOriginalJumbleCode(j[0].target);
-          }
+           const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
+           if (j && j.length > 0) setJumbleSet(j);
           const l = data.find((c: any) => c.config_key === 'labels')?.config_value;
           if (l) setLabelConfig(l);
        }
     }
     fetchGlobalConfigs();
 
-    // Listen for config changes
     const channel = supabase.channel('pyhunt_global_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pyhunt_global_config' }, () => fetchGlobalConfigs())
       .subscribe();
@@ -175,7 +232,6 @@ export default function PyHuntView() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // ── Persistence ──
   useEffect(() => {
     if (student?.id && code) {
       const timer = setTimeout(() => {
@@ -194,7 +250,13 @@ export default function PyHuntView() {
      }
   }, [mcqSelectionMap, student]);
 
-  // Load Admin Jumble Config for Round 2
+  useEffect(() => {
+    if (jumbleSet.length > 0 && jumbleSet[currentJumbleIndex]) {
+      setOriginalJumbleCode(jumbleSet[currentJumbleIndex].target);
+      setJumbledLines([]); // Reset for new jumble
+    }
+  }, [jumbleSet, currentJumbleIndex]);
+
   useEffect(() => {
      if (typeof window !== "undefined") {
         if (currentRound === 2 && originalJumbleCode && jumbledLines.length === 0) {
@@ -205,7 +267,6 @@ export default function PyHuntView() {
      }
   }, [currentRound, originalJumbleCode, jumbledLines.length]);
 
-  // ── Handlers ──
   const handleAuthorize = async () => {
     const data = await fetchPublicPyHuntConfig();
     let targetCode = "PYHUNT67";
@@ -229,22 +290,14 @@ export default function PyHuntView() {
       
       const studentId = student?.id || student?.student_id;
       if (studentId) {
-        // Initialize PyHunt for this student ONLY NOW
         try {
-          // The backend handles EVERYTHING:
-          //   - Clearing old 'submitted' status (bypasses RLS)
-          //   - Creating odyssey_progress if missing
-          //   - Setting fresh 'active' status with warnings=0
           await withRetry(() => startExam("PyHunt"));
-
           sessionStorage.setItem(`pyhunt_auth_${studentId}`, "true");
         } catch (err: any) {
-          console.error("[PYHUNT] Mission initialization failed:", err);
           setAuthError(`Mission Failed: ${err.detail || err.message || "Logic Error"}`);
           return;
         }
       }
-
       setIsAuthorized(true);
       setAuthError("");
     } else {
@@ -272,13 +325,22 @@ export default function PyHuntView() {
     }
 
     if (currentRound === 2) {
-      const currentOrder = jumbledLines.join('\n').replace(/\s/g, '');
-      const targetOrder = originalJumbleCode.replace(/\s/g, '');
+      const currentOrder = jumbledLines.map(l => l.trimEnd()).join('\n').trim();
+      const targetOrder = originalJumbleCode.split('\n')
+        .filter(l => l.trim() !== "")
+        .map(l => l.trimEnd())
+        .join('\n')
+        .trim();
 
       if (currentOrder === targetOrder) {
-        setIsAtGate(true);
-        setGateError(false);
-        setOutput("");
+        if (currentJumbleIndex < jumbleSet.length - 1) {
+          setCurrentJumbleIndex(prev => prev + 1);
+          setOutput(`Sequence Node ${currentJumbleIndex + 1} synchronized. Calibrating next cluster...`);
+        } else {
+          setIsAtGate(true);
+          setGateError(false);
+          setOutput("");
+        }
       } else {
         setWrongAttempts(prev => prev + 1);
         setOutput("ERROR: Execution sequence invalid. Logic flow interrupted.");
@@ -311,10 +373,25 @@ export default function PyHuntView() {
     const newLines = [...jumbledLines];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newLines.length) return;
-    
     [newLines[index], newLines[targetIndex]] = [newLines[targetIndex], newLines[index]];
     setJumbledLines(newLines);
     if (output.startsWith("ERROR")) setOutput("");
+  };
+
+  const handleRunScratch = async () => {
+    if (!scratchCode.trim()) return;
+    setScratchOutput("Running mission logic...");
+    try {
+      const res: any = await runCode(scratchCode);
+      if (res.error) {
+        setScratchOutput(`ERROR: ${res.error}`);
+      } else {
+        const out = (res.stdout || "") + (res.stderr || "");
+        setScratchOutput(out || "Execution successful (no output)");
+      }
+    } catch (err: any) {
+      setScratchOutput(`ERROR: ${err.message}`);
+    }
   };
 
   const handleMcqSelect = (idx: number, optIdx: number) => {
@@ -324,23 +401,14 @@ export default function PyHuntView() {
 
   const atmosphericCrystallize = (input: string) => {
     if (!input) return "";
-    // Purge leading/trailing gravity and ignore invisible weight (trailing spaces per line)
-    return input
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .join('\n')
-      .toLowerCase();
+    return input.split('\n').map(line => line.trim()).filter(line => line.length > 0).join('\n').toLowerCase();
   };
 
   const validateRound = (round: number, stdout: string) => {
     const userOutput = atmosphericCrystallize(stdout);
     const roundConfig = globalConfigs.find((c: any) => c.round === round);
     if (!roundConfig) return false;
-    
-    // Use target_output from admin if available, otherwise fallback to defaults
     const target = atmosphericCrystallize(roundConfig.target_output || "");
-    
     if (round === 3) {
        const expected = target || "palindrome: true";
        return userOutput.includes(expected) || userOutput === expected;
@@ -348,9 +416,6 @@ export default function PyHuntView() {
     if (round === 4) {
        const expected = target || "1\n2\nfizz\n4\nbuzz";
        return userOutput.includes(expected) || userOutput === expected;
-    }
-    if (round === 5) {
-       return target ? userOutput.includes(target) : userOutput.includes("coordinate");
     }
     return false;
   };
@@ -396,25 +461,12 @@ export default function PyHuntView() {
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={styles.terminationCard}>
           <div className={styles.terminationIcon}>🚫</div>
           <h2 className={styles.terminationTitle}>SESSION TERMINATED</h2>
-          
           <div className={styles.statGrid}>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Total Time</span>
-              <span className={styles.statValue}>{formatTime(Date.now() - startTime)}</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Wrong Attempts</span>
-              <span className={styles.statValue}>{wrongAttempts}</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Warnings</span>
-              <span className={styles.statValue}>{Math.min(warningCount, 3)}/3</span>
-            </div>
+            <div className={styles.statItem}><span className={styles.statLabel}>Total Time</span><span className={styles.statValue}>{formatTime(Date.now() - startTime)}</span></div>
+            <div className={styles.statItem}><span className={styles.statLabel}>Wrong Attempts</span><span className={styles.statValue}>{wrongAttempts}</span></div>
+            <div className={styles.statItem}><span className={styles.statLabel}>Warnings</span><span className={styles.statValue}>{Math.min(warningCount, 3)}/3</span></div>
           </div>
-
-          <p className={styles.terminationDesc}>
-            Your PyHunt session was automatically terminated due to excessive security violations. Please contact your facilitator.
-          </p>
+          <p className={styles.terminationDesc}>Your PyHunt session was automatically terminated due to excessive security violations. Please contact your facilitator.</p>
           <button className={styles.proceedBtn} onClick={() => window.location.href = "/dashboard"}>Return to Dashboard</button>
         </motion.div>
       </div>
@@ -422,35 +474,7 @@ export default function PyHuntView() {
   }
 
   if (currentRound > ROUNDS.length) {
-    return (
-      <div className={styles.successOverlay}>
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={styles.successCard}>
-          <div className={styles.successIcon}>🏆</div>
-          <h2 className={styles.successTitle}>PYHUNT COMPLETE!</h2>
-          
-          <div className={styles.statGrid}>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Total Time</span>
-              <span className={styles.statValue}>{formatTime(Date.now() - startTime)}</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Wrong Attempts</span>
-              <span className={styles.statValue}>{wrongAttempts}</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Warnings</span>
-              <span className={styles.statValue}>{Math.min(warningCount, 3)}/3</span>
-            </div>
-          </div>
-
-          <p className={styles.successDesc}>
-            🏆 Congratulations! You've conquered PyHunt! You are a true Python treasure hunter!
-          </p>
-          <div className={styles.codeDisplay}>MISSION ACCOMPLISHED</div>
-          <button className={styles.proceedBtn} onClick={() => window.location.href = "/dashboard"}>Return to Dashboard</button>
-        </motion.div>
-      </div>
-    );
+    return <SuccessScreen startTime={startTime} warningCount={warningCount} wrongAttempts={wrongAttempts} />;
   }
 
   if (!isAuthorized) {
@@ -458,24 +482,6 @@ export default function PyHuntView() {
       <div className={styles.authContainer}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={styles.authCard}>
           <header className={styles.authHeader}>
-            <div className={styles.lobbyIcon} style={{ marginBottom: 24 }}>
-              <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path 
-                  d="M40 85C40 85 20 85 20 60C20 35 40 20 60 20C80 20 100 35 100 60C100 85 80 100 60 100C40 100 35 85 45 75C55 65 75 65 75 45C75 25 55 25 45 35" 
-                  stroke="url(#snake_grad_auth)" 
-                  strokeWidth="12" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                />
-                <circle cx="45" cy="45" r="4" fill="#00FFA3" />
-                <defs>
-                  <linearGradient id="snake_grad_auth" x1="20" y1="60" x2="100" y2="60" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#00F0FF" />
-                    <stop offset="1" stopColor="#00FFA3" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
             <h2>PyHunt</h2>
             <p className={styles.authSubtitle}>Enter your credentials to access the logic nodes.</p>
           </header>
@@ -518,7 +524,7 @@ export default function PyHuntView() {
           </div>
           <h1 className={styles.lobbyTitle}>PyHunt</h1>
           <p className={styles.lobbySubtitle}>
-            Python Treasure Hunt — Solve 5 rounds of challenges to find hidden clues!
+            Python Treasure Hunt — Solve {ROUNDS.length - 1} rounds of challenges to unlock the final transmission!
           </p>
           
           <div className={styles.nexusBadge}>
@@ -551,7 +557,6 @@ export default function PyHuntView() {
             <div className={styles.orbitNumber}>{r.id}</div>
             <div className={styles.orbitMeta}>
                <div className={styles.orbitName}>{labelConfig.phase} {r.id}: {globalConfigs.find((c: any) => c.round === r.id)?.name || r.name}</div>
-               {currentRound === r.id && <div className={styles.orbitDesc}>{globalConfigs.find((c: any) => c.round === r.id)?.description || r.description}</div>}
             </div>
           </div>
         ))}
@@ -559,13 +564,7 @@ export default function PyHuntView() {
 
       <main className={styles.logicChamber}>
         <AnimatePresence mode="wait">
-            <motion.div 
-              key={currentRound}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
-            >
+            <motion.div key={currentRound} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               <header className={styles.chamberHeader}>
                  <h2>{labelConfig.orbit} {currentRound}: {globalConfigs.find((c: any) => c.round === currentRound)?.name || ROUNDS[currentRound-1].name}</h2>
                  <div className={styles.engineStatus}>
@@ -589,6 +588,7 @@ export default function PyHuntView() {
                   </div>
                 );
               })()}
+
               <div className={styles.editorContainer}>
                 {currentRound === 1 ? (
                   <div className={styles.mcqWrapper}>
@@ -631,47 +631,107 @@ export default function PyHuntView() {
                     </div>
                   </div>
                 ) : currentRound === 2 ? (
-                  <div className={styles.jumbleCard}>
-                    <div className={styles.jumbleHeader}>
-                       <h3>Fix the Logic Sequence</h3>
-                       <p className={styles.jumbleSubtitle}>Drag lines into correct order so the logic is valid.</p>
+                  <div className={`${styles.jumbleSplitLayout} ${showScratchpad ? styles.withScratchpad : ""}`}>
+                    <div className={styles.jumbleCard}>
+                      <div className={styles.jumbleHeader}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                           <h3 style={{ margin: 0 }}>Fix the Logic Sequence</h3>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                             {jumbleSet.length > 1 && (
+                               <span className={styles.mcqProgress}>Node {currentJumbleIndex + 1} of {jumbleSet.length}</span>
+                             )}
+                             <button 
+                               className={`${styles.toggleScratchBtn} ${showScratchpad ? styles.active : ""}`}
+                               onClick={() => setShowScratchpad(!showScratchpad)}
+                             >
+                               {showScratchpad ? "✕ Close Scratchpad" : "⌨ Open Scratchpad"}
+                             </button>
+                           </div>
+                         </div>
+                         <p className={styles.jumbleSubtitle}>Drag lines into correct order so the logic is valid.</p>
+                      </div>
+                      <Reorder.Group 
+                        axis="y" 
+                        values={jumbledLines} 
+                        onReorder={setJumbledLines} 
+                        className={styles.jumbleList}
+                      >
+                        {jumbledLines.map((line, idx) => (
+                          <Reorder.Item 
+                            key={line + idx} 
+                            value={line}
+                            className={styles.jumbleItem}
+                            whileDrag={{ scale: 1.05, boxShadow: "0 10px 30px rgba(0, 242, 255, 0.2)" }}
+                          >
+                            <div className={styles.jumbleItemLeft}>
+                              <span className={styles.jumbleNumber}>{idx + 1}</span>
+                              <code>{line}</code>
+                            </div>
+                            <div className={styles.jumbleActions}>
+                               <button disabled={idx === 0} onClick={() => moveLine(idx, 'up')} className={styles.orderBtn}>▲</button>
+                               <button disabled={idx === jumbledLines.length - 1} onClick={() => moveLine(idx, 'down')} className={styles.orderBtn}>▼</button>
+                               <div className={styles.dragHandle}>
+                                  <span></span><span></span><span></span>
+                               </div>
+                            </div>
+                          </Reorder.Item>
+                        ))}
+                      </Reorder.Group>
+                      <div className={styles.jumbleFooter}>
+                        <button onClick={handleExecute} className={styles.submitOrderBtn}>
+                          ✓ Submit Order
+                        </button>
+                      </div>
                     </div>
-                    <Reorder.Group 
-                      axis="y" 
-                      values={jumbledLines} 
-                      onReorder={setJumbledLines} 
-                      className={styles.jumbleList}
+
+                    {showScratchpad && (
+                      <div className={styles.scratchpadContainer}>
+                         <div className={styles.scratchpadHeader}>
+                            <span className={styles.scratchpadTitle}>LOGIC SCRATCHPAD (OPTIONAL)</span>
+                         </div>
+                         <textarea 
+                           className={styles.scratchpadEditor}
+                           value={scratchCode}
+                           onChange={(e) => setScratchCode(e.target.value)}
+                           placeholder="# Test your Python logic here..."
+                           spellCheck={false}
+                         />
+                         <div className={styles.scratchpadActions}>
+                            <button className={styles.runScratchBtn} onClick={handleRunScratch}>
+                              ▷ RUN LOGIC
+                            </button>
+                         </div>
+                         {scratchOutput && (
+                           <div className={styles.scratchOutput}>
+                              {scratchOutput}
+                           </div>
+                         )}
+                      </div>
+                    )}
+                  </div>
+                ) : currentRound === 5 ? (
+                  <div className={styles.finalSubmitWrapper}>
+                    <div className={styles.finalIcon}>🛸</div>
+                    <h3>MISSION PROTOCOL COMPLETE</h3>
+                    <p>All logic nodes have been synchronized. The final transmission is ready for uplink to the central nexus.</p>
+                    <button 
+                      onClick={handleFinalSubmit} 
+                      className={styles.finalSubmitBtn}
+                      disabled={loading}
                     >
-                      {jumbledLines.map((line, idx) => (
-                        <Reorder.Item 
-                          key={line + idx} 
-                          value={line}
-                          className={styles.jumbleItem}
-                          whileDrag={{ scale: 1.05, boxShadow: "0 10px 30px rgba(0, 242, 255, 0.2)" }}
-                        >
-                          <div className={styles.jumbleItemLeft}>
-                            <span className={styles.jumbleNumber}>{idx + 1}</span>
-                            <code>{line}</code>
-                          </div>
-                          <div className={styles.jumbleActions}>
-                             <button disabled={idx === 0} onClick={() => moveLine(idx, 'up')} className={styles.orderBtn}>▲</button>
-                             <button disabled={idx === jumbledLines.length - 1} onClick={() => moveLine(idx, 'down')} className={styles.orderBtn}>▼</button>
-                             <div className={styles.dragHandle}>
-                                <span></span><span></span><span></span>
-                             </div>
-                          </div>
-                        </Reorder.Item>
-                      ))}
-                    </Reorder.Group>
-                    <div className={styles.jumbleFooter}>
-                      <button onClick={handleExecute} className={styles.submitOrderBtn}>
-                        ✓ Submit Order
-                      </button>
-                    </div>
+                      {loading ? "TRANSMITTING..." : "UPLINK FINAL RESULTS"}
+                    </button>
                   </div>
                 ) : (
                   <>
-                    <textarea className={styles.codeArea} value={code} onChange={(e) => setCode(e.target.value)} placeholder="# Manifest your Python logic here..." spellCheck={false} autoComplete="off" />
+                    <textarea 
+                      className={styles.codeArea} 
+                      value={code} 
+                      onChange={(e) => setCode(e.target.value)} 
+                      placeholder="# Manifest your Python logic here..." 
+                      spellCheck={false} 
+                      autoComplete="off" 
+                    />
                     <div className={styles.editorGlow} />
                   </>
                 )}
@@ -683,7 +743,7 @@ export default function PyHuntView() {
                      <button onClick={handleExecute} className={styles.executeBtn}>SUBMIT MISSION SEQUENCE</button>
                    )
                  )}
-                 {currentRound > 2 && (
+                 {currentRound > 2 && currentRound < 5 && (
                    <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>EXECUTE LOGIC PROTOCOL</button>
                  )}
               </div>
