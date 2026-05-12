@@ -548,17 +548,20 @@ async def start_exam(
         
         # ── PyHunt Specialized Initialization ──
         if title.lower() == "pyhunt":
-            # Ensure odyssey_progress exists (bypass RLS via backend service role)
+            # Reset or Initialize odyssey_progress
             try:
-                existing_prog = db.table("odyssey_progress").select("id").eq("student_id", student_id).maybe_single().execute()
-                if not existing_prog.data:
-                    db.table("odyssey_progress").insert({
-                        "student_id": student_id,
-                        "current_round": 1,
-                        "round_1_state": {},
-                        "is_completed": False
-                    }).execute()
-                    print(f"[PYHUNT] Initialized progress for {student_id}")
+                # Use upsert to either create a new record or reset the existing one to round 1
+                db.table("odyssey_progress").upsert({
+                    "student_id": student_id,
+                    "current_round": 1,
+                    "round_1_state": {"reset": True},
+                    "round_2_state": {},
+                    "round_3_state": {},
+                    "round_4_state": {},
+                    "is_completed": False,
+                    "last_ping": datetime.now(timezone.utc).isoformat()
+                }, on_conflict="student_id").execute()
+                print(f"[PYHUNT] Progress reset/initialized for {student_id}")
             except Exception as pe:
                 print(f"[PYHUNT] Progress initialization failed: {pe}")
 
