@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { usePyodide } from '@/hooks/usePyodide';
 import { supabase } from '@/lib/supabase';
@@ -119,6 +119,9 @@ export default function PyHuntView() {
   const [showScratchpad, setShowScratchpad] = useState(false);
   const [scratchOutput, setScratchOutput] = useState("");
   const [round4Passed, setRound4Passed] = useState(false);
+  
+  const lastFetchRef = useRef<number>(0);
+  const isFetchingRef = useRef<boolean>(false);
 
   const handleAutoSubmit = useCallback(() => {
     setIsAutoSubmitted(true);
@@ -209,34 +212,49 @@ export default function PyHuntView() {
     }
     syncProgress();
 
-    async function fetchGlobalConfigs() {
-       const data = await fetchPublicPyHuntConfig();
-       if (data && data.length > 0) {
-          const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
-          if (rounds) setGlobalConfigs(rounds);
-          const mcqs = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
-          if (mcqs) {
-              const mapped = mcqs.map((m: any) => ({
-                 id: m.id,
-                 question: m.question,
-                 options: m.options,
-                 correct: m.answer,
-                 posMarks: m.positive_marks ?? 1,
-                 negMarks: Math.abs(m.negative_marks ?? 0),
-                 output: "Key: Manifested"
-              }));
-              setMcqSet(mapped);
-          }
-           const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
-           if (j && j.length > 0) setJumbleSet(j);
-          const l = data.find((c: any) => c.config_key === 'labels')?.config_value;
-          if (l) setLabelConfig(l);
+    async function fetchGlobalConfigs(force: boolean = false) {
+       // Throttling: prevent redundant fetches within 30 seconds unless forced
+       const now = Date.now();
+       if (!force && isFetchingRef.current) return;
+       if (!force && now - lastFetchRef.current < 30000) return;
+       
+       isFetchingRef.current = true;
+       try {
+         const data = await fetchPublicPyHuntConfig();
+         lastFetchRef.current = Date.now();
+         if (data && data.length > 0) {
+            const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
+            if (rounds) setGlobalConfigs(rounds);
+            const mcqs = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
+            if (mcqs) {
+                const mapped = mcqs.map((m: any) => ({
+                   id: m.id,
+                   question: m.question,
+                   options: m.options,
+                   correct: m.answer,
+                   posMarks: m.positive_marks ?? 1,
+                   negMarks: Math.abs(m.negative_marks ?? 0),
+                   output: "Key: Manifested"
+                }));
+                setMcqSet(mapped);
+            }
+             const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
+             if (j && j.length > 0) setJumbleSet(j);
+            const l = data.find((c: any) => c.config_key === 'labels')?.config_value;
+            if (l) setLabelConfig(l);
+         }
+       } finally {
+         isFetchingRef.current = false;
        }
     }
     fetchGlobalConfigs();
 
     const channel = supabase.channel('pyhunt_global_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pyhunt_global_config' }, () => fetchGlobalConfigs())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pyhunt_global_config' }, () => {
+        // Add jitter: 2-6 seconds delay to spread the load across 200 clients
+        const jitter = Math.random() * 4000 + 2000;
+        setTimeout(() => fetchGlobalConfigs(true), jitter);
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -278,15 +296,25 @@ export default function PyHuntView() {
   }, [currentRound, originalJumbleCode, jumbledLines.length]);
 
   const handleAuthorize = async () => {
-    const data = await fetchPublicPyHuntConfig();
     let targetCode = "PYHUNT67";
     let allowedUsns = "";
-    if (data && data.length > 0) {
-       const auth = data.find((c: any) => c.config_key === 'auth')?.config_value;
-       if (auth) {
-          targetCode = auth.startCode || "PYHUNT67";
-          allowedUsns = auth.authorizedUsns || "";
-       }
+
+    // 1. Try to use already-fetched config first to avoid API call
+    const authConfig = globalConfigs.find((c: any) => c.config_key === 'auth')?.config_value;
+    
+    if (authConfig) {
+      targetCode = authConfig.startCode || "PYHUNT67";
+      allowedUsns = authConfig.authorizedUsns || "";
+    } else {
+      // 2. Fallback to API if not in state yet (unlikely)
+      const data = await fetchPublicPyHuntConfig();
+      if (data && data.length > 0) {
+         const auth = data.find((c: any) => c.config_key === 'auth')?.config_value;
+         if (auth) {
+            targetCode = auth.startCode || "PYHUNT67";
+            allowedUsns = auth.authorizedUsns || "";
+         }
+      }
     }
 
     if (authForm.missionCode.toUpperCase() === targetCode.toUpperCase()) {

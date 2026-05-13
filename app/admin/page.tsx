@@ -98,6 +98,13 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
   const [violations, setViolations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [tableMissing, setTableMissing] = useState(false);
+  
+  const activeTabRef = useRef(activeTab);
+  const lastSyncRef = useRef(0);
+  
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   const fetchPyHuntStudents = useCallback(async () => {
     try {
@@ -132,10 +139,26 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
   useEffect(() => {
     fetchOdyssey();
     fetchPyHuntStudents();
+    
     const sub = supabase.channel('odyssey_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'odyssey_progress' }, () => {
-      fetchOdyssey();
-      fetchPyHuntStudents();
+      // 1. Tab-Awareness: Only re-fetch if currently viewing live status
+      if (activeTabRef.current !== 'live_status') return;
+
+      // 2. Throttling: Prevent re-fetching more than once every 5 seconds
+      const now = Date.now();
+      if (now - lastSyncRef.current < 5000) return;
+
+      // 3. Jitter: Add 3-7s delay to spread the load
+      const jitter = Math.random() * 4000 + 3000;
+      setTimeout(() => {
+        if (activeTabRef.current === 'live_status') {
+          fetchOdyssey();
+          fetchPyHuntStudents();
+          lastSyncRef.current = Date.now();
+        }
+      }, jitter);
     }).subscribe();
+
     return () => { supabase.removeChannel(sub); };
   }, [fetchOdyssey, fetchPyHuntStudents]);
 

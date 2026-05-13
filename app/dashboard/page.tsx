@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { fetchPublicExamConfig, type ExamConfig, updateProfile, getExamStatus } from "@/lib/api";
@@ -134,15 +134,30 @@ export default function DashboardPage() {
     }
   }, [student]);
 
+  const lastReloadRef = useRef(0);
+
   useEffect(() => {
-    loadExams();
+    // 1. Initial Stagger: Spread the DB connection spike when 200 students login at once
+    const initialStagger = Math.random() * 3000;
+    const initialTimer = setTimeout(() => {
+      loadExams();
+      lastReloadRef.current = Date.now();
+    }, initialStagger);
     
-    // Optimized Realtime with Jitter to prevent API spikes
+    // 2. Throttled Realtime with Jitter
     const handleUpdate = () => {
-      // Add random delay between 0 and 5 seconds
-      const jitter = Math.random() * 5000;
-      console.log(`[Realtime] Update received. Scheduling reload in ${Math.round(jitter)}ms (Jitter)`);
-      setTimeout(() => loadExams(), jitter);
+      const now = Date.now();
+      // Throttle: Don't schedule another reload if we just reloaded in the last 10s
+      if (now - lastReloadRef.current < 10000) return;
+
+      // Add random delay between 2 and 7 seconds to spread the load
+      const jitter = Math.random() * 5000 + 2000;
+      console.log(`[Realtime] Update detected. Staggering reload in ${Math.round(jitter)}ms...`);
+      
+      setTimeout(() => {
+        loadExams();
+        lastReloadRef.current = Date.now();
+      }, jitter);
     };
 
     const channel = supabase.channel("exam_config_rt")
@@ -154,6 +169,7 @@ export default function DashboardPage() {
       .subscribe();
 
     return () => { 
+      clearTimeout(initialTimer);
       supabase.removeChannel(channel); 
       supabase.removeChannel(qChannel); 
     };
