@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [branch, setBranch] = useState("DS");
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
@@ -32,7 +32,7 @@ export default function LoginPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    
+
     if (!usn.trim() || !password.trim()) {
       setError("Credentials required to access the hub.");
       return;
@@ -88,7 +88,7 @@ export default function LoginPage() {
       <div className={styles.overlay} />
 
       {/* Top Right Help Button */}
-      <button 
+      <button
         className={styles.helpBtn}
         onClick={() => {
           setModalType("support");
@@ -96,12 +96,12 @@ export default function LoginPage() {
         }}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
         Get Help
       </button>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         className={styles.card}
@@ -121,7 +121,7 @@ export default function LoginPage() {
             <input
               type="text"
               className={styles.inputField}
-              placeholder={isRegistering ? "USN No" : "Email ID / USN No"}
+              placeholder={isRegistering ? "USN No" : "USN No"}
               value={usn}
               onChange={(e) => {
                 const val = e.target.value;
@@ -151,7 +151,7 @@ export default function LoginPage() {
 
           <AnimatePresence>
             {isRegistering && (
-              <motion.div 
+              <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -186,13 +186,13 @@ export default function LoginPage() {
                     spellCheck="false"
                   />
                 </div>
-                
+
                 <div className={styles.selectWrapper}>
                   <svg className={styles.inputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                   </svg>
-                  <div 
-                    className={styles.selectTrigger} 
+                  <div
+                    className={styles.selectTrigger}
                     onClick={() => setIsBranchOpen(!isBranchOpen)}
                   >
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -200,18 +200,18 @@ export default function LoginPage() {
                     </span>
                     <span style={{ fontSize: '10px', opacity: 0.5 }}>{isBranchOpen ? "▲" : "▼"}</span>
                   </div>
-                  
+
                   <AnimatePresence>
                     {isBranchOpen && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className={styles.selectOptions}
                       >
                         {BRANCHES.map(b => (
-                          <div 
-                            key={b.id} 
+                          <div
+                            key={b.id}
                             className={styles.selectOption}
                             onClick={() => {
                               setBranch(b.id);
@@ -236,9 +236,9 @@ export default function LoginPage() {
                 <button
                   type="button"
                   className={styles.submitBtn}
-                  style={{ 
-                    background: '#ef4444', 
-                    fontSize: 12, 
+                  style={{
+                    background: '#ef4444',
+                    fontSize: 12,
                     padding: '8px 12px',
                     height: 'auto',
                     marginTop: 4,
@@ -271,8 +271,8 @@ export default function LoginPage() {
         </form>
 
         <div className={styles.linksRow}>
-          <div 
-            className={styles.link} 
+          <div
+            className={styles.link}
             onClick={() => {
               if (isRegistering) {
                 setIsRegistering(false);
@@ -293,14 +293,14 @@ export default function LoginPage() {
       {/* Forgot Password Modal */}
       <AnimatePresence>
         {showForgotModal && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className={styles.modalOverlay}
             onClick={() => setShowForgotModal(false)}
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -310,13 +310,13 @@ export default function LoginPage() {
               {isHelpSubmitted ? (
                 <>
                   <svg className={styles.modalIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#10b981' }}>
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
                   </svg>
                   <h2 className={styles.modalTitle}>Request Sent</h2>
                   <p className={styles.modalText}>
                     Your help request has been submitted. Please wait for a faculty member or administrator to reach out to you.
                   </p>
-                  <button 
+                  <button
                     className={styles.modalCloseBtn}
                     onClick={() => {
                       setShowForgotModal(false);
@@ -342,11 +342,11 @@ export default function LoginPage() {
                   <p className={styles.modalText} style={{ fontSize: 16, lineHeight: 1.6, color: '#cbd5e1', marginBottom: 32 }}>
                     Please contact the <strong style={{ color: '#fff' }}>Admin or Faculty</strong> to reset your password or recover your account details.
                   </p>
-                  
-                  <button 
-                    className={styles.submitBtn} 
-                    style={{ 
-                      textTransform: 'uppercase', 
+
+                  <button
+                    className={styles.submitBtn}
+                    style={{
+                      textTransform: 'uppercase',
                       letterSpacing: 2,
                       background: 'linear-gradient(135deg, #d4af37 0%, #c2a16d 100%)',
                       color: '#1e1b4b',
@@ -370,19 +370,19 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  <div style={{ 
-                    width: 60, height: 60, borderRadius: '50%', border: '3px solid #f59e0b', 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#f59e0b' 
+                  <div style={{
+                    width: 60, height: 60, borderRadius: '50%', border: '3px solid #f59e0b',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#f59e0b'
                   }}>
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                      <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
                     </svg>
                   </div>
                   <h2 className={styles.modalTitle}>Campus Support</h2>
                   <p className={styles.modalText} style={{ marginBottom: '24px', fontSize: 14 }}>
                     Describe your issue and an administrator will assist you shortly.
                   </p>
-                  
+
                   <div className={styles.form} style={{ gap: '12px' }}>
                     <div className={styles.inputWrap}>
                       <input
@@ -403,9 +403,9 @@ export default function LoginPage() {
                         style={{ paddingLeft: '16px', minHeight: '100px', resize: 'none', paddingTop: '12px' }}
                       />
                     </div>
-                    <button 
-                      className={styles.submitBtn} 
-                      style={{ 
+                    <button
+                      className={styles.submitBtn}
+                      style={{
                         marginTop: '10px',
                         background: 'linear-gradient(135deg, #d4af37 0%, #c2a16d 100%)',
                         color: '#1e1b4b',
@@ -431,8 +431,8 @@ export default function LoginPage() {
                     >
                       {loading ? "Sending..." : "Submit Request"}
                     </button>
-                    <button 
-                      className={styles.link} 
+                    <button
+                      className={styles.link}
                       style={{ marginTop: '10px', background: 'none', border: 'none', color: '#94a3b8', fontSize: 13 }}
                       onClick={() => setShowForgotModal(false)}
                     >
