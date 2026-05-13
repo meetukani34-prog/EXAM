@@ -144,12 +144,12 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
       // 1. Tab-Awareness: Only re-fetch if currently viewing live status
       if (activeTabRef.current !== 'live_status') return;
 
-      // 2. Throttling: Prevent re-fetching more than once every 5 seconds
+      // 2. Throttling: Prevent re-fetching more than once every 60 seconds
       const now = Date.now();
-      if (now - lastSyncRef.current < 5000) return;
+      if (now - lastSyncRef.current < 60000) return;
 
-      // 3. Jitter: Add 3-7s delay to spread the load
-      const jitter = Math.random() * 4000 + 3000;
+      // 3. Jitter: Add 10-30s delay to spread the load
+      const jitter = Math.random() * 20000 + 10000;
       setTimeout(() => {
         if (activeTabRef.current === 'live_status') {
           fetchOdyssey();

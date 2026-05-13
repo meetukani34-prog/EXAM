@@ -651,24 +651,6 @@ async def update_exam_config(request: ExamConfigUpdate, _: bool = Depends(verify
     return ExamConfig(**{k: v for k, v in update_data.items() if k in ExamConfig.model_fields})
 
 
-@router.get("/exam/config/public")
-async def get_exam_config_public(branch: Optional[str] = Query(None)):
-    """Public exam config endpoint (no auth) — filtered by branch and active status."""
-    db = get_supabase()
-    try:
-        # 1. Start with basic active filter
-        query = db.table("exam_config").select("*").eq("is_active", True)
-        
-        # 2. Add Branch-Level SQL Filtering (Optimized for 200+ students)
-        if branch:
-            # Match specific branch OR global "ALL" branch
-            query = query.or_(f"branch.eq.{branch.upper()},branch.eq.ALL,branch.is.null")
-        
-        result = query.execute()
-        return result.data or []
-    except Exception as e:
-        print(f"[ADMIN] Public config SQL fetch failed: {e}")
-        return []
 
 
 # ── PyHunt Global Configuration ────────────────────────────────

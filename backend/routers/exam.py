@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks, Query
+from typing import Optional, List
 from datetime import datetime, timezone
 
 from models.schemas import (
@@ -45,6 +46,25 @@ async def get_exam_status(current: dict = Depends(get_current_student)):
 async def heartbeat(current: dict = Depends(get_current_student)):
     """Simple authenticated ping to check if student is blocked/authorized."""
     return {"status": "ok"}
+
+@router.get("/config/public")
+async def get_exam_config_public(branch: Optional[str] = Query(None)):
+    """Public exam config endpoint (no auth) — filtered by branch and active status."""
+    db = get_supabase()
+    try:
+        # 1. Start with basic active filter
+        query = db.table("exam_config").select("*").eq("is_active", True)
+        
+        # 2. Add Branch-Level SQL Filtering (Optimized for 200+ students)
+        if branch:
+            # Match specific branch OR global "ALL" branch
+            query = query.or_(f"branch.eq.{branch.upper()},branch.eq.ALL,branch.is.null")
+        
+        result = query.execute()
+        return result.data or []
+    except Exception as e:
+        print(f"[EXAM] Public config SQL fetch failed: {e}")
+        return []
 
 
 

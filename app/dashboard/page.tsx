@@ -80,7 +80,7 @@ export default function DashboardPage() {
   // ── Load exams ────────────────────────────────────────────
   const loadExams = useCallback(async () => {
     try {
-      const configs = await withRetry(() => fetchPublicExamConfig());
+      const configs = await withRetry(() => fetchPublicExamConfig(student?.branch));
       
       // OPTIMIZATION: Instead of fetching ALL questions (which causes lag), 
       // we'll just use the configs as the base and filter/display accordingly.
@@ -140,15 +140,18 @@ export default function DashboardPage() {
     // 1. Initial Stagger: Spread the DB connection spike when 200 students login at once
     const initialStagger = Math.random() * 3000;
     const initialTimer = setTimeout(() => {
-      loadExams();
-      lastReloadRef.current = Date.now();
+      // Guard: Only fetch if student is loaded
+      if (student) {
+        loadExams();
+        lastReloadRef.current = Date.now();
+      }
     }, initialStagger);
     
     // 2. Throttled Realtime with Jitter
     const handleUpdate = () => {
       const now = Date.now();
-      // Throttle: Don't schedule another reload if we just reloaded in the last 10s
-      if (now - lastReloadRef.current < 10000) return;
+      // Throttle: Don't schedule another reload if we just reloaded in the last 30s
+      if (now - lastReloadRef.current < 30000) return;
 
       // Add random delay between 2 and 7 seconds to spread the load
       const jitter = Math.random() * 5000 + 2000;
@@ -175,26 +178,7 @@ export default function DashboardPage() {
     };
   }, [loadExams]);
 
-  const studentExams = useMemo(() => {
-    if (!student) return [];
-    const filtered = allExams.filter(e => {
-      const eBranch = (e.branch || "ALL").toUpperCase();
-      const sBranch = (student.branch || "ALL").toUpperCase();
-      const match = eBranch === "ALL" || eBranch === sBranch || sBranch === "ALL";
-      if (!match) {
-        console.log(`[Dashboard] Filtering out ${e.exam_name}: Branch mismatch (${eBranch} vs ${sBranch})`);
-      }
-      return match;
-    });
-    console.log("[Dashboard] Filtered Student Exams:", filtered.length, filtered);
-    return filtered;
-  }, [allExams, student]);
-
-  useEffect(() => {
-    console.log("[Dashboard] Student:", student);
-    console.log("[Dashboard] All Exams:", allExams);
-    console.log("[Dashboard] Filtered Student Exams:", studentExams);
-  }, [student, allExams, studentExams]);
+  const studentExams = allExams;
 
   const handleLaunchExam = (exam: ExamNode) => {
     if (!exam.is_active) return;

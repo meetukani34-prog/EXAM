@@ -32,7 +32,6 @@ async function apiFetch<T>(
     console.warn(`[API] Warning: Fetching ${url} without token.`);
   }
 
-  console.log(`[API] Fetching: ${options.method || 'GET'} ${url}`);
 
   try {
     const res = await fetch(url, { ...options, headers });
@@ -253,7 +252,6 @@ const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET || process.env.NEXT_PU
 
 function adminFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${path}`;
-  console.log(`[ADMIN API] Fetching: ${options.method || 'GET'} ${url}`);
 
   return fetch(url, {
     ...options,
@@ -456,24 +454,24 @@ export async function updateExamConfig(data: Partial<ExamConfig>): Promise<ExamC
   });
 }
 
-/** Public endpoint — no admin secret needed. Returns all active configurations. */
-export async function fetchPublicExamConfig(): Promise<ExamConfig[]> {
+/** Public endpoint — no admin secret needed. Returns active configurations filtered by branch. */
+export async function fetchPublicExamConfig(branch?: string): Promise<ExamConfig[]> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
-    console.log(`[API] Fetching public exam config from: ${API_BASE}/admin/exam/config/public`);
-    const res = await fetch(`${API_BASE}/admin/exam/config/public`, {
+    const query = branch ? `?branch=${encodeURIComponent(branch)}` : "";
+    const url = `${API_BASE}/exam/config/public${query}`;
+    
+    const res = await fetch(url, {
       signal: controller.signal,
       headers: { 'Cache-Control': 'no-cache' }
     });
     clearTimeout(timeoutId);
 
     if (!res.ok) {
-      console.warn(`[API] Public config fetch failed with status ${res.status}. Trying fallback...`);
-      const fallbackRes = await fetch(`${API_BASE}/admin/exam/config/public`);
-      if (!fallbackRes.ok) return [];
-      return await fallbackRes.json();
+      console.warn(`[API] Public config fetch failed with status ${res.status}.`);
+      return [];
     }
     const data = await res.json();
     console.log(`[API] Successfully fetched ${data.length} exams`);
