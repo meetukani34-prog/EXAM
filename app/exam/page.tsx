@@ -441,17 +441,17 @@ export default function ExamPage() {
               <div className={styles.resultCard}>
                 <div className={styles.resultDetail}>
                   <div className={styles.detailValue} style={{ color: "#4ade80" }}>{submitResult.correct_count ?? 0}</div>
-                  <div className={styles.detailLabel} style={{ opacity: 0.9 }}>Correct</div>
+                  <div className={styles.detailLabel} style={{ color: "rgba(255,255,255,0.7)" }}>Correct</div>
                 </div>
                 <div className={styles.resultDetail}>
                   <div className={styles.detailValue} style={{ color: "#f87171" }}>{submitResult.wrong_count ?? 0}</div>
-                  <div className={styles.detailLabel} style={{ opacity: 0.9 }}>Wrong</div>
+                  <div className={styles.detailLabel} style={{ color: "rgba(255,255,255,0.7)" }}>Wrong</div>
                 </div>
                 <div className={styles.resultDetail}>
                   <div className={styles.detailValue} style={{ color: "#cbd5e1" }}>
                     {Math.max(0, (questions.length || 0) - ((submitResult.correct_count || 0) + (submitResult.wrong_count || 0)))}
                   </div>
-                  <div className={styles.detailLabel} style={{ opacity: 0.9 }}>Skipped</div>
+                  <div className={styles.detailLabel} style={{ color: "rgba(255,255,255,0.7)" }}>Skipped</div>
                 </div>
                 
                 <div style={{ gridColumn: "1 / -1", marginTop: 12, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
