@@ -449,17 +449,16 @@ export default function LoginPage() {
       <div className={styles.pulseBar}>
         <div className={styles.pulseBadge}>Campus Pulse</div>
         <div className={styles.pulseContent}>
-          <span>Registration Deadline: Sept 15</span>
+          <span>PyHunt Registration Deadline: MAY 15</span>
           <span>•</span>
           <span>New Research Grant Winners Announced!</span>
           <span>•</span>
           <span>Campus Safety Alert: Standard Procedures in Place.</span>
           <span>•</span>
-          <span>Upcoming Tech Symposium: Register Today!</span>
-          <span>•</span>
-          <span>Registration Deadline: Sept 15</span>
+          <span>Upcoming Tech Symposium: Comming Soon!</span>
           <span>•</span>
           <span>New Research Grant Winners Announced!</span>
+          <span>•</span>
         </div>
       </div>
     </div>
