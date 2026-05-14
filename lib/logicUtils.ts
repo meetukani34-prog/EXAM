@@ -12,8 +12,11 @@ export const validateOutput = (stdout: string, expectedRaw: string) => {
   const userTokens = normalizeTokens(stdout);
   const expectedTokens = normalizeTokens(expectedRaw);
 
-  // If admin didn't provide any expected output, consider it a pass (optional output)
-  if (expectedTokens.length === 0) return true;
+  // If both are empty, it's a pass (nothing expected, nothing given)
+  if (expectedTokens.length === 0 && userTokens.length === 0) return true;
+  
+  // If admin didn't provide any expected output, but user produced something, it's a failure (missing target)
+  if (expectedTokens.length === 0 && userTokens.length > 0) return false;
   
   if (userTokens.length === 0) return false;
 

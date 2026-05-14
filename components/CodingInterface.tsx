@@ -182,6 +182,14 @@ export default function CodingInterface({
                     exit={{ opacity: 0 }}
                     className={styles.testcaseArea}
                   >
+                    {testResults && testResults.length > 0 && (
+                      <div className={styles.testSummary}>
+                        <span className={styles.summaryLabel}>Test Result:</span>
+                        <span className={testResults.every(r => r.passed) ? styles.allPassed : styles.someFailed}>
+                          {testResults.filter(r => r.passed).length} / {testResults.length} Case(s) Passed
+                        </span>
+                      </div>
+                    )}
                     {testCases.map((tc: any, i: number) => {
                       const result = testResults?.[i];
                       const isPassed = result?.passed;
