@@ -903,6 +903,16 @@ async def export_results(
                 rounds_comp = (p.get("current_round") or 1) - 1
                 if p.get("is_completed"): rounds_comp = 5
                 
+                time_taken = "Live"
+                if exam_st.get("started_at"):
+                    try:
+                        t0 = datetime.fromisoformat(exam_st["started_at"].replace("Z", "+00:00"))
+                        t1 = datetime.now(timezone.utc)
+                        secs = int((t1 - t0).total_seconds())
+                        time_taken = f"{secs // 60}m {secs % 60}s (Live)"
+                    except Exception:
+                        pass
+
                 rows.append({
                     "USN": student.get("usn", ""),
                     "Name": student.get("name", ""),
@@ -912,7 +922,7 @@ async def export_results(
                     "Score": rounds_comp,
                     "Total": 5,
                     "Percentage": f"{round(rounds_comp/5*100, 1)}%",
-                    "Time Taken": "Live",
+                    "Time Taken": time_taken,
                     "Submitted At": p.get("last_ping", ""),
                     "Warnings": exam_st.get("warnings", 0)
                 })
