@@ -9,6 +9,7 @@ import { startExam, ApiError, fetchPublicPyHuntConfig } from '@/lib/api';
 import styles from './PyHuntView.module.css';
 import AntiCheat from './AntiCheat';
 import { useFullscreen } from '@/hooks/useFullscreen';
+import CodingInterface from './CodingInterface';
 
 const ROUNDS = [
   { id: 1, name: "MCQ Logic", description: "Identify the correct Python syntax and logic from the given options.", target: "syntax" },
@@ -787,199 +788,208 @@ export default function PyHuntView() {
                  )}
               </header>
 
-              {(() => {
-                const roundChallenges = codingChallenges[currentRound] || [];
-                const currentChallenge = roundChallenges[currentProblemIndex];
-                const c = currentChallenge || globalConfigs.find((conf: any) => conf.round === currentRound);
-                
-                if (!c?.prompt && !c?.imageUrl && roundChallenges.length <= 1) return null;
-                return (
-                  <div className={styles.roundMeta}>
-                    {roundChallenges.length > 1 && (
-                      <div className={styles.challengeProgress} style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', marginBottom: 8 }}>
-                        CHALLENGE {currentProblemIndex + 1} OF {roundChallenges.length}
-                      </div>
-                    )}
-                    {c?.imageUrl && <img src={c.imageUrl} alt="Logic Challenge" className={styles.roundImage} />}
-                    {c?.prompt && <p className={styles.roundPrompt} style={{ whiteSpace: 'pre-wrap' }}>{c.prompt}</p>}
-                  </div>
-                );
-              })()}
-
-              <div className={styles.editorContainer}>
-                {currentRound === 1 ? (
-                  <div className={styles.mcqWrapper}>
-                    <div className={styles.mcqHeader}>
-                      <span className={styles.mcqProgress}>Node {currentMcqIndex + 1} of {mcqSet.length}</span>
-                      <span className={styles.scoringBadge}>+{mcqSet[currentMcqIndex].posMarks} / -{mcqSet[currentMcqIndex].negMarks}</span>
-                    </div>
+              {(currentRound > 2 && currentRound < 5) ? (
+                <CodingInterface 
+                  problem={{
+                    prompt: (codingChallenges[currentRound] || [])[currentProblemIndex]?.prompt || globalConfigs.find((c: any) => c.round === currentRound)?.prompt || "",
+                    imageUrl: (codingChallenges[currentRound] || [])[currentProblemIndex]?.imageUrl || globalConfigs.find((c: any) => c.round === currentRound)?.imageUrl || "",
+                    test_cases: (codingChallenges[currentRound] || [])[currentProblemIndex]?.test_cases || globalConfigs.find((c: any) => c.round === currentRound)?.test_cases || "[]",
+                    target_output: (codingChallenges[currentRound] || [])[currentProblemIndex]?.target_output || globalConfigs.find((c: any) => c.round === currentRound)?.target_output || ""
+                  }}
+                  code={code}
+                  setCode={setCode}
+                  output={output}
+                  onRun={handleExecute}
+                  onSubmit={handleExecute}
+                  pyLoading={pyLoading}
+                  currentRound={currentRound}
+                  labelConfig={labelConfig}
+                  isRound4Passed={round4Passed}
+                />
+              ) : (
+                <>
+                  {(() => {
+                    const roundChallenges = codingChallenges[currentRound] || [];
+                    const currentChallenge = roundChallenges[currentProblemIndex];
+                    const c = currentChallenge || globalConfigs.find((conf: any) => conf.round === currentRound);
                     
-                    <div className={styles.mcqQuestionSection}>
-                      <p className={styles.mcqQuestion}>{mcqSet[currentMcqIndex].question}</p>
-                      {mcqSet[currentMcqIndex].imageUrl && (
-                        <div style={{ marginTop: 16, textAlign: 'center' }}>
-                           <img 
-                             src={mcqSet[currentMcqIndex].imageUrl} 
-                             alt="Question Visual" 
-                             style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)' }} 
-                           />
+                    if (!c?.prompt && !c?.imageUrl && roundChallenges.length <= 1) return null;
+                    return (
+                      <div className={styles.roundMeta}>
+                        {roundChallenges.length > 1 && (
+                          <div className={styles.challengeProgress} style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', marginBottom: 8 }}>
+                            CHALLENGE {currentProblemIndex + 1} OF {roundChallenges.length}
+                          </div>
+                        )}
+                        {c?.imageUrl && <img src={c.imageUrl} alt="Logic Challenge" className={styles.roundImage} />}
+                        {c?.prompt && <p className={styles.roundPrompt} style={{ whiteSpace: 'pre-wrap' }}>{c.prompt}</p>}
+                      </div>
+                    );
+                  })()}
+
+                  <div className={styles.editorContainer}>
+                    {currentRound === 1 ? (
+                      <div className={styles.mcqWrapper}>
+                        <div className={styles.mcqHeader}>
+                          <span className={styles.mcqProgress}>Node {currentMcqIndex + 1} of {mcqSet.length}</span>
+                          <span className={styles.scoringBadge}>+{mcqSet[currentMcqIndex].posMarks} / -{mcqSet[currentMcqIndex].negMarks}</span>
                         </div>
-                      )}
-                    </div>
-
-                    <div className={styles.mcqOptions}>
-                      {mcqSet[currentMcqIndex].options.map((opt: string, i: number) => (
-                        <button
-                          key={i}
-                          className={`${styles.mcqOption} ${mcqSelectionMap[currentMcqIndex] === i ? styles.selected : ""}`}
-                          onClick={() => handleMcqSelect(currentMcqIndex, i)}
-                        >
-                          <span className={styles.optionLetter}>{String.fromCharCode(65 + i)}</span>
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className={styles.mcqNav}>
-                       <button disabled={currentMcqIndex === 0} onClick={() => setCurrentMcqIndex(prev => prev - 1)} className={styles.navBtn}>← Previous Node</button>
-                       {mcqSelectionMap[currentMcqIndex] !== undefined && currentMcqIndex < mcqSet.length - 1 && (
-                         <button onClick={() => setCurrentMcqIndex(prev => prev + 1)} className={styles.navBtn}>Next Node →</button>
-                       )}
-                    </div>
-                  </div>
-                ) : currentRound === 2 ? (
-                  <div className={`${styles.jumbleSplitLayout} ${showScratchpad ? styles.withScratchpad : ""}`}>
-                    <div className={styles.jumbleCard}>
-                      <div className={styles.jumbleHeader}>
-                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                           <h3 style={{ margin: 0 }}>Fix the Logic Sequence</h3>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                             {jumbleSet.length > 1 && (
-                               <span className={styles.mcqProgress}>Node {currentJumbleIndex + 1} of {jumbleSet.length}</span>
-                             )}
-                             <button 
-                               className={`${styles.toggleScratchBtn} ${showScratchpad ? styles.active : ""}`}
-                               onClick={() => setShowScratchpad(!showScratchpad)}
-                             >
-                               {showScratchpad ? "✕ Close Scratchpad" : "⌨ Open Scratchpad"}
-                             </button>
-                           </div>
-                         </div>
-                         <p className={styles.jumbleSubtitle}>Drag lines into correct order so the logic is valid.</p>
-                      </div>
-                      <Reorder.Group 
-                        axis="y" 
-                        values={jumbledLines} 
-                        onReorder={setJumbledLines} 
-                        className={styles.jumbleList}
-                      >
-                        {jumbledLines.map((line, idx) => (
-                          <Reorder.Item 
-                            key={line + idx} 
-                            value={line}
-                            className={styles.jumbleItem}
-                            whileDrag={{ scale: 1.05, boxShadow: "0 10px 30px rgba(0, 242, 255, 0.2)" }}
-                          >
-                            <div className={styles.jumbleItemLeft}>
-                              <span className={styles.jumbleNumber}>{idx + 1}</span>
-                              <code>{line}</code>
+                        
+                        <div className={styles.mcqQuestionSection}>
+                          <p className={styles.mcqQuestion}>{mcqSet[currentMcqIndex].question}</p>
+                          {mcqSet[currentMcqIndex].imageUrl && (
+                            <div style={{ marginTop: 16, textAlign: 'center' }}>
+                               <img 
+                                 src={mcqSet[currentMcqIndex].imageUrl} 
+                                 alt="Question Visual" 
+                                 style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)' }} 
+                               />
                             </div>
-                            <div className={styles.jumbleActions}>
-                               <button disabled={idx === 0} onClick={() => moveLine(idx, 'up')} className={styles.orderBtn}>▲</button>
-                               <button disabled={idx === jumbledLines.length - 1} onClick={() => moveLine(idx, 'down')} className={styles.orderBtn}>▼</button>
-                               <div className={styles.dragHandle}>
-                                  <span></span><span></span><span></span>
-                               </div>
-                            </div>
-                          </Reorder.Item>
-                        ))}
-                      </Reorder.Group>
-                      <div className={styles.jumbleFooter}>
-                        <button onClick={handleExecute} className={styles.submitOrderBtn}>
-                          ✓ Submit Order
-                        </button>
-                      </div>
-                    </div>
+                          )}
+                        </div>
 
-                    {showScratchpad && (
-                      <div className={styles.scratchpadContainer}>
-                         <div className={styles.scratchpadHeader}>
-                            <span className={styles.scratchpadTitle}>LOGIC SCRATCHPAD (OPTIONAL)</span>
-                         </div>
-                         <textarea 
-                           className={styles.scratchpadEditor}
-                           value={scratchCode}
-                           onChange={(e) => setScratchCode(e.target.value)}
-                           placeholder="# Test your Python logic here..."
-                           spellCheck={false}
-                         />
-                         <div className={styles.scratchpadActions}>
-                            <button className={styles.runScratchBtn} onClick={handleRunScratch}>
-                              ▷ RUN LOGIC
+                        <div className={styles.mcqOptions}>
+                          {mcqSet[currentMcqIndex].options.map((opt: string, i: number) => (
+                            <button
+                              key={i}
+                              className={`${styles.mcqOption} ${mcqSelectionMap[currentMcqIndex] === i ? styles.selected : ""}`}
+                              onClick={() => handleMcqSelect(currentMcqIndex, i)}
+                            >
+                              <span className={styles.optionLetter}>{String.fromCharCode(65 + i)}</span>
+                              {opt}
                             </button>
-                         </div>
-                         {scratchOutput && (
-                           <div className={styles.scratchOutput}>
-                              {scratchOutput}
-                           </div>
-                         )}
+                          ))}
+                        </div>
+
+                        <div className={styles.mcqNav}>
+                           <button disabled={currentMcqIndex === 0} onClick={() => setCurrentMcqIndex(prev => prev - 1)} className={styles.navBtn}>← Previous Node</button>
+                           {mcqSelectionMap[currentMcqIndex] !== undefined && currentMcqIndex < mcqSet.length - 1 && (
+                             <button onClick={() => setCurrentMcqIndex(prev => prev + 1)} className={styles.navBtn}>Next Node →</button>
+                           )}
+                        </div>
                       </div>
+                    ) : currentRound === 2 ? (
+                      <div className={`${styles.jumbleSplitLayout} ${showScratchpad ? styles.withScratchpad : ""}`}>
+                        <div className={styles.jumbleCard}>
+                          <div className={styles.jumbleHeader}>
+                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                               <h3 style={{ margin: 0 }}>Fix the Logic Sequence</h3>
+                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                 {jumbleSet.length > 1 && (
+                                   <span className={styles.mcqProgress}>Node {currentJumbleIndex + 1} of {jumbleSet.length}</span>
+                                 )}
+                                 <button 
+                                   className={`${styles.toggleScratchBtn} ${showScratchpad ? styles.active : ""}`}
+                                   onClick={() => setShowScratchpad(!showScratchpad)}
+                                 >
+                                   {showScratchpad ? "✕ Close Scratchpad" : "⌨ Open Scratchpad"}
+                                 </button>
+                               </div>
+                             </div>
+                             <p className={styles.jumbleSubtitle}>Drag lines into correct order so the logic is valid.</p>
+                          </div>
+                          <Reorder.Group 
+                            axis="y" 
+                            values={jumbledLines} 
+                            onReorder={setJumbledLines} 
+                            className={styles.jumbleList}
+                          >
+                            {jumbledLines.map((line, idx) => (
+                              <Reorder.Item 
+                                key={line + idx} 
+                                value={line}
+                                className={styles.jumbleItem}
+                                whileDrag={{ scale: 1.05, boxShadow: "0 10px 30px rgba(0, 242, 255, 0.2)" }}
+                              >
+                                <div className={styles.jumbleItemLeft}>
+                                  <span className={styles.jumbleNumber}>{idx + 1}</span>
+                                  <code>{line}</code>
+                                </div>
+                                <div className={styles.jumbleActions}>
+                                   <button disabled={idx === 0} onClick={() => moveLine(idx, 'up')} className={styles.orderBtn}>▲</button>
+                                   <button disabled={idx === jumbledLines.length - 1} onClick={() => moveLine(idx, 'down')} className={styles.orderBtn}>▼</button>
+                                   <div className={styles.dragHandle}>
+                                      <span></span><span></span><span></span>
+                                   </div>
+                                </div>
+                              </Reorder.Item>
+                            ))}
+                          </Reorder.Group>
+                          <div className={styles.jumbleFooter}>
+                            <button onClick={handleExecute} className={styles.submitOrderBtn}>
+                              ✓ Submit Order
+                            </button>
+                          </div>
+                        </div>
+
+                        {showScratchpad && (
+                          <div className={styles.scratchpadContainer}>
+                             <div className={styles.scratchpadHeader}>
+                                <span className={styles.scratchpadTitle}>LOGIC SCRATCHPAD (OPTIONAL)</span>
+                             </div>
+                             <textarea 
+                               className={styles.scratchpadEditor}
+                               value={scratchCode}
+                               onChange={(e) => setScratchCode(e.target.value)}
+                               placeholder="# Test your Python logic here..."
+                               spellCheck={false}
+                             />
+                             <div className={styles.scratchpadActions}>
+                                <button className={styles.runScratchBtn} onClick={handleRunScratch}>
+                                  ▷ RUN LOGIC
+                                </button>
+                             </div>
+                             {scratchOutput && (
+                               <div className={styles.scratchOutput}>
+                                  {scratchOutput}
+                               </div>
+                             )}
+                          </div>
+                        )}
+                      </div>
+                    ) : currentRound === 5 ? (
+                      <div className={styles.finalSubmitWrapper}>
+                        <div className={styles.finalIcon}>🛸</div>
+                        <h3>MISSION PROTOCOL COMPLETE</h3>
+                        <p>All logic nodes have been synchronized. The final transmission is ready for uplink to the central nexus.</p>
+                        <button 
+                          onClick={handleFinalSubmit} 
+                          className={styles.finalSubmitBtn}
+                          disabled={loading}
+                        >
+                          {loading ? "TRANSMITTING..." : "UPLINK FINAL RESULTS"}
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <textarea 
+                          className={styles.codeArea} 
+                          value={code} 
+                          onChange={(e) => setCode(e.target.value)} 
+                          placeholder="# Manifest your Python logic here..." 
+                          spellCheck={false} 
+                          autoComplete="off" 
+                        />
+                        <div className={styles.editorGlow} />
+                      </>
                     )}
                   </div>
-                ) : currentRound === 5 ? (
-                  <div className={styles.finalSubmitWrapper}>
-                    <div className={styles.finalIcon}>🛸</div>
-                    <h3>MISSION PROTOCOL COMPLETE</h3>
-                    <p>All logic nodes have been synchronized. The final transmission is ready for uplink to the central nexus.</p>
-                    <button 
-                      onClick={handleFinalSubmit} 
-                      className={styles.finalSubmitBtn}
-                      disabled={loading}
-                    >
-                      {loading ? "TRANSMITTING..." : "UPLINK FINAL RESULTS"}
-                    </button>
+
+                  <div className={styles.controlPanel}>
+                     {currentRound === 1 && (
+                       (currentMcqIndex === mcqSet.length - 1 && Object.keys(mcqSelectionMap).length === mcqSet.length) && (
+                         <button onClick={handleExecute} className={styles.executeBtn}>SUBMIT MISSION SEQUENCE</button>
+                       )
+                     )}
                   </div>
-                ) : (
-                  <>
-                    <textarea 
-                      className={styles.codeArea} 
-                      value={code} 
-                      onChange={(e) => setCode(e.target.value)} 
-                      placeholder="# Manifest your Python logic here..." 
-                      spellCheck={false} 
-                      autoComplete="off" 
-                    />
-                    <div className={styles.editorGlow} />
-                  </>
-                )}
-              </div>
 
-              <div className={styles.controlPanel}>
-                 {currentRound === 1 && (
-                   (currentMcqIndex === mcqSet.length - 1 && Object.keys(mcqSelectionMap).length === mcqSet.length) && (
-                     <button onClick={handleExecute} className={styles.executeBtn}>SUBMIT MISSION SEQUENCE</button>
-                   )
-                 )}
-                 {currentRound > 2 && currentRound < 5 && !round4Passed && (
-                   <button onClick={handleExecute} disabled={pyLoading} className={styles.executeBtn}>EXECUTE LOGIC PROTOCOL</button>
-                 )}
-                 {currentRound === 4 && round4Passed && (
-                   <button 
-                     onClick={handleFinalSubmit} 
-                     disabled={loading} 
-                     className={styles.finalSubmitBtn}
-                     style={{ width: '100%', marginTop: 8 }}
-                   >
-                     {loading ? "TRANSMITTING..." : "🛸 SUBMIT MISSION"}
-                   </button>
-                 )}
-              </div>
-
-              {(currentRound > 1 || (output && output.includes("ERROR"))) && (
-                <div className={styles.terminal}>
-                   <div className={styles.terminalLabel}>TRANSMISSION OUTPUT</div>
-                   <pre style={{ color: output.includes("ERROR") ? "#ff4d4d" : "inherit" }}>{output}</pre>
-                </div>
+                  {(currentRound === 2 || (output && output.includes("ERROR"))) && (
+                    <div className={styles.terminal}>
+                       <div className={styles.terminalLabel}>TRANSMISSION OUTPUT</div>
+                       <pre style={{ color: output.includes("ERROR") ? "#ff4d4d" : "inherit" }}>{output}</pre>
+                    </div>
+                  )}
+                </>
               )}
             </motion.div>
         </AnimatePresence>

@@ -52,6 +52,8 @@ import LeaderboardPage from "./leaderboard/page";
 import IngestPage from "./ingest/page";
 import OrbitalControl from "./control/page";
 import StudentExplorer from "@/components/admin/StudentExplorer";
+import CodingInterface from "@/components/CodingInterface";
+import { usePyodide } from "@/hooks/usePyodide";
 
 // ── Types ─────────────────────────────────────────────────────
 // Use AdminStudent from lib/api
@@ -551,8 +553,68 @@ function PyHuntConfig({
   saveGlobalAuth, saveJumbles, addJumble, removeJumble, labelConfig, saveLabelConfig,
   codingChallenges, updateCodingChallenge, addCodingChallenge, removeCodingChallenge
 }: any) {
+  const [previewChallenge, setPreviewChallenge] = useState<any>(null);
+  const [previewCode, setPreviewCode] = useState("");
+  const [previewOutput, setPreviewOutput] = useState("");
+  const { runCode, loading: pyLoading } = usePyodide(activeTab === 'r3' || activeTab === 'r4');
+
+  const handleRunPreview = async () => {
+    if (!previewChallenge) return;
+    setPreviewOutput("Initializing Logic...");
+    
+    let testCases: any[] = [];
+    try {
+      if (previewChallenge.test_cases) {
+        testCases = JSON.parse(previewChallenge.test_cases);
+      }
+    } catch (e) {
+      setPreviewOutput("ERROR: Invalid Test Cases JSON");
+      return;
+    }
+
+    if (Array.isArray(testCases) && testCases.length > 0) {
+      let finalResults = "";
+      for (let i = 0; i < testCases.length; i++) {
+        const tc = testCases[i];
+        const res: any = await runCode(previewCode, tc.input || "");
+        if (res.error) {
+          finalResults += `❌ CASE ${i+1}: ERROR\n   ${res.error}\n`;
+        } else {
+          finalResults += `📟 CASE ${i+1} OUTPUT:\n${res.stdout}\n`;
+        }
+      }
+      setPreviewOutput(finalResults);
+    } else {
+      const res: any = await runCode(previewCode);
+      setPreviewOutput(res.error ? `ERROR: ${res.error}` : res.stdout || "Success (No Output)");
+    }
+  };
+
   return (
     <div className={adminStyles.configContent}>
+      {previewChallenge && (
+        <div className={adminStyles.modalOverlay} onClick={() => setPreviewChallenge(null)}>
+          <div className={adminStyles.modal} style={{ maxWidth: '90vw', width: '1200px', height: '85vh', padding: '20px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0 }}>Live IDE Preview</h3>
+              <button onClick={() => setPreviewChallenge(null)} className={adminStyles.actionBtn}>✕ Close Preview</button>
+            </div>
+            <div style={{ height: 'calc(100% - 60px)' }}>
+              <CodingInterface 
+                problem={previewChallenge}
+                code={previewCode}
+                setCode={setPreviewCode}
+                output={previewOutput}
+                onRun={handleRunPreview}
+                onSubmit={handleRunPreview}
+                pyLoading={pyLoading}
+                currentRound={previewChallenge.round}
+                labelConfig={labelConfig}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       {activeTab === "clues" && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div className={adminStyles.configCard}>
@@ -767,7 +829,20 @@ function PyHuntConfig({
           {(codingChallenges[3] || []).map((c: any, idx: number) => (
             <div key={c.id} className={adminStyles.configCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <span className={adminStyles.codeBadge}>CHALLENGE {idx + 1}</span>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <span className={adminStyles.codeBadge}>CHALLENGE {idx + 1}</span>
+                  <button 
+                    className={adminStyles.actionBtn} 
+                    style={{ background: 'rgba(0, 242, 255, 0.1)', color: '#00f2ff', borderColor: 'rgba(0, 242, 255, 0.2)' }}
+                    onClick={() => {
+                      setPreviewChallenge({ ...c, round: 3 });
+                      setPreviewCode("# Write test code here...");
+                      setPreviewOutput("");
+                    }}
+                  >
+                    👁️ LIVE PREVIEW
+                  </button>
+                </div>
                 <button onClick={() => removeCodingChallenge(3, c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
               </div>
                <div className={adminStyles.inputGroup}>
@@ -850,7 +925,20 @@ function PyHuntConfig({
           {(codingChallenges[4] || []).map((c: any, idx: number) => (
             <div key={c.id} className={adminStyles.configCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <span className={adminStyles.codeBadge}>CHALLENGE {idx + 1}</span>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <span className={adminStyles.codeBadge}>CHALLENGE {idx + 1}</span>
+                  <button 
+                    className={adminStyles.actionBtn} 
+                    style={{ background: 'rgba(0, 242, 255, 0.1)', color: '#00f2ff', borderColor: 'rgba(0, 242, 255, 0.2)' }}
+                    onClick={() => {
+                      setPreviewChallenge({ ...c, round: 4 });
+                      setPreviewCode("# Write test code here...");
+                      setPreviewOutput("");
+                    }}
+                  >
+                    👁️ LIVE PREVIEW
+                  </button>
+                </div>
                 <button onClick={() => removeCodingChallenge(4, c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
               </div>
                <div className={adminStyles.inputGroup}>
