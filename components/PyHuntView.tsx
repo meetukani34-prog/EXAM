@@ -493,7 +493,21 @@ export default function PyHuntView() {
     let testCases: any[] = [];
     try {
       if (activeProblem?.test_cases) {
-        testCases = JSON.parse(activeProblem.test_cases);
+        let parsed = activeProblem.test_cases;
+        if (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed);
+        }
+        
+        if (Array.isArray(parsed)) {
+          // Handle nested Supabase JSON structure
+          if (parsed.length > 0 && parsed[0].test_cases && Array.isArray(parsed[0].test_cases)) {
+            testCases = parsed[0].test_cases;
+          } else {
+            testCases = parsed;
+          }
+        } else if (parsed && typeof parsed === 'object' && (parsed as any).test_cases) {
+          testCases = (parsed as any).test_cases;
+        }
       }
     } catch (e) {
       console.error("Invalid test cases JSON configuration.");
