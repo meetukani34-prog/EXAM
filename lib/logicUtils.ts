@@ -47,10 +47,17 @@ const extractLastLine = (raw: string): string => {
 
 // ─── Main Validation Pipeline ──────────────────────────────────
 export const validateOutput = (stdout: string, expectedRaw: string): boolean => {
-  const capturedOutput = (stdout || "").trim();
-  const targetOutput = (expectedRaw || "").trim();
-
   // ── Stage 0: Empty Checks ──
+  // Strip non-printable characters and standardize
+  const clean = (s: string) => s
+    .replace(/[\r\n\t]/g, ' ')      // Standardize whitespace
+    .replace(/[^\x20-\x7E]/g, '')   // Remove non-printable characters
+    .trim()
+    .replace(/^["']|["']$/g, '');   // Remove accidental surrounding quotes
+
+  const capturedOutput = clean(stdout || "");
+  const targetOutput = clean(expectedRaw || "");
+
   // Both empty = pass (e.g., empty input producing empty output)
   if (targetOutput.length === 0 && capturedOutput.length === 0) return true;
   // Admin didn't set expected output → fail (misconfigured test case)
@@ -101,6 +108,13 @@ export const validateOutput = (stdout: string, expectedRaw: string): boolean => 
       userTokens.some(ut => ut === et || ut.includes(et))
     );
     if (allTokensPresent && expectedTokens.length >= 2) return true;
+  }
+
+  // ── Stage 5: Nuclear Normalization ──
+  // If still not matching, strip ALL punctuation and whitespace for a final attempt
+  const normalizeDeep = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (normalizeDeep(capturedOutput) === normalizeDeep(targetOutput) && targetOutput.length > 0) {
+    return true;
   }
 
   // ── All stages failed ──

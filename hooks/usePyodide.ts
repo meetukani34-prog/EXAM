@@ -195,7 +195,7 @@ _stderr_val = sys.stderr.getvalue()
         results.push({
           input: tc.input || "",
           expected: expectedStr,
-          actual: "",
+          actual: (res.stdout || "").trim(),
           passed: false,
           error: res.error,
           executionTimeMs,
