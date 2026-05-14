@@ -216,14 +216,11 @@ export default function PyHuntView() {
         }
         setCurrentRound(data.current_round);
         
-        // Restore assigned clue from previous round state
-        const prevRound = data.current_round - 1;
-        if (prevRound >= 1) {
-          const roundKey = `round_${prevRound}_state`;
-          const roundState = (data as any)[roundKey];
-          if (roundState?.assigned_clue_index !== undefined) {
-            setAssignedClueIndex(roundState.assigned_clue_index);
-          }
+        // Restore assigned clue for current round
+        const currentRoundKey = `round_${data.current_round}_state`;
+        const currentRoundState = (data as any)[currentRoundKey];
+        if (currentRoundState?.assigned_clue_index !== undefined) {
+          setAssignedClueIndex(currentRoundState.assigned_clue_index);
         }
       }
       setLoading(false);
@@ -356,6 +353,25 @@ export default function PyHuntView() {
       }
       setIsAuthorized(true);
       setAuthError("");
+
+      // High-Velocity Orbital Distribution Engine: Initial Assignment for Round 1
+      try {
+        const distRes = await fetch('/api/pyhunt/distribute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            studentId, 
+            roundNum: 1, 
+            totalClues: 4 
+          })
+        });
+        const distData = await distRes.json();
+        if (distData.success) {
+           setAssignedClueIndex(distData.clueIndex);
+        }
+      } catch (err) {
+        console.warn("[Orbital Engine] Initial crystallization failed.");
+      }
     } else {
       setAuthError("Invalid Mission Authorization Code.");
     }
@@ -534,7 +550,7 @@ export default function PyHuntView() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             studentId, 
-            roundNum: currentRound, 
+            roundNum: next, 
             totalClues: 4 
           })
         });
