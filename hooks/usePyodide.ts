@@ -52,19 +52,30 @@ export function usePyodide(enabled: boolean = true) {
     if (!pyodide) return { error: "Logic Engine not ready." };
     
     try {
-      // Create a clean output buffer and set stdin
-      await pyodide.runPythonAsync(`
+      // Create a clean environment, mock input(), and redirect stdout/stderr
+      const wrapperCode = `
 import sys
 import io
+
+# Mock input to return the test case input exactly as requested
+def input(prompt=""):
+    return """${input.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
+
+# Redirect stdout/stderr to capture output
 sys.stdout = io.StringIO()
 sys.stderr = io.StringIO()
-sys.stdin = io.StringIO("""${input.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}""")
-      `);
 
-      await pyodide.runPythonAsync(code);
+${code}
+
+# Capture results
+stdout_val = sys.stdout.getvalue()
+stderr_val = sys.stderr.getvalue()
+`;
+
+      await pyodide.runPythonAsync(wrapperCode);
       
-      const stdout = pyodide.runPython("sys.stdout.getvalue()");
-      const stderr = pyodide.runPython("sys.stderr.getvalue()");
+      const stdout = pyodide.runPython("stdout_val");
+      const stderr = pyodide.runPython("stderr_val");
       
       return { stdout, stderr };
     } catch (err: any) {

@@ -400,6 +400,21 @@ export default function PyHuntView() {
         setOutput("");
       }
 
+      // --- Clue Logic Integration ---
+      try {
+        const { data: rankData } = await supabase.rpc('increment_completion_count', { 
+          round: currentRound 
+        });
+        if (rankData) {
+          const totalClues = 4;
+          const count = typeof rankData === 'object' ? (rankData.current_count || 1) : rankData;
+          setAssignedClueIndex((count - 1) % totalClues);
+        }
+      } catch (err) {
+        console.error("Clue assignment failed:", err);
+      }
+      // ------------------------------
+
       setIsAtGate(true);
       setGateError(false);
       return;
@@ -418,6 +433,21 @@ export default function PyHuntView() {
           setCurrentJumbleIndex(prev => prev + 1);
           setOutput(`Sequence Node ${currentJumbleIndex + 1} synchronized. Calibrating next cluster...`);
         } else {
+          // --- Clue Logic Integration ---
+          try {
+            const { data: rankData } = await supabase.rpc('increment_completion_count', { 
+              round: currentRound 
+            });
+            if (rankData) {
+              const totalClues = 4;
+              const count = typeof rankData === 'object' ? (rankData.current_count || 1) : rankData;
+              setAssignedClueIndex((count - 1) % totalClues);
+            }
+          } catch (err) {
+            console.error("Clue assignment failed:", err);
+          }
+          // ------------------------------
+
           setIsAtGate(true);
           setGateError(false);
           setOutput("");
@@ -494,6 +524,27 @@ export default function PyHuntView() {
       if (allPassed) {
          setShowSuccessRipple(true);
          setTimeout(() => setShowSuccessRipple(false), 1000);
+
+         // --- Clue Logic Integration ---
+         try {
+           const { data: rankData } = await supabase.rpc('increment_completion_count', { 
+             round: currentRound 
+           });
+           
+           if (rankData) {
+             const totalClues = 4;
+             const count = typeof rankData === 'object' ? (rankData.current_count || 1) : rankData;
+             const clueId = (count - 1) % totalClues;
+             setAssignedClueIndex(clueId);
+           } else {
+             // Fallback if RPC fails or is missing
+             setAssignedClueIndex(Math.floor(Math.random() * 4));
+           }
+         } catch (err) {
+           console.error("Clue assignment failed:", err);
+           setAssignedClueIndex(0);
+         }
+         // ------------------------------
 
          // Sequence Check: More problems in this round?
          if (currentProblemIndex < roundChallenges.length - 1) {

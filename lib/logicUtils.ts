@@ -12,31 +12,32 @@ export const validateOutput = (stdout: string, expectedRaw: string) => {
   const userTokens = normalizeTokens(stdout);
   const expectedTokens = normalizeTokens(expectedRaw);
 
+  // Normalize full strings for flexible checking
+  const capturedOutput = (stdout || "").toLowerCase().trim();
+  const targetOutput = (expectedRaw || "").toLowerCase().trim();
+
   // If both are empty, it's a pass (nothing expected, nothing given)
-  if (expectedTokens.length === 0 && userTokens.length === 0) return true;
+  if (targetOutput.length === 0 && capturedOutput.length === 0) return true;
   
   // If admin didn't provide any expected output, but user produced something, it's a failure (missing target)
-  if (expectedTokens.length === 0 && userTokens.length > 0) return false;
+  // EXCEPT if the problem description implies any output is fine (not handled here yet)
+  if (targetOutput.length === 0 && capturedOutput.length > 0) return false;
   
-  if (userTokens.length === 0) return false;
+  if (capturedOutput.length === 0) return false;
 
-  // Exact token list match
-  if (userTokens.length === expectedTokens.length && userTokens.every((t, i) => t === expectedTokens[i])) {
+  // Flexible Check (Recommended): 
+  // If the expected output exists anywhere inside the captured output, it's a PASS.
+  // This allows students to print "Output: PYTHON" or "The result is 123"
+  if (capturedOutput.includes(targetOutput)) {
     return true;
   }
 
-  // Smart check: Does any part of the output contain the joined expected tokens?
-  // This helps when students print "Output: Result" instead of just "Result"
-  const userFlat = userTokens.join(' ');
-  const expectedFlat = expectedTokens.join(' ');
-  
-  // Also check individual lines for exact matches of the expected flat string
-  const userLines = stdout.toLowerCase().split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  for (const line of userLines) {
-    if (line === expectedFlat || line.endsWith(` ${expectedFlat}`) || line.startsWith(`${expectedFlat} `)) {
-      return true;
-    }
+  // Token-based fallback (for multi-line or comma-separated lists)
+  if (userTokens.length > 0 && expectedTokens.length > 0) {
+    const userFlat = userTokens.join(' ');
+    const expectedFlat = expectedTokens.join(' ');
+    if (userFlat.includes(expectedFlat)) return true;
   }
 
-  return userFlat.includes(expectedFlat);
+  return false;
 };
