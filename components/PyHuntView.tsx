@@ -423,6 +423,63 @@ export default function PyHuntView() {
     }
 
     setOutput("Executing Logic...");
+    
+    const roundConfig = globalConfigs.find((c: any) => c.round === currentRound);
+    let testCases: any[] = [];
+    try {
+      if (roundConfig?.test_cases) {
+        testCases = JSON.parse(roundConfig.test_cases);
+      }
+    } catch (e) {
+      console.error("Invalid test cases JSON configuration.");
+    }
+
+    if (Array.isArray(testCases) && testCases.length > 0) {
+      let allPassed = true;
+      let finalResults = "";
+      
+      for (let i = 0; i < testCases.length; i++) {
+        const tc = testCases[i];
+        const res = await runCode(code, tc.input || "");
+        
+        if (res.error) {
+          allPassed = false;
+          finalResults += `❌ CASE ${i+1}: LOGIC ERROR\n   ${res.error}\n`;
+          break;
+        }
+
+        const isCorrect = validateOutput(res.stdout, tc.expected || "");
+        if (isCorrect) {
+          finalResults += `✅ CASE ${i+1}: PASSED\n`;
+        } else {
+          allPassed = false;
+          finalResults += `❌ CASE ${i+1}: FAILED\n   Input: ${tc.input || "None"}\n   Expected: ${tc.expected}\n   Got: ${res.stdout?.trim() || "(empty)"}\n`;
+          break; // Fail fast like LeetCode
+        }
+      }
+
+      setOutput(finalResults);
+
+      if (allPassed) {
+         setShowSuccessRipple(true);
+         if (currentRound === 4) {
+           setTimeout(() => setShowSuccessRipple(false), 1000);
+           setRound4Passed(true);
+         } else {
+           setTimeout(() => {
+             setShowSuccessRipple(false);
+             setIsAtGate(true);
+           }, 1000);
+         }
+      } else {
+         setWrongAttempts(prev => prev + 1);
+         setHint("Logic discrepancies detected across test nodes. Debug and retry.");
+         setTimeout(() => setHint(""), 4000);
+      }
+      return;
+    }
+
+    // Legacy Single-Output Validation (Fallback)
     const result = await runCode(code);
     if (result.error) {
       setOutput(`ERROR: ${result.error}`);
@@ -433,7 +490,6 @@ export default function PyHuntView() {
     if (isValid) {
        setShowSuccessRipple(true);
        if (currentRound === 4) {
-         // Round 4 passed — show Submit button, skip gate
          setTimeout(() => setShowSuccessRipple(false), 1000);
          setRound4Passed(true);
        } else {
@@ -493,34 +549,37 @@ export default function PyHuntView() {
       .filter(t => t.length > 0); // remove empties
   };
 
-  const validateRound = (round: number, stdout: string) => {
-    const roundConfig = globalConfigs.find((c: any) => c.round === round);
-    if (!roundConfig) return false;
-
+  const validateOutput = (stdout: string, expectedRaw: string) => {
     const userTokens = normalizeTokens(stdout);
-    const targetRaw = roundConfig.target_output || "";
-    const targetTokens = normalizeTokens(targetRaw);
+    const expectedTokens = normalizeTokens(expectedRaw);
 
-    // Fallback defaults if no config target
-    const fallbackTargets: Record<number, string[]> = {
-      3: ["palindrome: true"],
-      4: ["1", "2", "fizz", "4", "buzz"],
-    };
-
-    const expected = targetTokens.length > 0 ? targetTokens : (fallbackTargets[round] || []);
-
-    // Token-based comparison: user tokens must contain all expected tokens in order
-    if (userTokens.length === 0 || expected.length === 0) return false;
+    if (userTokens.length === 0 || expectedTokens.length === 0) return false;
 
     // Exact token list match
-    if (userTokens.length === expected.length && userTokens.every((t, i) => t === expected[i])) {
+    if (userTokens.length === expectedTokens.length && userTokens.every((t, i) => t === expectedTokens[i])) {
       return true;
     }
 
     // Fallback: check if user output includes the joined expected string
     const userFlat = userTokens.join(' ');
-    const expectedFlat = expected.join(' ');
+    const expectedFlat = expectedTokens.join(' ');
     return userFlat.includes(expectedFlat);
+  };
+
+  const validateRound = (round: number, stdout: string) => {
+    const roundConfig = globalConfigs.find((c: any) => c.round === round);
+    if (!roundConfig) return false;
+
+    const targetRaw = roundConfig.target_output || "";
+    
+    // Fallback defaults if no config target
+    const fallbackTargets: Record<number, string> = {
+      3: "palindrome: true",
+      4: "1, 2, fizz, 4, buzz",
+    };
+
+    const expected = targetRaw || fallbackTargets[round] || "";
+    return validateOutput(stdout, expected);
   };
 
   const handleGateUnlock = async () => {

@@ -48,16 +48,17 @@ export function usePyodide(enabled: boolean = true) {
     initPyodide();
   }, [enabled]);
 
-  const runCode = useCallback(async (code: string) => {
+  const runCode = useCallback(async (code: string, input: string = "") => {
     if (!pyodide) return { error: "Logic Engine not ready." };
     
     try {
-      // Create a clean output buffer
+      // Create a clean output buffer and set stdin
       await pyodide.runPythonAsync(`
 import sys
 import io
 sys.stdout = io.StringIO()
 sys.stderr = io.StringIO()
+sys.stdin = io.StringIO("""${input.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}""")
       `);
 
       await pyodide.runPythonAsync(code);

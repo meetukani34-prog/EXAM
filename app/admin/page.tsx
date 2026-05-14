@@ -751,6 +751,19 @@ function PyHuntConfig({
                 />
                 <p style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>The student's code must print this exact string (case-insensitive) to pass.</p>
              </div>
+             <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>TEST CASES (JSON ARRAY)</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={configs.find((c: any) => c.round === 3)?.test_cases || "[]"}
+                  onChange={(e) => updateConfig(3, 'test_cases', e.target.value)}
+                  placeholder='[{"input": "radar", "expected": "palindrome: true"}]'
+                  style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
+                />
+                <p style={{ fontSize: 11, opacity: 0.5, marginTop: 4 }}>
+                  Format: {"[{\"input\": \"...\", \"expected\": \"...\"}]"}. If empty, only the single OUTPUT above is used.
+                </p>
+             </div>
           </div>
         </div>
       )}
@@ -787,6 +800,19 @@ function PyHuntConfig({
                   style={{ minHeight: 120, fontFamily: 'monospace' }}
                 />
                 <p style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>The student's code must print this exact string (case-insensitive) to pass.</p>
+             </div>
+             <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>TEST CASES (JSON ARRAY)</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={configs.find((c: any) => c.round === 4)?.test_cases || "[]"}
+                  onChange={(e) => updateConfig(4, 'test_cases', e.target.value)}
+                  placeholder='[{"input": "3", "expected": "1, 2, Fizz"}]'
+                  style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
+                />
+                <p style={{ fontSize: 11, opacity: 0.5, marginTop: 4 }}>
+                  Format: {"[{\"input\": \"...\", \"expected\": \"...\"}]"}. If empty, only the single OUTPUT above is used.
+                </p>
              </div>
           </div>
         </div>
