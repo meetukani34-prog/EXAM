@@ -204,13 +204,13 @@ export default function CodingInterface({
                             </div>
                             <div className={styles.dataItem}>
                               <span className={styles.dataLabel}>EXP:</span>
-                              <code>{tc.expected || tc.output || "None"}</code>
+                              <code>{tc.expected || tc.output || "(Empty Output)"}</code>
                             </div>
                             {hasRun && (
                               <div className={styles.dataItem}>
                                 <span className={styles.dataLabel}>ACT:</span>
-                                <code style={{ color: isPassed ? '#51cf66' : '#ff6b6b' }}>
-                                  {result.actual || result.error || "No output"}
+                                <code style={{ color: isPassed ? '#10b981' : '#ef4444', fontWeight: 700 }}>
+                                  {result.actual || result.error || "(No Output)"}
                                 </code>
                               </div>
                             )}
