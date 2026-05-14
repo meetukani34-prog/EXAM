@@ -93,12 +93,20 @@ export function usePyodide(enabled: boolean = true) {
    * Mocks Python's input() with a queue-based system that feeds
    * multi-line inputs one at a time, preventing browser freeze.
    */
-  const runCode = useCallback(async (code: string, input: string = "") => {
+  const runCode = useCallback(async (code: string, input: any = "") => {
     if (!pyodide) return { error: "Logic Engine not ready." };
     
     try {
+      // Ensure input is a string. If it's an object/array (from JSON config), stringify it.
+      let inputStr = "";
+      if (typeof input === 'string') {
+        inputStr = input;
+      } else if (input !== null && input !== undefined) {
+        inputStr = JSON.stringify(input);
+      }
+
       // Split input into lines for queue-based feeding
-      const inputLines = input.split('\n');
+      const inputLines = inputStr.split('\n');
       const escapedLines = inputLines.map(l => escapePythonString(l));
       const inputListStr = escapedLines.map(l => `"""${l}"""`).join(', ');
 

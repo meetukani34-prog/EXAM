@@ -159,19 +159,44 @@ async def upload_question_image(
 async def get_all_students(exam: Optional[str] = Query(None), _: bool = Depends(verify_admin)):
     try:
         db = get_supabase()
-        # Query students joined with ALL their exam_status records
-        # Explicitly list columns for exam_status to avoid stale schema expansion of non-existent columns
-        result = db.table("students").select("*, exam_status(id, student_id, exam_name, status, warnings, last_active, submitted_at, started_at), odyssey_progress(current_round)").execute()
+        # Query students joined with ALL their exam_status and exam_results records
+        result = db.table("students").select("*, exam_status(id, student_id, exam_name, status, warnings, last_active, submitted_at, started_at), odyssey_progress(current_round, round_1_state), exam_results(score, total_marks, exam_name)").execute()
 
         rows = []
         if result.data:
             for s in result.data:
                 e_statuses = s.get("exam_status") or []
+                e_results = s.get("exam_results") or []
                 odyssey = s.get("odyssey_progress") or {}
                 if isinstance(odyssey, list) and len(odyssey) > 0:
                     odyssey = odyssey[0]
                 
                 current_round = odyssey.get("current_round")
+                round_1_state = odyssey.get("round_1_state")
+
+                # Get the best/latest result for the current exam
+                score = 0.0
+                total_marks = 100
+                if e_results:
+                    # If an exam filter is provided, try to find a matching result
+                    if exam:
+                        matching_results = [r for r in e_results if (r.get("exam_name") or "").lower() == exam.lower()]
+                        if matching_results:
+                            res = matching_results[0]
+                            score = res.get("score", 0.0)
+                            total_marks = res.get("total_marks", 100)
+                    else:
+                        # Otherwise take the first one (most recent usually)
+                        res = e_results[0]
+                        score = res.get("score", 0.0)
+                        total_marks = res.get("total_marks", 100)
+
+                # ─── ROUND 1 MARK INTEGRATION ───
+                # If score is still 0 and we have round_1_state, use those marks
+                if score == 0 and round_1_state:
+                    score = round_1_state.get("mcq_score", 0.0)
+                    total_marks = round_1_state.get("mcq_total", 100)
+                # ────────────────────────────────
 
                 latest = None
                 if exam:
@@ -200,30 +225,36 @@ async def get_all_students(exam: Optional[str] = Query(None), _: bool = Depends(
                         branch=s.get("branch", "CS"),
                         status="not_started",
                         warnings=0,
+                        score=score,
+                        total_marks=total_marks,
                         last_active=None,
                         submitted_at=None,
                         started_at=None,
                         is_blocked=s.get("is_blocked", False),
                         exam_name=exam,
-                        current_round=current_round
+                        current_round=current_round,
+                        round_1_state=round_1_state
                     ))
-                    continue
+                else:
+                    rows.append(StudentStatus(
+                        student_id=s["id"],
+                        usn=s.get("usn") or s.get("roll_number") or "UNKNOWN",
+                        name=s.get("name", "UNKNOWN"),
+                        email=s.get("email"),
+                        branch=s.get("branch", "CS"),
+                        status=latest.get("status", "not_started"),
+                        warnings=latest.get("warnings", 0),
+                        score=score,
+                        total_marks=total_marks,
+                        last_active=latest.get("last_active"),
+                        submitted_at=latest.get("submitted_at"),
+                        started_at=latest.get("started_at"),
+                        is_blocked=s.get("is_blocked", False),
+                        exam_name=latest.get("exam_name"),
+                        current_round=current_round,
+                        round_1_state=round_1_state
+                    ))
 
-                rows.append(StudentStatus(
-                    student_id=s["id"],
-                    usn=s.get("usn") or s.get("roll_number") or "UNKNOWN",
-                    name=s.get("name", "UNKNOWN"),
-                    email=s.get("email"),
-                    branch=s.get("branch", "CS"),
-                    status=latest.get("status", "not_started"),
-                    warnings=latest.get("warnings", 0),
-                    last_active=latest.get("last_active"),
-                    submitted_at=latest.get("submitted_at"),
-                    started_at=latest.get("started_at"),
-                    is_blocked=s.get("is_blocked", False),
-                    exam_name=latest.get("exam_name"),
-                    current_round=current_round
-                ))
         return rows
     except Exception as e:
         print(f"CRITICAL get_all_students: {e}")

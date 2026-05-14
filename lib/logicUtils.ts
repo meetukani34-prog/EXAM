@@ -47,42 +47,48 @@ const extractLastLine = (raw: string): string => {
 
 // ─── Main Validation Pipeline ──────────────────────────────────
 export const validateOutput = (stdout: string, expectedRaw: string): boolean => {
-  // ── Stage 0: Empty Checks ──
-  // Strip non-printable characters and standardize
-  const clean = (s: string) => s
-    .replace(/[\r\n\t]/g, ' ')      // Standardize whitespace
-    .replace(/[^\x20-\x7E]/g, '')   // Remove non-printable characters
+  if (!stdout && !expectedRaw) return true;
+  
+  const clean = (s: string) => (s || "")
+    .replace(/[\r\n\t]/g, ' ')
     .trim()
-    .replace(/^["']|["']$/g, '');   // Remove accidental surrounding quotes
+    .replace(/^["']|["']$/g, '');
 
-  const capturedOutput = clean(stdout || "");
-  const targetOutput = clean(expectedRaw || "");
+  const capturedOutput = clean(stdout);
+  const targetOutput = clean(expectedRaw);
 
-  // Both empty = pass (e.g., empty input producing empty output)
   if (targetOutput.length === 0 && capturedOutput.length === 0) return true;
-  // Admin didn't set expected output → fail (misconfigured test case)
-  if (targetOutput.length === 0 && capturedOutput.length > 0) return false;
-  // Student produced nothing but something was expected → fail
-  if (capturedOutput.length === 0) return false;
+  if (targetOutput.length === 0 || capturedOutput.length === 0) return false;
 
-  // Case-insensitive versions for comparison
   const capturedLower = capturedOutput.toLowerCase();
   const targetLower = targetOutput.toLowerCase();
 
-  // ── Stage 1: Standard Normalized Match ──
-  // Direct match after cleaning (handles whitespace/invisible chars)
+  // 1. Direct Match
   if (capturedLower === targetLower) return true;
 
-  // ── Stage 2: Deep Alphanumeric Match ──
-  // If they are identical after stripping ALL punctuation/whitespace
-  // This handles OS differences like trailing periods or quotes in config.
-  const normalizeDeepLocal = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const deepCaptured = normalizeDeepLocal(capturedOutput);
-  const deepTarget = normalizeDeepLocal(targetOutput);
+  // 2. Semantic Isolation (Remove common labels)
+  const labels = [
+    "output", "result", "answer", "final", "count", "value",
+    "the answer is", "the result is", "the count is", 
+    "words starting with vowels", "total", "sum"
+  ];
   
-  if (deepCaptured === deepTarget && deepTarget.length > 0) return true;
+  let semanticCaptured = capturedLower;
+  labels.forEach(label => {
+    const regex = new RegExp(`^${label}\\s*[:=>\\-]\\s*`, 'i');
+    semanticCaptured = semanticCaptured.replace(regex, '').trim();
+  });
 
-  // ── All stages failed ──
+  if (semanticCaptured === targetLower) return true;
+
+  // 3. Deep Alphanumeric Match
+  const normalizeDeep = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (normalizeDeep(semanticCaptured) === normalizeDeep(targetLower)) return true;
+
+  // 4. Token Presence Check (Is the expected value the last word/number?)
+  const tokens = capturedLower.split(/[\s,:]+/).filter(t => t.length > 0);
+  if (tokens.length > 0 && tokens[tokens.length - 1] === targetLower) return true;
+
   return false;
 };
 

@@ -468,8 +468,12 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
 
                   // Points (Show Round 1 MCQ marks if available)
                   let points = "—";
-                  const r1State = p.pyhunt?.round_1_state;
-                  if (r1State && r1State.mcq_score !== undefined) {
+                  let r1State = p.pyhunt?.round_1_state || p.round_1_state;
+                  if (typeof r1State === 'string') {
+                    try { r1State = JSON.parse(r1State); } catch(e) {}
+                  }
+
+                  if (r1State && typeof r1State === 'object' && r1State.mcq_score !== undefined) {
                     points = `${r1State.mcq_score}/${r1State.mcq_total || 0}`;
                   } else if (p.score !== undefined && p.score !== null) {
                     points = `${p.score}/${p.total_marks || 100}`;

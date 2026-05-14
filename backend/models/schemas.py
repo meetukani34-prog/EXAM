@@ -152,6 +152,8 @@ class StudentStatus(BaseModel):
     branch: str = "CS"
     status: str
     warnings: int
+    score: Optional[float] = 0.0
+    total_marks: Optional[int] = 100
     last_active: Optional[str]
     submitted_at: Optional[str]
     started_at: Optional[str] = None
@@ -159,6 +161,7 @@ class StudentStatus(BaseModel):
     avatar_url: Optional[str] = None
     exam_name: Optional[str] = None
     current_round: Optional[int] = None
+    round_1_state: Optional[Dict[str, Any]] = None
 
 # ── Exam Config ───────────────────────────────────────────────
 class ExamConfig(BaseModel):

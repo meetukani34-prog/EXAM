@@ -98,13 +98,23 @@ export default function CodingInterface({
       }
       
       if (Array.isArray(parsed)) {
-        if (parsed.length > 0 && parsed[0].test_cases && Array.isArray(parsed[0].test_cases)) {
-          testCases = parsed[0].test_cases;
+        if (parsed.length > 0 && (parsed[0] as any).test_cases && Array.isArray((parsed[0] as any).test_cases)) {
+          testCases = (parsed[0] as any).test_cases;
         } else {
           testCases = parsed;
         }
       } else if (parsed && typeof parsed === 'object' && (parsed as any).test_cases) {
         testCases = (parsed as any).test_cases;
+      }
+
+      // Normalize string-only test cases
+      if (Array.isArray(testCases)) {
+        testCases = testCases.map(tc => {
+          if (typeof tc === 'string') {
+            return { input: tc, expected: tc }; 
+          }
+          return tc;
+        });
       }
     }
   } catch (e) {

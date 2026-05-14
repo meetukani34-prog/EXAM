@@ -26,6 +26,8 @@ const ROUND_1_QUESTIONS = [
     question: "What is the output of print(2 ** 3)?",
     options: ["6", "8", "9", "12"],
     correct: 1,
+    posMarks: 1,
+    negMarks: 0,
     output: "Key: Manifested"
   },
   {
@@ -33,6 +35,8 @@ const ROUND_1_QUESTIONS = [
     question: "Which of these is a mutable data type in Python?",
     options: ["Tuple", "List", "String", "Int"],
     correct: 1,
+    posMarks: 1,
+    negMarks: 0,
     output: "Key: Manifested"
   },
   {
@@ -40,6 +44,8 @@ const ROUND_1_QUESTIONS = [
     question: "What does 'len()' function do?",
     options: ["Returns the length of an object", "Converts to integer", "Prints a value", "Clears a list"],
     correct: 0,
+    posMarks: 1,
+    negMarks: 0,
     output: "Key: Manifested"
   }
 ];
@@ -1028,6 +1034,25 @@ export default function PyHuntView() {
                         <div className={styles.finalIcon}>🛸</div>
                         <h3>MISSION PROTOCOL COMPLETE</h3>
                         <p>All logic nodes have been synchronized. The final transmission is ready for uplink to the central nexus.</p>
+                        
+                        {assignedClueIndex !== null && (
+                          <div className={styles.finalClueBox} style={{ margin: '20px 0', padding: '15px', background: 'rgba(0, 242, 255, 0.05)', borderRadius: '8px', border: '1px border rgba(0, 242, 255, 0.2)' }}>
+                            <span style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>CONCLUDING CLUE:</span>
+                            <p style={{ margin: 0, fontSize: '1.1rem' }}>
+                              {(() => {
+                                const c = globalConfigs.find((conf: any) => conf.round === 4);
+                                if (!c) return "The treasure is within reach.";
+                                if (c.clues && Array.isArray(c.clues)) return c.clues[assignedClueIndex] || c.clue;
+                                if (c.clue_variants) {
+                                  const variants = c.clue_variants.split('|');
+                                  return variants[assignedClueIndex % variants.length] || c.clue;
+                                }
+                                return c.clue || "The treasure is within reach.";
+                              })()}
+                            </p>
+                          </div>
+                        )}
+
                         <button 
                           onClick={handleFinalSubmit} 
                           className={styles.finalSubmitBtn}
