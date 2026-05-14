@@ -41,7 +41,15 @@ export default function CodingInterface({
   let testCases = [];
   try {
     if (problem.test_cases) {
-      testCases = JSON.parse(problem.test_cases);
+      const parsed = JSON.parse(problem.test_cases);
+      if (Array.isArray(parsed)) {
+        // Handle nested structure: [{ test_cases: [...] }] or simple array [...]
+        if (parsed.length > 0 && parsed[0].test_cases && Array.isArray(parsed[0].test_cases)) {
+          testCases = parsed[0].test_cases;
+        } else {
+          testCases = parsed;
+        }
+      }
     }
   } catch (e) {
     console.error("Failed to parse test cases", e);
@@ -170,7 +178,14 @@ export default function CodingInterface({
                       <div key={i} className={styles.testcaseRow}>
                         <div className={styles.testcaseLabel}>Case {i + 1}</div>
                         <div className={styles.testcaseData}>
-                          <code>{tc.input || "None"}</code>
+                          <div style={{ marginBottom: 4 }}>
+                            <span style={{ fontSize: 10, opacity: 0.5, marginRight: 8 }}>IN:</span>
+                            <code>{tc.input || "None"}</code>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: 10, opacity: 0.5, marginRight: 8 }}>EXP:</span>
+                            <code>{tc.expected || tc.output || "None"}</code>
+                          </div>
                         </div>
                       </div>
                     ))}

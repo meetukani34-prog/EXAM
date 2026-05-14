@@ -565,7 +565,14 @@ function PyHuntConfig({
     let testCases: any[] = [];
     try {
       if (previewChallenge.test_cases) {
-        testCases = JSON.parse(previewChallenge.test_cases);
+        const parsed = JSON.parse(previewChallenge.test_cases);
+        if (Array.isArray(parsed)) {
+          if (parsed.length > 0 && parsed[0].test_cases && Array.isArray(parsed[0].test_cases)) {
+            testCases = parsed[0].test_cases;
+          } else {
+            testCases = parsed;
+          }
+        }
       }
     } catch (e) {
       setPreviewOutput("ERROR: Invalid Test Cases JSON");
@@ -594,10 +601,10 @@ function PyHuntConfig({
     <div className={adminStyles.configContent}>
       {previewChallenge && (
         <div className={adminStyles.modalOverlay} onClick={() => setPreviewChallenge(null)}>
-          <div className={adminStyles.modal} style={{ maxWidth: '90vw', width: '1200px', height: '85vh', padding: '20px' }} onClick={e => e.stopPropagation()}>
+          <div className={adminStyles.modal} style={{ maxWidth: '90vw', width: '1200px', height: '85vh', padding: '20px', background: '#0f172a', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ margin: 0 }}>Live IDE Preview</h3>
-              <button onClick={() => setPreviewChallenge(null)} className={adminStyles.actionBtn}>✕ Close Preview</button>
+              <h3 style={{ margin: 0, color: '#fff' }}>Live IDE Preview</h3>
+              <button onClick={() => setPreviewChallenge(null)} className={adminStyles.actionBtn} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>✕ Close Preview</button>
             </div>
             <div style={{ height: 'calc(100% - 60px)' }}>
               <CodingInterface 
