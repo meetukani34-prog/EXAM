@@ -26,6 +26,7 @@ interface CodingInterfaceProps {
     actual: string;
     passed: boolean;
     error?: string;
+    executionTimeMs?: number;
   }>;
 }
 
@@ -47,6 +48,8 @@ export default function CodingInterface({
 
   const hasRun = testResults && testResults.length > 0;
   const allPassed = hasRun && testResults.every(r => r.passed);
+  const passedCount = hasRun ? testResults.filter(r => r.passed).length : 0;
+  const totalTime = hasRun ? testResults.reduce((acc, r) => acc + (r.executionTimeMs || 0), 0) : 0;
 
   // Parse test cases if available
   let testCases: any[] = [];
@@ -103,6 +106,19 @@ export default function CodingInterface({
                 ))}
               </div>
             )}
+
+            {/* Protocol Guidance — Luminous Protocol Note */}
+            <div className={styles.protocolNote}>
+              <div className={styles.protocolIcon}>⚡</div>
+              <div className={styles.protocolContent}>
+                <div className={styles.protocolTitle}>PROTOCOL NOTE</div>
+                <p>Use <code>input()</code> to read the test value. Print only the final result.</p>
+                <div className={styles.protocolExample}>
+                  <code>val = input()</code><br/>
+                  <code>print(your_result)</code>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -149,6 +165,14 @@ export default function CodingInterface({
                   </button>
                 )}
               </div>
+
+              {/* Overall Status Badge in header */}
+              {hasRun && (
+                <div className={`${styles.overallBadge} ${allPassed ? styles.overallPassed : styles.overallFailed}`}>
+                  {allPassed ? '✓ Accepted' : `✗ ${passedCount}/${testResults.length} Passed`}
+                  {totalTime > 0 && <span className={styles.timeBadge}>{totalTime}ms</span>}
+                </div>
+              )}
             </div>
             <div className={styles.terminalContent}>
               <AnimatePresence mode="wait">
@@ -180,14 +204,18 @@ export default function CodingInterface({
                       <div className={styles.caseTabs}>
                         {testCases.map((_: any, i: number) => {
                           const passed = testResults?.[i]?.passed;
+                          const hasResult = testResults?.[i] !== undefined;
                           return (
                             <button 
                               key={i}
                               onClick={() => setSelectedCase(i)}
                               className={`${styles.caseTab} ${selectedCase === i ? styles.caseTabActive : ''}`}
                             >
-                              {hasRun && <span className={styles.caseStatusDot} style={{ background: passed ? '#10b981' : '#ef4444' }} />}
+                              {hasResult && <span className={styles.caseStatusDot} style={{ background: passed ? '#10b981' : '#ef4444' }} />}
                               Case {i + 1}
+                              {hasResult && testResults[i].executionTimeMs !== undefined && (
+                                <span className={styles.caseTiming}>{testResults[i].executionTimeMs}ms</span>
+                              )}
                             </button>
                           );
                         })}
@@ -204,9 +232,18 @@ export default function CodingInterface({
                       </div>
                       {hasRun && testResults?.[selectedCase] && (
                         <div className={styles.dataBlock}>
-                          <div className={styles.dataLabel}>Actual Output</div>
+                          <div className={styles.dataLabel}>
+                            Actual Output
+                            {testResults[selectedCase].passed 
+                              ? <span className={styles.inlinePass}> ✓ MATCH</span>
+                              : <span className={styles.inlineFail}> ✗ MISMATCH</span>
+                            }
+                          </div>
                           <code className={`${styles.dataValue} ${testResults[selectedCase].passed ? styles.statusAccepted : styles.statusFailed}`}>
-                            {testResults[selectedCase].actual || testResults[selectedCase].error || "(No Output)"}
+                            {testResults[selectedCase].error 
+                              ? `Error: ${testResults[selectedCase].error}`
+                              : testResults[selectedCase].actual || "(No Output)"
+                            }
                           </code>
                         </div>
                       )}

@@ -99,7 +99,7 @@ export default function PyHuntView() {
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [warningCount, setWarningCount] = useState(0);
 
-  const { runCode, loading: pyLoading } = usePyodide(currentRound > 1);
+  const { runCode, runTestSuite, loading: pyLoading } = usePyodide(currentRound > 1);
   const { enter: enterFullscreen } = useFullscreen();
   
   const [isAtGate, setIsAtGate] = useState(false);
@@ -477,74 +477,46 @@ export default function PyHuntView() {
       console.error("Invalid test cases JSON configuration.");
     }
     if (Array.isArray(testCases) && testCases.length > 0) {
-      let allPassed = true;
+      // ═══ Neural Test-Runner Execution ═══
+      const suite = await runTestSuite(code, testCases, sharedValidateOutput);
+
+      // Build console output from suite results
       let finalResults = "";
-      const results = [];
-      for (let i = 0; i < testCases.length; i++) {
-        const tc = testCases[i];
-        const res = await runCode(code, tc.input || "");
-        
-        if (res.error) {
-          allPassed = false;
-          finalResults += `❌ CASE ${i+1}: LOGIC ERROR\n   ${res.error}\n`;
-          results.push({
-            input: tc.input,
-            expected: tc.expected || tc.output,
-            actual: "",
-            passed: false,
-            error: res.error
-          });
-          break;
-        }
-
-        const expected = (tc.expected || tc.output || "").toString().trim();
-        const actual = (res.stdout || "").toString().trim();
-        const isCorrect = sharedValidateOutput(res.stdout, expected);
-        
-        results.push({
-          input: tc.input,
-          expected: expected,
-          actual: actual,
-          passed: isCorrect,
-          error: res.error
-        });
-
-        if (isCorrect) {
-          finalResults += `✅ CASE ${i+1}: PASSED\n`;
+      for (let i = 0; i < suite.results.length; i++) {
+        const r = suite.results[i];
+        if (r.error) {
+          finalResults += `❌ CASE ${i+1}: LOGIC ERROR (${r.executionTimeMs}ms)\n   ${r.error}\n`;
+        } else if (r.passed) {
+          finalResults += `✅ CASE ${i+1}: PASSED (${r.executionTimeMs}ms)\n`;
         } else {
-          allPassed = false;
-          finalResults += `❌ CASE ${i+1}: FAILED\n   Input: ${tc.input || "None"}\n   Expected: ${expected}\n   Got: ${actual || "(empty)"}\n`;
-          break; // Fail fast like LeetCode
+          finalResults += `❌ CASE ${i+1}: FAILED (${r.executionTimeMs}ms)\n   Input: ${r.input || "None"}\n   Expected: ${r.expected}\n   Got: ${r.actual || "(empty)"}\n`;
         }
       }
+      finalResults += `\n━━━ ${suite.passedCount}/${suite.totalCases} passed · ${suite.totalTimeMs}ms ━━━`;
 
-      setTestResults(results);
+      setTestResults(suite.results);
       setOutput(finalResults);
 
-      if (allPassed) {
+      if (suite.allPassed) {
          setShowSuccessRipple(true);
          setTimeout(() => setShowSuccessRipple(false), 1000);
 
-         // --- Clue Logic Integration ---
+         // ─── Orbital Clue Manifestation (Modulo Integration) ───
          try {
            const { data: rankData } = await supabase.rpc('increment_completion_count', { 
              round: currentRound 
            });
-           
            if (rankData) {
              const totalClues = 4;
              const count = typeof rankData === 'object' ? (rankData.current_count || 1) : rankData;
-             const clueId = (count - 1) % totalClues;
-             setAssignedClueIndex(clueId);
+             setAssignedClueIndex((count - 1) % totalClues);
            } else {
-             // Fallback if RPC fails or is missing
              setAssignedClueIndex(Math.floor(Math.random() * 4));
            }
          } catch (err) {
            console.error("Clue assignment failed:", err);
            setAssignedClueIndex(0);
          }
-         // ------------------------------
 
          // Sequence Check: More problems in this round?
          if (currentProblemIndex < roundChallenges.length - 1) {

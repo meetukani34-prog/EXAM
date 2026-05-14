@@ -148,7 +148,139 @@
   color: #fff;
 }
 
-/* Editor Section */
+/* ═══ Protocol Note — Luminous Guidance ═══ */
+.protocolNote {
+  margin-top: 24px;
+  background: linear-gradient(135deg, rgba(0, 242, 255, 0.06) 0%, rgba(139, 92, 246, 0.06) 100%);
+  border: 1px solid rgba(0, 242, 255, 0.15);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  animation: protocolGlow 3s ease-in-out infinite;
+}
+
+@keyframes protocolGlow {
+  0%, 100% { border-color: rgba(0, 242, 255, 0.15); }
+  50% { border-color: rgba(0, 242, 255, 0.35); }
+}
+
+.protocolIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.protocolContent {
+  flex: 1;
+}
+
+.protocolTitle {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  color: #00f2ff;
+  margin-bottom: 6px;
+}
+
+.protocolContent p {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.5;
+}
+
+.protocolContent code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #7dd3fc;
+}
+
+.protocolExample {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #a5f3fc;
+  line-height: 1.8;
+  border: 1px solid rgba(0, 242, 255, 0.08);
+}
+
+.protocolExample code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* ═══ Overall Status Badge ═══ */
+.overallBadge {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 14px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.02em;
+  animation: badgeFadeIn 0.3s ease-out;
+}
+
+@keyframes badgeFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.overallPassed {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.overallFailed {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.timeBadge {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.caseTiming {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.3);
+  margin-left: 4px;
+}
+
+/* ═══ Inline MATCH/MISMATCH Labels ═══ */
+.inlinePass {
+  color: #10b981;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  margin-left: 8px;
+}
+
+.inlineFail {
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  margin-left: 8px;
+}
+
+/* ═══ Editor Section ═══ */
 .editorSection {
   flex: 1.5;
   display: flex;
@@ -205,7 +337,7 @@
   z-index: 1;
 }
 
-/* Terminal Section */
+/* ═══ Terminal Section ═══ */
 .terminalSection {
   flex: 1;
   display: flex;
@@ -256,26 +388,10 @@
   height: 100%;
 }
 
-.testSummary {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.overallStatus {
-  font-size: 20px;
-  font-weight: 800;
+.caseTabsWrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
-
-.statusAccepted { color: #10b981; }
-.statusFailed { color: #ef4444; }
 
 .caseTabs {
   display: flex;
@@ -343,11 +459,25 @@
   color: #fff;
   min-height: 44px;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.testcaseRow {
-  display: none; /* Hide old row style */
+.statusAccepted {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.06);
 }
+
+.statusFailed {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+/* ═══ Legacy (preserved for backward compat) ═══ */
+.testcaseRow { display: none; }
 
 .testcaseLabel {
   font-size: 11px;
@@ -391,21 +521,6 @@
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-.dataItem {
-  display: grid;
-  grid-template-columns: 45px 1fr;
-  gap: 12px;
-  margin-bottom: 6px;
-  align-items: flex-start;
-}
-
-.dataLabel {
-  font-size: 10px;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.4);
-  text-transform: uppercase;
-}
-
 .passedRow {
   border-color: rgba(16, 185, 129, 0.3);
   background: rgba(16, 185, 129, 0.05);
@@ -416,6 +531,7 @@
   background: rgba(239, 68, 68, 0.05);
 }
 
+/* ═══ Terminal Footer ═══ */
 .terminalFooter {
   height: 56px;
   background: rgba(30, 41, 59, 0.8);
@@ -478,6 +594,11 @@
 .runBtn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.2);
+}
+
+.runBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .submitBtn {
