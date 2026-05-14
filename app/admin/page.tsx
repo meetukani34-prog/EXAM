@@ -584,6 +584,19 @@ function PyHuntConfig({
                 />
               </div>
               <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>CLUE VARIANTS (ORBITAL NODES - PIPE SEPARATED)</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  style={{ minHeight: 60, height: 60 }}
+                  value={c.clue_variants || ""}
+                  onChange={(e) => updateConfig(c.round, 'clue_variants', e.target.value)}
+                  placeholder="Clue A | Clue B | Clue C | Clue D"
+                />
+                <p style={{ fontSize: 11, opacity: 0.5, marginTop: 4 }}>
+                  Use '|' to separate clues for different ranks (Rank 1 gets first clue, Rank 2 gets second, etc.)
+                </p>
+              </div>
+              <div className={adminStyles.inputGroup}>
                 <label className={adminStyles.inputLabel}>{labelConfig.orbit.toUpperCase()} UNLOCK CODE</label>
                 <input
                   type="text"
