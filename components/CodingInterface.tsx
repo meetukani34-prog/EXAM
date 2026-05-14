@@ -69,13 +69,19 @@ export default function CodingInterface({
   let testCases: any[] = [];
   try {
     if (problem.test_cases) {
-      const parsed = JSON.parse(problem.test_cases);
+      let parsed = problem.test_cases;
+      if (typeof parsed === 'string') {
+        parsed = JSON.parse(parsed);
+      }
+      
       if (Array.isArray(parsed)) {
         if (parsed.length > 0 && parsed[0].test_cases && Array.isArray(parsed[0].test_cases)) {
           testCases = parsed[0].test_cases;
         } else {
           testCases = parsed;
         }
+      } else if (parsed && typeof parsed === 'object' && (parsed as any).test_cases) {
+        testCases = (parsed as any).test_cases;
       }
     }
   } catch (e) {
@@ -84,6 +90,17 @@ export default function CodingInterface({
 
   return (
     <div className={styles.container}>
+      <style jsx global>{`
+        textarea.${styles.codeEditor} {
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
+          caret-color: #00f2ff !important;
+          background: rgba(13, 17, 23, 0.8) !important;
+          font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+      `}</style>
       <div className={styles.splitPane}>
         {/* LEFT: PROBLEM DESCRIPTION */}
         <div className={styles.leftPane}>

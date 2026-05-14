@@ -567,13 +567,19 @@ function PyHuntConfig({
     let testCases: any[] = [];
     try {
       if (previewChallenge.test_cases) {
-        const parsed = JSON.parse(previewChallenge.test_cases);
+        let parsed = previewChallenge.test_cases;
+        if (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed);
+        }
+        
         if (Array.isArray(parsed)) {
           if (parsed.length > 0 && parsed[0].test_cases && Array.isArray(parsed[0].test_cases)) {
             testCases = parsed[0].test_cases;
           } else {
             testCases = parsed;
           }
+        } else if (parsed && typeof parsed === 'object' && (parsed as any).test_cases) {
+          testCases = (parsed as any).test_cases;
         }
       }
     } catch (e) {
