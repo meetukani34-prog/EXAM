@@ -69,17 +69,17 @@ export const validateOutput = (stdout: string, expectedRaw: string): boolean => 
   const capturedLower = capturedOutput.toLowerCase();
   const targetLower = targetOutput.toLowerCase();
 
-  // ── Stage 1: Strict Alignment ──
-  // Direct match (fastest path, zero friction)
-  if (capturedLower === targetLower) return true;
+  // ── Stage 1: Ultra-Permissive Match (The "Nuclear" Path) ──
+  // If they are identical after stripping ALL non-alphanumeric characters, they match.
+  const normalizeDeep = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const deepCaptured = normalizeDeep(capturedOutput);
+  const deepTarget = normalizeDeep(targetOutput);
+  
+  if (deepCaptured === deepTarget && deepTarget.length > 0) return true;
 
   // ── Stage 2: Flexible Drift Check ──
   // If the expected output exists anywhere inside the captured output
-  // Handles: "Output: PYTHON" contains "PYTHON" → PASS
   if (capturedLower.includes(targetLower)) return true;
-
-  // Also check if captured output ends with the expected value
-  // Handles: "The result is PYTHON" endsWith "PYTHON" → PASS
   if (capturedLower.endsWith(targetLower)) return true;
 
   // ── Stage 3: Regex Semantic Isolation ──
@@ -110,9 +110,7 @@ export const validateOutput = (stdout: string, expectedRaw: string): boolean => 
     if (allTokensPresent && expectedTokens.length >= 2) return true;
   }
 
-  // ── Stage 5: Nuclear Normalization ──
-  // If still not matching, strip ALL punctuation and whitespace for a final attempt
-  const normalizeDeep = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  // ── Stage 5: Semantic Final Check ──
   if (normalizeDeep(capturedOutput) === normalizeDeep(targetOutput) && targetOutput.length > 0) {
     return true;
   }
