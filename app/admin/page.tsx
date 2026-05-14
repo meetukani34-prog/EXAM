@@ -639,7 +639,11 @@ function PyHuntConfig({
                   className={adminStyles.configInput}
                   value={c.code}
                   onChange={(e) => updateConfig(c.round, 'code', e.target.value)}
+                  placeholder="Code A | Code B | Code C"
                 />
+                <p style={{ fontSize: 11, opacity: 0.5, marginTop: 4 }}>
+                  Use '|' to separate codes for each clue variant. If only one code is provided, it applies to all.
+                </p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div className={adminStyles.inputGroup}>

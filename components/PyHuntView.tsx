@@ -603,7 +603,13 @@ export default function PyHuntView() {
   const handleGateUnlock = async () => {
     const studentId = student?.id || student?.student_id;
     const currentConfig = globalConfigs.find((c: any) => c.round === currentRound);
-    const targetCode = currentConfig?.code || (currentRound === 1 ? "LIBRARY42" : "ALPHA");
+    let targetCode = currentConfig?.code || (currentRound === 1 ? "LIBRARY42" : "ALPHA");
+
+    // Support multiple codes for different clue variants
+    if (assignedClueIndex !== null && targetCode.includes('|')) {
+      const codes = targetCode.split('|').map((s: string) => s.trim());
+      targetCode = codes[assignedClueIndex % codes.length] || codes[0];
+    }
 
     if (gateInput.trim().toUpperCase() === targetCode.toUpperCase()) {
       const next = currentRound + 1;
