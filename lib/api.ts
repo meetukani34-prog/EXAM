@@ -436,6 +436,7 @@ export interface ExamConfig {
   total_marks: number;
   exam_description: string | null;
   branch: string;
+  category?: string;
 }
 
 export async function fetchExamConfig(title?: string): Promise<ExamConfig> {

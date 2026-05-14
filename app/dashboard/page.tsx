@@ -116,7 +116,7 @@ export default function DashboardPage() {
           scheduled_start: config.scheduled_start,
           scheduled_end: config.scheduled_end,
           question_count: config.total_questions || 0,
-          category: inferCategory(config.exam_title),
+          category: config.category || inferCategory(config.exam_title),
           marks_per_question: config.marks_per_question ?? 4,
           negative_marks: config.negative_marks ?? -1,
           max_attempts: config.max_attempts || 1,

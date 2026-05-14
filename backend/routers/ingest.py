@@ -726,14 +726,25 @@ async def commit_questions(
             # Deactivate ALL other exams first to ensure this one becomes the global active one
             db.table("exam_config").update({"is_active": False}).execute()
             
-            db.table("exam_config").upsert({
+            # discovery for exam_config
+            probe_cfg = db.table("exam_config").select("*").limit(1).execute()
+            cfg_columns = list(probe_cfg.data[0].keys()) if (probe_cfg.data and len(probe_cfg.data) > 0) else []
+            
+            # Get category from the first question (they should all be the same)
+            primary_category = getattr(questions[0], "category", "other") or "other"
+
+            config_payload = {
                 "exam_title": safe_exam_name,
                 "total_questions": inserted_count,
                 "total_marks": total_marks,
-                "duration_minutes": 20,  # Enforced 20 min exam as per user request
+                "duration_minutes": 20,
                 "is_active": True,
                 "updated_at": datetime.now(timezone.utc).isoformat()
-            }, on_conflict="exam_title").execute()
+            }
+            if "category" in cfg_columns:
+                config_payload["category"] = primary_category
+
+            db.table("exam_config").upsert(config_payload, on_conflict="exam_title").execute()
             
             logger.info(f"Exam Config synced for '{safe_exam_name}': {inserted_count} qs, 20 mins, active.")
         except Exception as config_err:

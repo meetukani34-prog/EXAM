@@ -175,6 +175,7 @@ class ExamConfig(BaseModel):
     total_marks: int = 120
     exam_description: Optional[str] = None
     branch: str = "ALL"
+    category: Optional[str] = "other"
 
 class ExamConfigUpdate(BaseModel):
     is_active: Optional[bool] = None
@@ -192,6 +193,7 @@ class ExamConfigUpdate(BaseModel):
     total_marks: Optional[int] = None
     exam_description: Optional[str] = None
     branch: Optional[str] = None
+    category: Optional[str] = None
 
 # ── Global Config ──────────────────────────────────────────────
 class GlobalConfigUpdate(BaseModel):

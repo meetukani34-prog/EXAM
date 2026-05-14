@@ -566,9 +566,9 @@ function PyHuntConfig({
                 </div>
                 <div className={adminStyles.inputGroup}>
                   <label className={adminStyles.inputLabel}>{labelConfig.phase.toUpperCase()} DESCRIPTION</label>
-                  <input
-                    type="text"
-                    className={adminStyles.configInput}
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    style={{ minHeight: 60, height: 60 }}
                     value={c.description || ""}
                     onChange={(e) => updateConfig(c.round, 'description', e.target.value)}
                   />
@@ -631,8 +631,9 @@ function PyHuntConfig({
               </div>
               <div className={adminStyles.inputGroup}>
                 <label className={adminStyles.inputLabel}>QUESTION TEXT</label>
-                <input
-                  className={adminStyles.configInput}
+                <textarea
+                  className={adminStyles.configTextarea}
+                  style={{ minHeight: 80 }}
                   value={q.question}
                   onChange={(e) => updateMcq(q.id, 'question', e.target.value)}
                 />

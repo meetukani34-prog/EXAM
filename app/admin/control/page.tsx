@@ -31,6 +31,7 @@ interface ExamConfig {
   exam_description: string;
   total_questions: number;
   total_marks: number;
+  category: string;
 }
 
 const defaultConfig: ExamConfig = {
@@ -54,6 +55,7 @@ const defaultConfig: ExamConfig = {
   exam_description: "",
   total_questions: 30,
   total_marks: 120,
+  category: "other",
 };
 
 function StatCard({
@@ -575,6 +577,19 @@ export default function OrbitalControlPage() {
               >
                 <option value="" disabled>Select exam...</option>
                 {availableExams.map(name => <option key={name} value={name}>{name}</option>)}
+              </select>
+            </div>
+
+            <div className={styles.settingsCard}>
+              <label className={styles.settingsLabel}>Quiz Category (Folder)</label>
+              <select
+                className={styles.settingsSelect}
+                value={config.category || "other"}
+                onChange={(e) => setConfig((c) => ({ ...c, category: e.target.value }))}
+              >
+                <option value="aptitude">🧠 Aptitude</option>
+                <option value="programming">💻 Programming</option>
+                <option value="other">📂 Other</option>
               </select>
             </div>
 

@@ -541,6 +541,7 @@ async def get_exam_config(title: Optional[str] = None, _: bool = Depends(verify_
                 total_questions=row.get("total_questions", 30),
                 total_marks=row.get("total_marks", 120),
                 exam_description=row.get("exam_description"),
+                category=row.get("category", "other")
             )
     except Exception as e:
         print(f"Error fetching config: {e}")
@@ -570,6 +571,7 @@ async def get_all_exam_configs(_: bool = Depends(verify_admin)):
                 total_questions=row.get("total_questions", 30),
                 total_marks=row.get("total_marks", 120),
                 exam_description=row.get("exam_description"),
+                category=row.get("category", "other")
             ) for row in res.data
         ]
     except Exception as e:
