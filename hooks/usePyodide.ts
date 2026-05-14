@@ -103,9 +103,14 @@ export function usePyodide(enabled: boolean = true) {
       const inputListStr = escapedLines.map(l => `"""${l}"""`).join(', ');
 
       // Wrapper: Override input() with a queue, redirect stdout/stderr
+      // We clear global buffers first to prevent "caching" of old results
       const wrapperCode = `
 import sys
 import io
+
+# Clear previous run artifacts
+_stdout_val = ""
+_stderr_val = ""
 
 # --- Spectral Input Override ---
 # Queue-based input mock: feeds one line per call
@@ -124,11 +129,12 @@ def input(prompt=""):
 sys.stdout = io.StringIO()
 sys.stderr = io.StringIO()
 
-${code}
-
-# Capture crystallized results
-_stdout_val = sys.stdout.getvalue()
-_stderr_val = sys.stderr.getvalue()
+try:
+${code.split('\n').map(line => '    ' + line).join('\n')}
+finally:
+    # Capture crystallized results even if execution failed
+    _stdout_val = sys.stdout.getvalue()
+    _stderr_val = sys.stderr.getvalue()
 `;
 
       // Execute with timeout protection
