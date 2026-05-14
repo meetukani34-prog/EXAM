@@ -53,6 +53,7 @@ import IngestPage from "./ingest/page";
 import OrbitalControl from "./control/page";
 import StudentExplorer from "@/components/admin/StudentExplorer";
 import CodingInterface from "@/components/CodingInterface";
+import { validateOutput } from "@/lib/logicUtils";
 import { usePyodide } from "@/hooks/usePyodide";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -589,7 +590,7 @@ function PyHuntConfig({
         
         const expected = (tc.expected || tc.output || "").toString().trim();
         const actual = (res.stdout || "").toString().trim();
-        const passed = actual === expected;
+        const passed = validateOutput(res.stdout, expected);
 
         results.push({
           input: tc.input,

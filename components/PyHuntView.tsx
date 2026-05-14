@@ -10,6 +10,7 @@ import styles from './PyHuntView.module.css';
 import AntiCheat from './AntiCheat';
 import { useFullscreen } from '@/hooks/useFullscreen';
 import CodingInterface from './CodingInterface';
+import { validateOutput as sharedValidateOutput } from '@/lib/logicUtils';
 
 const ROUNDS = [
   { id: 1, name: "MCQ Logic", description: "Identify the correct Python syntax and logic from the given options.", target: "syntax" },
@@ -468,7 +469,7 @@ export default function PyHuntView() {
 
         const expected = (tc.expected || tc.output || "").toString().trim();
         const actual = (res.stdout || "").toString().trim();
-        const isCorrect = validateOutput(res.stdout, expected);
+        const isCorrect = sharedValidateOutput(res.stdout, expected);
         
         results.push({
           input: tc.input,
@@ -578,34 +579,6 @@ export default function PyHuntView() {
     return input.split('\n').map(line => line.trim()).filter(line => line.length > 0).join('\n').toLowerCase();
   };
 
-  const normalizeTokens = (input: string) => {
-    if (!input) return [];
-    return input
-      .toLowerCase()
-      .split(/[\n,]+/)           // split on newlines and commas
-      .map(t => t.trim())         // trim whitespace
-      .filter(t => t.length > 0); // remove empties
-  };
-
-  const validateOutput = (stdout: string, expectedRaw: string) => {
-    const userTokens = normalizeTokens(stdout);
-    const expectedTokens = normalizeTokens(expectedRaw);
-
-    // If admin didn't provide any expected output, consider it a pass (optional output)
-    if (expectedTokens.length === 0) return true;
-    
-    if (userTokens.length === 0) return false;
-
-    // Exact token list match
-    if (userTokens.length === expectedTokens.length && userTokens.every((t, i) => t === expectedTokens[i])) {
-      return true;
-    }
-
-    // Fallback: check if user output includes the joined expected string
-    const userFlat = userTokens.join(' ');
-    const expectedFlat = expectedTokens.join(' ');
-    return userFlat.includes(expectedFlat);
-  };
 
   const validateRound = (round: number, stdout: string, expectedTarget?: string) => {
     const roundConfig = globalConfigs.find((c: any) => c.round === round);
@@ -620,7 +593,7 @@ export default function PyHuntView() {
     };
 
     const expected = targetRaw || fallbackTargets[round] || "";
-    return validateOutput(stdout, expected);
+    return sharedValidateOutput(stdout, expected);
   };
 
   const handleGateUnlock = async () => {
