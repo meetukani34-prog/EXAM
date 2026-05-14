@@ -20,6 +20,12 @@ const ROUNDS = [
   { id: 5, name: "Final Transmission", description: "Mission Conclusion", target: null },
 ];
 
+const ATMOSPHERIC_HINTS: Record<number, string> = {
+  3: "Filter the linguistic noise using .isalpha() and initiate a spatial reversal.",
+  4: "Transform the string into a list node before performing a .join() transition."
+};
+
+
 const ROUND_1_QUESTIONS = [
   {
     id: 1,
@@ -98,6 +104,8 @@ export default function PyHuntView() {
   const [currentRound, setCurrentRound] = useState(1);
   const [isAutoSubmitted, setIsAutoSubmitted] = useState(false);
   const [code, setCode] = useState("");
+  const [isHintRevealed, setIsHintRevealed] = useState(false);
+
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(true);
   const [student, setStudent] = useState<any>(null);
@@ -411,6 +419,19 @@ export default function PyHuntView() {
     }
   };
 
+  const handleRevealHint = async () => {
+    if (!student?.id || isHintRevealed) return;
+    
+    setIsHintRevealed(true);
+    try {
+      await supabase.rpc('increment_hints_taken', { 
+        student_id_val: student.id || student.student_id 
+      });
+    } catch (err) {
+      console.error("Hint increment failed:", err);
+    }
+  };
+
   const handleExecute = async () => {
     if (currentRound === 1) {
       // ─── Calculate MCQ Score ───
@@ -706,6 +727,10 @@ export default function PyHuntView() {
       setOutput("");
       setMcqSelectionMap({});
       setCurrentMcqIndex(0);
+      setIsHintRevealed(false);
+
+      setIsHintRevealed(false);
+
       
       localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
       localStorage.removeItem(`pyhunt_mcq_map_${studentId}`);
@@ -887,7 +912,11 @@ export default function PyHuntView() {
                   currentRound={currentRound}
                   labelConfig={labelConfig}
                   testResults={testResults}
+                  hint={ATMOSPHERIC_HINTS[currentRound]}
+                  isHintRevealed={isHintRevealed}
+                  onRevealHint={handleRevealHint}
                 />
+
               ) : (
                 <>
                   {(() => {

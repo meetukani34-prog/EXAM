@@ -704,3 +704,104 @@
     flex: 1;
   }
 }
+
+/* ═══ Cognitive Beacon (Hint System) ═══ */
+.beaconContainer {
+  margin-top: auto;
+  padding: 20px;
+  position: relative;
+  z-index: 10;
+}
+
+.beaconGlass {
+  background: rgba(0, 242, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 242, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  overflow: hidden;
+  position: relative;
+}
+
+.beaconGlass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  transform: skewX(-25deg);
+  animation: shine 6s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  20% { left: 150%; }
+  100% { left: 150%; }
+}
+
+.beaconHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.beaconIcon {
+  font-size: 16px;
+  filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.5));
+}
+
+.beaconTitle {
+  font-size: 11px;
+  font-weight: 800;
+  color: #00f2ff;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.revealAction {
+  background: rgba(0, 242, 255, 0.1);
+  border: 1px solid rgba(0, 242, 255, 0.2);
+  color: #00f2ff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.revealAction:hover {
+  background: rgba(0, 242, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 242, 255, 0.2);
+}
+
+.insightDrift {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #fff;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 2px solid #00f2ff;
+  font-style: italic;
+}
+

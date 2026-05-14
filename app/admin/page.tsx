@@ -436,6 +436,29 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
             </button>
           </div>
 
+          {/* Entropy Dashboard Widget */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 24 }}>
+            <div style={{ padding: 16, background: 'rgba(0, 242, 255, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 242, 255, 0.1)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 4 }}>TOTAL GUIDANCE BEACONS</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)' }}>
+                {odysseyData.reduce((acc, curr) => acc + (curr.hints_taken || 0), 0)}
+              </div>
+            </div>
+            <div style={{ padding: 16, background: 'rgba(0, 242, 255, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 242, 255, 0.1)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 4 }}>COGNITIVE ENTROPY (AVG)</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)' }}>
+                {odysseyData.length > 0 ? (odysseyData.reduce((acc, curr) => acc + (curr.hints_taken || 0), 0) / odysseyData.length).toFixed(2) : "0.00"}
+              </div>
+            </div>
+            <div style={{ padding: 16, background: 'rgba(0, 242, 255, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 242, 255, 0.1)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 4 }}>FRICTION SENSOR</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>
+                {(odysseyData.reduce((acc, curr) => acc + (curr.hints_taken || 0), 0) / odysseyData.length) > 0.5 ? "⚠️ HIGH FRICTION" : "✅ STABLE"}
+              </div>
+            </div>
+          </div>
+
+
           <div className={adminStyles.tableWrapper}>
             <table className={adminStyles.pyhuntTable}>
               <thead>
@@ -446,7 +469,9 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                   <th>WARNINGS</th>
                   <th>TOTAL TIME</th>
                   <th>POINTS</th>
+                  <th>HINTS</th>
                   <th>STATUS</th>
+
                   <th>ACTIONS</th>
                 </tr>
               </thead>
@@ -507,6 +532,12 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                     <td style={{ fontSize: 12, fontWeight: 700, color: isCompleted ? 'var(--success, #22c55e)' : 'var(--text-muted)' }}>
                       {points}
                     </td>
+                    <td>
+                      <span className={adminStyles.warningCount} style={{ background: (p.pyhunt?.hints_taken || 0) > 0 ? 'rgba(0, 242, 255, 0.1)' : 'rgba(255,255,255,0.05)', color: (p.pyhunt?.hints_taken || 0) > 0 ? 'var(--accent)' : 'inherit' }}>
+                        {p.pyhunt?.hints_taken || 0}
+                      </span>
+                    </td>
+
                     <td>
                       <span className={`${adminStyles.liveStatus} ${isCompleted ? adminStyles.statusFinished : (p.status === 'active' ? adminStyles.statusActive : adminStyles.statusPending)}`}>
                         {isCompleted ? "FINISHED" : (p.is_blocked ? "STOPPED" : (p.status === 'not_started' ? "NOT STARTED" : "ACTIVE"))}

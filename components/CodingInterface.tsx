@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import styles from './CodingInterface.module.css';
 import { motion, AnimatePresence } from 'framer-motion';
+import CognitiveBeacon from './CognitiveBeacon';
+
 
 interface CodingInterfaceProps {
   problem: {
@@ -29,7 +31,11 @@ interface CodingInterfaceProps {
     error?: string;
     executionTimeMs?: number;
   }>;
+  hint?: string;
+  isHintRevealed?: boolean;
+  onRevealHint?: () => void;
 }
+
 
 export default function CodingInterface({
   problem,
@@ -42,8 +48,12 @@ export default function CodingInterface({
   currentRound,
   labelConfig,
   isRound4Passed,
-  testResults
+  testResults,
+  hint,
+  isHintRevealed = false,
+  onRevealHint
 }: CodingInterfaceProps) {
+
   const [activeTerminalTab, setActiveTerminalTab] = useState<'console' | 'testcases'>('console');
   const [selectedCase, setSelectedCase] = useState(0);
 
@@ -201,8 +211,17 @@ export default function CodingInterface({
                 </div>
               </div>
             </div>
+
+            {hint && (
+              <CognitiveBeacon 
+                hint={hint} 
+                isRevealed={isHintRevealed} 
+                onReveal={onRevealHint || (() => {})} 
+              />
+            )}
           </div>
         </div>
+
 
         {/* RIGHT: EDITOR AND TERMINAL */}
         <div className={styles.rightPane}>
