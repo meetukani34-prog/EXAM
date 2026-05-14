@@ -69,51 +69,18 @@ export const validateOutput = (stdout: string, expectedRaw: string): boolean => 
   const capturedLower = capturedOutput.toLowerCase();
   const targetLower = targetOutput.toLowerCase();
 
-  // ── Stage 1: Ultra-Permissive Match (The "Nuclear" Path) ──
-  // If they are identical after stripping ALL non-alphanumeric characters, they match.
-  const normalizeDeep = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const deepCaptured = normalizeDeep(capturedOutput);
-  const deepTarget = normalizeDeep(targetOutput);
+  // ── Stage 1: Standard Normalized Match ──
+  // Direct match after cleaning (handles whitespace/invisible chars)
+  if (capturedLower === targetLower) return true;
+
+  // ── Stage 2: Deep Alphanumeric Match ──
+  // If they are identical after stripping ALL punctuation/whitespace
+  // This handles OS differences like trailing periods or quotes in config.
+  const normalizeDeepLocal = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const deepCaptured = normalizeDeepLocal(capturedOutput);
+  const deepTarget = normalizeDeepLocal(targetOutput);
   
   if (deepCaptured === deepTarget && deepTarget.length > 0) return true;
-
-  // ── Stage 2: Flexible Drift Check ──
-  // If the expected output exists anywhere inside the captured output
-  if (capturedLower.includes(targetLower)) return true;
-  if (capturedLower.endsWith(targetLower)) return true;
-
-  // ── Stage 3: Regex Semantic Isolation ──
-  // Strip labels from student output and compare
-  const semanticResult = isolateSemanticResult(capturedOutput).toLowerCase();
-  if (semanticResult === targetLower) return true;
-  if (semanticResult.includes(targetLower)) return true;
-
-  // Extract last line (most likely the actual answer)
-  const lastLine = extractLastLine(capturedOutput).toLowerCase();
-  const lastLineClean = isolateSemanticResult(lastLine);
-  if (lastLineClean === targetLower) return true;
-
-  // ── Stage 4: Token-based Fallback ──
-  // For multi-line or comma-separated expected outputs
-  const userTokens = normalizeTokens(capturedOutput);
-  const expectedTokens = normalizeTokens(targetOutput);
-
-  if (userTokens.length > 0 && expectedTokens.length > 0) {
-    const userFlat = userTokens.join(' ');
-    const expectedFlat = expectedTokens.join(' ');
-    if (userFlat.includes(expectedFlat)) return true;
-
-    // Check if all expected tokens exist in user output (order-independent)
-    const allTokensPresent = expectedTokens.every(et => 
-      userTokens.some(ut => ut === et || ut.includes(et))
-    );
-    if (allTokensPresent && expectedTokens.length >= 2) return true;
-  }
-
-  // ── Stage 5: Semantic Final Check ──
-  if (normalizeDeep(capturedOutput) === normalizeDeep(targetOutput) && targetOutput.length > 0) {
-    return true;
-  }
 
   // ── All stages failed ──
   return false;
