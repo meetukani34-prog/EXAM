@@ -20,6 +20,13 @@ interface CodingInterfaceProps {
   currentRound: number;
   labelConfig: { phase: string; orbit: string };
   isRound4Passed?: boolean;
+  testResults?: Array<{
+    input: string;
+    expected: string;
+    actual: string;
+    passed: boolean;
+    error?: string;
+  }>;
 }
 
 export default function CodingInterface({
@@ -32,7 +39,8 @@ export default function CodingInterface({
   pyLoading,
   currentRound,
   labelConfig,
-  isRound4Passed
+  isRound4Passed,
+  testResults
 }: CodingInterfaceProps) {
   const [activeTab, setActiveTab] = useState<'description' | 'testcases'>('description');
   const [terminalTab, setTerminalTab] = useState<'output' | 'testcase_details'>('output');
@@ -174,21 +182,42 @@ export default function CodingInterface({
                     exit={{ opacity: 0 }}
                     className={styles.testcaseArea}
                   >
-                    {testCases.map((tc: any, i: number) => (
-                      <div key={i} className={styles.testcaseRow}>
-                        <div className={styles.testcaseLabel}>Case {i + 1}</div>
-                        <div className={styles.testcaseData}>
-                          <div style={{ marginBottom: 4 }}>
-                            <span style={{ fontSize: 10, opacity: 0.5, marginRight: 8 }}>IN:</span>
-                            <code>{tc.input || "None"}</code>
+                    {testCases.map((tc: any, i: number) => {
+                      const result = testResults?.[i];
+                      const isPassed = result?.passed;
+                      const hasRun = !!result;
+
+                      return (
+                        <div key={i} className={`${styles.testcaseRow} ${hasRun ? (isPassed ? styles.passedRow : styles.failedRow) : ''}`}>
+                          <div className={styles.testcaseHeader}>
+                            <div className={styles.testcaseLabel}>Case {i + 1}</div>
+                            {hasRun && (
+                              <span className={isPassed ? styles.passBadge : styles.failBadge}>
+                                {isPassed ? '✓ PASSED' : '✗ FAILED'}
+                              </span>
+                            )}
                           </div>
-                          <div>
-                            <span style={{ fontSize: 10, opacity: 0.5, marginRight: 8 }}>EXP:</span>
-                            <code>{tc.expected || tc.output || "None"}</code>
+                          <div className={styles.testcaseData}>
+                            <div className={styles.dataItem}>
+                              <span className={styles.dataLabel}>IN:</span>
+                              <code>{tc.input || "None"}</code>
+                            </div>
+                            <div className={styles.dataItem}>
+                              <span className={styles.dataLabel}>EXP:</span>
+                              <code>{tc.expected || tc.output || "None"}</code>
+                            </div>
+                            {hasRun && (
+                              <div className={styles.dataItem}>
+                                <span className={styles.dataLabel}>ACT:</span>
+                                <code style={{ color: isPassed ? '#51cf66' : '#ff6b6b' }}>
+                                  {result.actual || result.error || "No output"}
+                                </code>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </motion.div>
                 )}
               </AnimatePresence>

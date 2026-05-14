@@ -556,6 +556,7 @@ function PyHuntConfig({
   const [previewChallenge, setPreviewChallenge] = useState<any>(null);
   const [previewCode, setPreviewCode] = useState("");
   const [previewOutput, setPreviewOutput] = useState("");
+  const [previewTestResults, setPreviewTestResults] = useState<any[]>([]);
   const { runCode, loading: pyLoading } = usePyodide(activeTab === 'r3' || activeTab === 'r4');
 
   const handleRunPreview = async () => {
@@ -581,15 +582,30 @@ function PyHuntConfig({
 
     if (Array.isArray(testCases) && testCases.length > 0) {
       let finalResults = "";
+      const results = [];
       for (let i = 0; i < testCases.length; i++) {
         const tc = testCases[i];
         const res: any = await runCode(previewCode, tc.input || "");
+        
+        const expected = (tc.expected || tc.output || "").toString().trim();
+        const actual = (res.stdout || "").toString().trim();
+        const passed = actual === expected;
+
+        results.push({
+          input: tc.input,
+          expected: expected,
+          actual: actual,
+          passed: passed,
+          error: res.error
+        });
+
         if (res.error) {
           finalResults += `❌ CASE ${i+1}: ERROR\n   ${res.error}\n`;
         } else {
-          finalResults += `📟 CASE ${i+1} OUTPUT:\n${res.stdout}\n`;
+          finalResults += `${passed ? '✅' : '❌'} CASE ${i+1} ${passed ? 'PASSED' : 'FAILED'}\n   Output: ${actual}\n`;
         }
       }
+      setPreviewTestResults(results);
       setPreviewOutput(finalResults);
     } else {
       const res: any = await runCode(previewCode);
@@ -617,6 +633,7 @@ function PyHuntConfig({
                 pyLoading={pyLoading}
                 currentRound={previewChallenge.round}
                 labelConfig={labelConfig}
+                testResults={previewTestResults}
               />
             </div>
           </div>

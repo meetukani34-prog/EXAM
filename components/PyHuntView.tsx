@@ -123,6 +123,7 @@ export default function PyHuntView() {
   const [round4Passed, setRound4Passed] = useState(false);
   const [codingChallenges, setCodingChallenges] = useState<any>({});
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
+  const [testResults, setTestResults] = useState<any[]>([]);
   
   const lastFetchRef = useRef<number>(0);
   const isFetchingRef = useRef<boolean>(false);
@@ -444,11 +445,10 @@ export default function PyHuntView() {
     } catch (e) {
       console.error("Invalid test cases JSON configuration.");
     }
-
     if (Array.isArray(testCases) && testCases.length > 0) {
       let allPassed = true;
       let finalResults = "";
-      
+      const results = [];
       for (let i = 0; i < testCases.length; i++) {
         const tc = testCases[i];
         const res = await runCode(code, tc.input || "");
@@ -456,19 +456,38 @@ export default function PyHuntView() {
         if (res.error) {
           allPassed = false;
           finalResults += `❌ CASE ${i+1}: LOGIC ERROR\n   ${res.error}\n`;
+          results.push({
+            input: tc.input,
+            expected: tc.expected || tc.output,
+            actual: "",
+            passed: false,
+            error: res.error
+          });
           break;
         }
 
-        const isCorrect = validateOutput(res.stdout, tc.expected || "");
+        const expected = (tc.expected || tc.output || "").toString().trim();
+        const actual = (res.stdout || "").toString().trim();
+        const isCorrect = validateOutput(res.stdout, expected);
+        
+        results.push({
+          input: tc.input,
+          expected: expected,
+          actual: actual,
+          passed: isCorrect,
+          error: res.error
+        });
+
         if (isCorrect) {
           finalResults += `✅ CASE ${i+1}: PASSED\n`;
         } else {
           allPassed = false;
-          finalResults += `❌ CASE ${i+1}: FAILED\n   Input: ${tc.input || "None"}\n   Expected: ${tc.expected}\n   Got: ${res.stdout?.trim() || "(empty)"}\n`;
+          finalResults += `❌ CASE ${i+1}: FAILED\n   Input: ${tc.input || "None"}\n   Expected: ${expected}\n   Got: ${actual || "(empty)"}\n`;
           break; // Fail fast like LeetCode
         }
       }
 
+      setTestResults(results);
       setOutput(finalResults);
 
       if (allPassed) {
@@ -805,6 +824,7 @@ export default function PyHuntView() {
                   currentRound={currentRound}
                   labelConfig={labelConfig}
                   isRound4Passed={round4Passed}
+                  testResults={testResults}
                 />
               ) : (
                 <>
