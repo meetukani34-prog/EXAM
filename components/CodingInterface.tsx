@@ -48,10 +48,20 @@ export default function CodingInterface({
   const [selectedCase, setSelectedCase] = useState(0);
 
   const formatValue = (val: any) => {
-    if (!val) return "None";
+    if (val === null || val === undefined) return "None";
+    
+    // If it's already an object/array, stringify it
+    if (typeof val === 'object') {
+      try {
+        return JSON.stringify(val, null, 2);
+      } catch (e) {
+        return "[Complex Data]";
+      }
+    }
+
     const str = val.toString().trim();
     try {
-      // If it's already a JSON-like string (starts with [ or {), try to parse and prettify
+      // If it's a JSON-like string, try to parse and prettify
       if ((str.startsWith('[') && str.endsWith(']')) || (str.startsWith('{') && str.endsWith('}'))) {
         return JSON.stringify(JSON.parse(str), null, 2);
       }
