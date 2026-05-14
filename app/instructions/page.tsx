@@ -117,7 +117,7 @@ export default function InstructionsPage() {
       } else {
         // Include detailed error if available for debugging
         const detail = err.detail || err.message || JSON.stringify(err);
-        msg = `System Error: ${detail}. Please try refreshing or contact support.`;
+        msg = `System Error: ${detail} Please try refreshing or contact support.`;
       }
       
       alert(msg);

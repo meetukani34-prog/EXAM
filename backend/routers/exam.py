@@ -529,31 +529,36 @@ async def start_exam(
         return StartExamResponse(started_at=started_at, status="active")
 
     # 4. Block restart if already submitted OR reached max attempts
-    #    EXCEPTION: PyHunt allows re-authorization (mission restart)
+    #    EXCEPTION: PyHunt and Admin Previews always allow mission restart
+    is_pyhunt = title.lower() == "pyhunt"
+    is_admin = current["student_id"] == "ADMIN_PREVIEW"
+
     if status_str == "submitted":
-        if title.lower() == "pyhunt":
-            # PyHunt allows mission restart — reset the record server-side
-            print(f"[PYHUNT] Allowing restart for submitted student {student_id}")
+        if is_pyhunt or is_admin:
+            print(f"[{'PYHUNT' if is_pyhunt else 'ADMIN'}] Allowing restart for submitted student {student_id}")
             if record_id:
                 try:
                     db.table("exam_status").delete().eq("id", record_id).execute()
-                    print(f"[PYHUNT] Cleared old submitted record {record_id}")
+                    print(f"[{'PYHUNT' if is_pyhunt else 'ADMIN'}] Cleared old submitted record {record_id}")
                 except Exception as de:
-                    print(f"[PYHUNT] Delete failed, will upsert over it: {de}")
-            # Reset counters so the flow below creates a fresh record
+                    print(f"[{'PYHUNT' if is_pyhunt else 'ADMIN'}] Delete failed, will upsert over it: {de}")
             record_id = None
             attempts_count = 0
             status_str = "not_started"
-        else:
+        elif (attempts_count or 0) >= max_attempts:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Exam already submitted. You cannot restart."
+                detail=f"Exam already submitted and maximum attempts ({max_attempts}) reached."
             )
+        else:
+            # Allow restart since attempts < max_attempts
+            print(f"[RESTART] Allowing restart for {student_id} (attempts {attempts_count}/{max_attempts})")
+            status_str = "not_started"
+
     if (attempts_count or 0) >= max_attempts and status_str != "active":
-        # PyHunt always allows restarts — skip the attempt limit
-        if title.lower() == "pyhunt":
-            print(f"[PYHUNT] Bypassing max-attempts check for {student_id} (attempts={attempts_count})")
-            attempts_count = 0  # Reset so the new attempt starts at 1
+        if is_pyhunt or is_admin:
+            print(f"[{'PYHUNT' if is_pyhunt else 'ADMIN'}] Bypassing max-attempts check for {student_id}")
+            attempts_count = 0
         else:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

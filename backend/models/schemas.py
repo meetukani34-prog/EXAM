@@ -75,6 +75,7 @@ class SubmitExamResponse(BaseModel):
 
 class StartExamResponse(BaseModel):
     started_at: str
+    status: str = "active"
 
 # ── Violations ────────────────────────────────────────────────
 class ReportViolationRequest(BaseModel):
