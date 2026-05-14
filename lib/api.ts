@@ -234,6 +234,7 @@ export interface AdminStudent {
   started_at: string | null;
   is_blocked: boolean;
   exam_name?: string | null;
+  current_round?: number | null;
 }
 
 export interface ViolationHistory {

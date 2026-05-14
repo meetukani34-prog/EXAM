@@ -161,13 +161,18 @@ async def get_all_students(exam: Optional[str] = Query(None), _: bool = Depends(
         db = get_supabase()
         # Query students joined with ALL their exam_status records
         # Explicitly list columns for exam_status to avoid stale schema expansion of non-existent columns
-        result = db.table("students").select("*, exam_status(id, student_id, exam_name, status, warnings, last_active, submitted_at, started_at)").execute()
+        result = db.table("students").select("*, exam_status(id, student_id, exam_name, status, warnings, last_active, submitted_at, started_at), odyssey_progress(current_round)").execute()
 
         rows = []
         if result.data:
             for s in result.data:
                 e_statuses = s.get("exam_status") or []
+                odyssey = s.get("odyssey_progress") or {}
+                if isinstance(odyssey, list) and len(odyssey) > 0:
+                    odyssey = odyssey[0]
                 
+                current_round = odyssey.get("current_round")
+
                 latest = None
                 if exam:
                     # Filter for specific exam (case-insensitive)
@@ -199,7 +204,8 @@ async def get_all_students(exam: Optional[str] = Query(None), _: bool = Depends(
                         submitted_at=None,
                         started_at=None,
                         is_blocked=s.get("is_blocked", False),
-                        exam_name=exam
+                        exam_name=exam,
+                        current_round=current_round
                     ))
                     continue
 
@@ -215,7 +221,8 @@ async def get_all_students(exam: Optional[str] = Query(None), _: bool = Depends(
                     submitted_at=latest.get("submitted_at"),
                     started_at=latest.get("started_at"),
                     is_blocked=s.get("is_blocked", False),
-                    exam_name=latest.get("exam_name")
+                    exam_name=latest.get("exam_name"),
+                    current_round=current_round
                 ))
         return rows
     except Exception as e:

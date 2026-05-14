@@ -1496,12 +1496,15 @@ export default function AdminPage() {
                           textTransform: 'uppercase'
                         }}>
                           {s.exam_name || "—"}
+                          {s.exam_name === "PyHunt" && s.current_round && s.status === 'active' && (
+                            <span style={{ marginLeft: 4, opacity: 0.8 }}>- R{s.current_round}</span>
+                          )}
                         </span>
                       </td>
                       <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{s.email || "—"}</td>
                       <td><span className="badge badge-neutral">{s.branch}</span></td>
                       <td><WarningBadge count={s.warnings} /></td>
-                      <td><StatusBadge status={s.status} lastActive={s.last_active} isBlocked={s.is_blocked} /></td>
+                      <td><StatusBadge status={s.status} lastActive={s.last_active} isBlocked={s.is_blocked} examName={s.exam_name} round={s.current_round} /></td>
                       <td style={{ fontSize: 12 }}>{s.started_at ? new Date(s.started_at).toLocaleTimeString() : "—"}</td>
                       <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{getElapsedTime(s.started_at, s.submitted_at)}</td>
                       <td style={{ fontSize: 12, color: "var(--text-muted)" }}>
@@ -1660,12 +1663,17 @@ function ViolationAlertsFeed() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────
-function StatusBadge({ status, lastActive, isBlocked }: { status: string; lastActive: string | null; isBlocked?: boolean }) {
+function StatusBadge({ status, lastActive, isBlocked, examName, round }: { status: string; lastActive: string | null; isBlocked?: boolean; examName?: string | null; round?: number | null }) {
   if (isBlocked) return <span className="badge badge-danger">🛑 STOPPED</span>;
   const idle = lastActive ? (Date.now() - new Date(lastActive).getTime()) > 60_000 : false;
   if (status === "submitted") return <span className="badge badge-success">✓ Submitted</span>;
   if (status === "active" && idle) return <span className="badge badge-warning">⏸ Idle</span>;
-  if (status === "active") return <span className="badge badge-success">● Active</span>;
+  if (status === "active") {
+    if (examName === "PyHunt" && round) {
+      return <span className="badge badge-success">● PyHunt R{round}</span>;
+    }
+    return <span className="badge badge-success">● Active</span>;
+  }
   return <span className="badge badge-neutral">○ Not Started</span>;
 }
 

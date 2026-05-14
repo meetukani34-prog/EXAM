@@ -157,6 +157,7 @@ class StudentStatus(BaseModel):
     is_blocked: bool = False
     avatar_url: Optional[str] = None
     exam_name: Optional[str] = None
+    current_round: Optional[int] = None
 
 # ── Exam Config ───────────────────────────────────────────────
 class ExamConfig(BaseModel):
