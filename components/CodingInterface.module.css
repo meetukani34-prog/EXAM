@@ -140,7 +140,7 @@
 }
 
 .exampleItem span {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.7);
   margin-right: 8px;
 }
 
@@ -169,7 +169,7 @@
   background: transparent;
   border: none;
   padding: 20px 20px 20px 50px;
-  color: #e6edf3;
+  color: #ffffff;
   font-family: 'JetBrains Mono', monospace;
   font-size: 15px;
   line-height: 1.5;
@@ -177,6 +177,10 @@
   outline: none;
   z-index: 2;
   position: relative;
+}
+
+.codeEditor::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .lineNumbers {
