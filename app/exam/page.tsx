@@ -362,21 +362,36 @@ export default function ExamPage() {
         </div>
       );
     }
+    
+    // Extract detail if JSON string
+    let displayError = error;
+    try {
+      if (error.startsWith('{')) {
+        const parsed = JSON.parse(error);
+        displayError = parsed.detail || parsed.message || error;
+      }
+    } catch (e) {}
+
     return (
       <div className="page-center">
-        <div className={styles.errorBox}>
-          <p className="text-danger">{error}</p>
+        <div className={styles.errorBox} style={{ maxWidth: 500, padding: 40 }}>
+          <div style={{ fontSize: 48, marginBottom: 20 }}>⚠️</div>
+          <h2 style={{ color: "#ef4444", marginBottom: 16 }}>Mission Interrupted</h2>
+          <p style={{ color: "rgba(255,255,255,0.7)", marginBottom: 32, fontSize: 15, lineHeight: 1.6 }}>
+            {displayError}
+          </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
             <button 
               className="btn btn-primary" 
+              style={{ background: "#ef4444", border: "none" }}
               disabled={submitting}
               onClick={() => window.location.reload()}
             >
-              {submitting ? "Retrying..." : "Retry"}
+              {submitting ? "Retrying..." : "Retry Session"}
             </button>
             <button 
               className="btn" 
-              style={{ background: "rgba(255,255,255,0.1)", color: "var(--text-primary)" }}
+              style={{ background: "rgba(255,255,255,0.1)", color: "var(--text-primary)", border: "1px solid rgba(255,255,255,0.1)" }}
               onClick={() => router.push("/dashboard")}
             >
               Back to Home

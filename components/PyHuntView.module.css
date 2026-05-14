@@ -789,6 +789,18 @@
   white-space: pre-wrap;
 }
 
+.roundPrompt {
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 24px;
+  white-space: pre-wrap;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
 .mcqOptions {
   display: flex;
   flex-direction: column;

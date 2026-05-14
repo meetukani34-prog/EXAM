@@ -571,7 +571,10 @@ export default function PyHuntView() {
     const userTokens = normalizeTokens(stdout);
     const expectedTokens = normalizeTokens(expectedRaw);
 
-    if (userTokens.length === 0 || expectedTokens.length === 0) return false;
+    // If admin didn't provide any expected output, consider it a pass (optional output)
+    if (expectedTokens.length === 0) return true;
+    
+    if (userTokens.length === 0) return false;
 
     // Exact token list match
     if (userTokens.length === expectedTokens.length && userTokens.every((t, i) => t === expectedTokens[i])) {
@@ -798,7 +801,7 @@ export default function PyHuntView() {
                       </div>
                     )}
                     {c?.imageUrl && <img src={c.imageUrl} alt="Logic Challenge" className={styles.roundImage} />}
-                    {c?.prompt && <p className={styles.roundPrompt}>{c.prompt}</p>}
+                    {c?.prompt && <p className={styles.roundPrompt} style={{ whiteSpace: 'pre-wrap' }}>{c.prompt}</p>}
                   </div>
                 );
               })()}

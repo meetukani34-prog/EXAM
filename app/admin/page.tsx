@@ -808,6 +808,34 @@ function PyHuntConfig({
                     style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
                   />
                </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>CLUE (VISIBLE AT GATE)</label>
+                  <input
+                    className={adminStyles.configInput}
+                    value={c.clue || ""}
+                    onChange={(e) => updateCodingChallenge(3, c.id, 'clue', e.target.value)}
+                    placeholder="Enter the clue for this challenge..."
+                  />
+               </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>ASSIGNED CLUE VARIANTS (Separated by |)</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={c.clue_variants || ""}
+                    onChange={(e) => updateCodingChallenge(3, c.id, 'clue_variants', e.target.value)}
+                    placeholder="Variant 1 | Variant 2 | Variant 3"
+                    style={{ minHeight: 60 }}
+                  />
+               </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>UNLOCK CODE(S) (Use | for multiple)</label>
+                  <input
+                    className={adminStyles.configInput}
+                    value={c.unlock_code || ""}
+                    onChange={(e) => updateCodingChallenge(3, c.id, 'unlock_code', e.target.value)}
+                    placeholder="e.g., SECRET123 or CODE1|CODE2"
+                  />
+               </div>
             </div>
           ))}
         </div>
@@ -861,6 +889,34 @@ function PyHuntConfig({
                     onChange={(e) => updateCodingChallenge(4, c.id, 'test_cases', e.target.value)}
                     placeholder='[{"input": "3", "expected": "1, 2, Fizz"}]'
                     style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
+                  />
+               </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>CLUE (VISIBLE AT GATE)</label>
+                  <input
+                    className={adminStyles.configInput}
+                    value={c.clue || ""}
+                    onChange={(e) => updateCodingChallenge(4, c.id, 'clue', e.target.value)}
+                    placeholder="Enter the clue for this challenge..."
+                  />
+               </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>ASSIGNED CLUE VARIANTS (Separated by |)</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={c.clue_variants || ""}
+                    onChange={(e) => updateCodingChallenge(4, c.id, 'clue_variants', e.target.value)}
+                    placeholder="Variant 1 | Variant 2 | Variant 3"
+                    style={{ minHeight: 60 }}
+                  />
+               </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>UNLOCK CODE(S) (Use | for multiple)</label>
+                  <input
+                    className={adminStyles.configInput}
+                    value={c.unlock_code || ""}
+                    onChange={(e) => updateCodingChallenge(4, c.id, 'unlock_code', e.target.value)}
+                    placeholder="e.g., SECRET123 or CODE1|CODE2"
                   />
                </div>
             </div>

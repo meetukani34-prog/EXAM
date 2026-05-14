@@ -398,60 +398,66 @@ def submit_exam(
 
     # 4. Upsert exam_results — unique per (student_id, exam_name)
     try:
-        # Try full payload with reporting columns
-        db.table("exam_results").upsert({
+        # Construct payload with all reporting columns
+        results_payload = {
             "student_id": student_id,
             "exam_name": exam_title,
             "answers": answers,
-            "score": score,
-            "total_marks": total_marks,
-            "correct_count": correct_count,
-            "wrong_count": wrong_count,
+            "score": float(score),
+            "total_marks": float(total_marks),
+            "correct_count": int(correct_count),
+            "wrong_count": int(wrong_count),
             "submitted_at": submitted_at
-        }, on_conflict="student_id,exam_name").execute()
+        }
+        
+        print(f"[SUBMIT] Attempting upsert for {student_id} on {exam_title}...")
+        upsert_res = db.table("exam_results").upsert(results_payload, on_conflict="student_id,exam_name").execute()
+        print(f"[SUBMIT] Results upserted successfully.")
+        
     except Exception as e:
-        print(f"[EXAM] Full upsert failed (likely missing columns), retrying basic: {e}")
+        print(f"[EXAM] Full upsert failed: {e}")
+        # Secondary fallback for older schema
         try:
-            # Fallback to basic schema
             db.table("exam_results").upsert({
                 "student_id": student_id,
                 "exam_name": exam_title,
                 "answers": answers,
-                "score": score,
-                "total_marks": total_marks,
+                "score": float(score),
+                "total_marks": float(total_marks),
                 "submitted_at": submitted_at
             }, on_conflict="student_id,exam_name").execute()
+            print(f"[SUBMIT] Fallback upsert successful.")
         except Exception as e2:
-            print(f"[EXAM] CRITICAL: exam_results fallback upsert failed: {e2}")
+            print(f"[EXAM] CRITICAL: Fallback upsert also failed: {e2}")
+            # Raise clear error for global handler to catch and return to student portal
+            raise HTTPException(
+                status_code=500,
+                detail=f"DATABASE_ERROR: Could not save results for {exam_title}. {str(e2)}"
+            )
 
     # 5. Mark submitted and ensure attempt is counted for THIS exam
     try:
-        # Fetch existing status for THIS specific exam
-        curr_res = db.table("exam_status").select("*").eq("student_id", student_id).eq("exam_name", exam_title).limit(1).execute()
+        # Fetch existing status to preserve attempts_count
+        curr_res = db.table("exam_status").select("attempts_count, id").eq("student_id", student_id).eq("exam_name", exam_title).execute()
         
-        curr_count = 0
-        record_id = None
-        
+        curr_count = 1
         if curr_res.data:
-            data = curr_res.data[0]
-            curr_count = data.get("attempts_count", 0) or 0
-            record_id = data.get("id")
+            curr_count = curr_res.data[0].get("attempts_count", 0) or 1
         
-        # Increment count if not already submitted
-        final_count = curr_count if curr_count > 0 else 1
-        
-        update_data = {
+        status_payload = {
             "student_id": student_id,
             "exam_name": exam_title,
             "status": "submitted", 
             "submitted_at": submitted_at,
-            "attempts_count": final_count,
+            "attempts_count": curr_count,
             "warnings": 0  # Clear warnings on submission
         }
         
-        db.table("exam_status").upsert(update_data, on_conflict="student_id,exam_name").execute()
+        db.table("exam_status").upsert(status_payload, on_conflict="student_id,exam_name").execute()
+        print(f"[SUBMIT] Status marked as submitted for {student_id}.")
     except Exception as e:
-        print(f"[EXAM] Per-exam submit failed: {e}")
+        print(f"[EXAM] Status update failed: {e}")
+        # Don't fail the whole submission if just status update fails, but log it
 
     # 6. Clear active session
     db.table("students").update(
