@@ -121,7 +121,6 @@ export default function PyHuntView() {
   const [scratchCode, setScratchCode] = useState("");
   const [showScratchpad, setShowScratchpad] = useState(false);
   const [scratchOutput, setScratchOutput] = useState("");
-  const [round4Passed, setRound4Passed] = useState(false);
   const [codingChallenges, setCodingChallenges] = useState<any>({});
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [testResults, setTestResults] = useState<any[]>([]);
@@ -562,7 +561,7 @@ export default function PyHuntView() {
          } else {
             // Round finished
             if (currentRound === 4) {
-              setRound4Passed(true);
+              setIsAtGate(true);
             } else {
               setIsAtGate(true);
             }
@@ -589,7 +588,7 @@ export default function PyHuntView() {
        setShowSuccessRipple(true);
        if (currentRound === 4) {
          setTimeout(() => setShowSuccessRipple(false), 1000);
-         setRound4Passed(true);
+         setIsAtGate(true);
        } else {
          setTimeout(() => {
            setShowSuccessRipple(false);
@@ -856,7 +855,6 @@ export default function PyHuntView() {
                   pyLoading={pyLoading}
                   currentRound={currentRound}
                   labelConfig={labelConfig}
-                  isRound4Passed={round4Passed}
                   testResults={testResults}
                 />
               ) : (
