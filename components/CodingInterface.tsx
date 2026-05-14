@@ -10,6 +10,7 @@ interface CodingInterfaceProps {
     imageUrl?: string;
     test_cases?: string;
     target_output?: string;
+    starter_code?: string;
   };
   code: string;
   setCode: (code: string) => void;
@@ -50,6 +51,19 @@ export default function CodingInterface({
   const allPassed = hasRun && testResults.every(r => r.passed);
   const passedCount = hasRun ? testResults.filter(r => r.passed).length : 0;
   const totalTime = hasRun ? testResults.reduce((acc, r) => acc + (r.executionTimeMs || 0), 0) : 0;
+
+  // --- Starter Code (Nomenclature-Locked Lines) ---
+  const starterCode = problem.starter_code || '';
+  const lockedLineCount = starterCode ? starterCode.split('\n').length : 0;
+
+  // Protect immutable starter code prefix
+  const handleCodeChange = (newValue: string) => {
+    if (starterCode && !newValue.startsWith(starterCode)) {
+      // Student tried to edit the locked lines — reject the edit
+      return;
+    }
+    setCode(newValue);
+  };
 
   // Parse test cases if available
   let testCases: any[] = [];
@@ -134,14 +148,16 @@ export default function CodingInterface({
               <textarea
                 className={styles.codeEditor}
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
+                onChange={(e) => handleCodeChange(e.target.value)}
                 placeholder="# Write your logic here..."
                 spellCheck={false}
                 autoComplete="off"
               />
               <div className={styles.lineNumbers}>
                 {code.split('\n').map((_, i) => (
-                  <span key={i}>{i + 1}</span>
+                  <span key={i} className={i < lockedLineCount ? styles.lockedLine : ''}>
+                    {i < lockedLineCount ? '🔒' : i + 1}
+                  </span>
                 ))}
               </div>
             </div>

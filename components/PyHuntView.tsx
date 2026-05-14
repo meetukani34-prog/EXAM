@@ -317,6 +317,28 @@ export default function PyHuntView() {
      }
   }, [currentRound, originalJumbleCode, jumbledLines.length]);
 
+  // --- Initialization Singularity: Seed editor with starter code ---
+  useEffect(() => {
+    if (currentRound > 2 && currentRound < 5) {
+      const roundChallenges = codingChallenges[currentRound] || [];
+      const currentChallenge = roundChallenges[currentProblemIndex];
+      const roundConfig = globalConfigs.find((c: any) => c.round === currentRound);
+      const activeProblem = currentChallenge || roundConfig;
+      const starter = activeProblem?.starter_code || '';
+      
+      if (starter && !code.startsWith(starter)) {
+        // Check for a saved draft first
+        const draftKey = `pyhunt_code_draft_${student?.id || student?.student_id}`;
+        const savedDraft = localStorage.getItem(draftKey);
+        if (savedDraft && savedDraft.startsWith(starter)) {
+          setCode(savedDraft);
+        } else {
+          setCode(starter + '\n\n# Transform the input string into the expected output\n# Print only the final result\n');
+        }
+      }
+    }
+  }, [currentRound, currentProblemIndex]);
+
   const handleAuthorize = async () => {
     let targetCode = "PYHUNT67";
     let allowedUsns = "";
@@ -809,7 +831,8 @@ export default function PyHuntView() {
                     prompt: (codingChallenges[currentRound] || [])[currentProblemIndex]?.prompt || globalConfigs.find((c: any) => c.round === currentRound)?.prompt || "",
                     imageUrl: (codingChallenges[currentRound] || [])[currentProblemIndex]?.imageUrl || globalConfigs.find((c: any) => c.round === currentRound)?.imageUrl || "",
                     test_cases: (codingChallenges[currentRound] || [])[currentProblemIndex]?.test_cases || globalConfigs.find((c: any) => c.round === currentRound)?.test_cases || "[]",
-                    target_output: (codingChallenges[currentRound] || [])[currentProblemIndex]?.target_output || globalConfigs.find((c: any) => c.round === currentRound)?.target_output || ""
+                    target_output: (codingChallenges[currentRound] || [])[currentProblemIndex]?.target_output || globalConfigs.find((c: any) => c.round === currentRound)?.target_output || "",
+                    starter_code: (codingChallenges[currentRound] || [])[currentProblemIndex]?.starter_code || globalConfigs.find((c: any) => c.round === currentRound)?.starter_code || ""
                   }}
                   code={code}
                   setCode={setCode}
