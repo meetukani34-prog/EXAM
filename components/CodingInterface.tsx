@@ -162,7 +162,16 @@ export default function CodingInterface({
                         </div>
                         <div className={styles.exampleRow}>
                           <span className={styles.exampleLabel}>EXPECTED</span>
-                          <code className={styles.exampleCode}>{formatValue(tc.expected || tc.output || tc.expected_output)}</code>
+                          <code className={styles.exampleCode}>
+                            {formatValue(
+                              tc.expected || 
+                              tc.output || 
+                              tc.expected_output ||
+                              tc.expected_calculations ||
+                              tc.expected_status ||
+                              tc.target_output
+                            )}
+                          </code>
                         </div>
                       </div>
                     </div>
@@ -293,7 +302,16 @@ export default function CodingInterface({
                       </div>
                       <div className={styles.dataBlock}>
                         <div className={styles.dataLabel}>Expected Output</div>
-                        <code className={styles.dataValue}>{formatValue(testCases[selectedCase]?.expected || testCases[selectedCase]?.output || testCases[selectedCase]?.expected_output)}</code>
+                        <code className={styles.dataValue}>
+                          {formatValue(
+                            testCases[selectedCase]?.expected || 
+                            testCases[selectedCase]?.output || 
+                            testCases[selectedCase]?.expected_output ||
+                            testCases[selectedCase]?.expected_calculations ||
+                            testCases[selectedCase]?.expected_status ||
+                            testCases[selectedCase]?.target_output
+                          )}
+                        </code>
                       </div>
                       {hasRun && testResults?.[selectedCase] && (
                         <div className={styles.dataBlock}>
