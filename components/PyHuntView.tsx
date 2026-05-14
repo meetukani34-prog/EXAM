@@ -106,6 +106,7 @@ export default function PyHuntView() {
   const [hint, setHint] = useState("");
   const [showSuccessRipple, setShowSuccessRipple] = useState(false);
   
+  const [assignedClueIndex, setAssignedClueIndex] = useState<number | null>(null);
   const [globalConfigs, setGlobalConfigs] = useState<any[]>([]);
   const [labelConfig, setLabelConfig] = useState<any>({ phase: "Phase", orbit: "Orbit" });
   const [mcqSet, setMcqSet] = useState<any[]>(ROUND_1_QUESTIONS);
@@ -214,6 +215,16 @@ export default function PyHuntView() {
           if (savedCode) setCode(savedCode);
         }
         setCurrentRound(data.current_round);
+        
+        // Restore assigned clue from previous round state
+        const prevRound = data.current_round - 1;
+        if (prevRound >= 1) {
+          const roundKey = `round_${prevRound}_state`;
+          const roundState = (data as any)[roundKey];
+          if (roundState?.assigned_clue_index !== undefined) {
+            setAssignedClueIndex(roundState.assigned_clue_index);
+          }
+        }
       }
       setLoading(false);
     }
@@ -514,6 +525,26 @@ export default function PyHuntView() {
       
       localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
       localStorage.removeItem(`pyhunt_mcq_map_${studentId}`);
+
+      // High-Velocity Orbital Distribution Engine
+      // Assigns clue node based on completion rank (n-1 mod 4)
+      try {
+        const distRes = await fetch('/api/pyhunt/distribute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            studentId, 
+            roundNum: currentRound, 
+            totalClues: 4 
+          })
+        });
+        const distData = await distRes.json();
+        if (distData.success) {
+           setAssignedClueIndex(distData.clueIndex);
+        }
+      } catch (err) {
+        console.warn("[Orbital Engine] Fallback engaged due to gravitational drift.");
+      }
 
       await withRetry(async () => {
         const { error } = await supabase
@@ -852,8 +883,24 @@ export default function PyHuntView() {
               <div className={styles.gateIcon}>🔒</div>
               <h2>{labelConfig.orbit.toUpperCase()} UNLOCK REQUIRED</h2>
               <div className={styles.clueBox}>
-                <label>CLUE:</label>
-                <p>{globalConfigs.find((c: any) => c.round === currentRound)?.clue || "Locate the physical node to find your code."}</p>
+                <label>CLUE {assignedClueIndex !== null ? String.fromCharCode(65 + assignedClueIndex) : ""}:</label>
+                <p>
+                  {(() => {
+                    const c = globalConfigs.find((conf: any) => conf.round === currentRound);
+                    if (!c) return "Locate the physical node to find your code.";
+                    
+                    // Support multiple clues if provided in config as comma-separated or array
+                    if (assignedClueIndex !== null && c.clues && Array.isArray(c.clues)) {
+                      return c.clues[assignedClueIndex] || c.clue || "Locate the physical node.";
+                    }
+                    if (assignedClueIndex !== null && c.clue_variants) {
+                      const variants = c.clue_variants.split('|');
+                      return variants[assignedClueIndex % variants.length] || c.clue;
+                    }
+                    
+                    return c.clue || "Locate the physical node to find your code.";
+                  })()}
+                </p>
               </div>
               <div className={styles.gateInputGroup}>
                 <label>{labelConfig.orbit.toUpperCase()} UNLOCK CODE</label>
