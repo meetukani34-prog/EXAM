@@ -785,7 +785,7 @@ function PyHuntConfig({
                   />
                </div>
                <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>OUTPUT</label>
+                  <label className={adminStyles.inputLabel}>OPTIONAL TARGET OUTPUT (FALLBACK)</label>
                   <textarea
                     className={adminStyles.configTextarea}
                     value={c.target_output || ""}
@@ -840,7 +840,7 @@ function PyHuntConfig({
                   />
                </div>
                <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>OUTPUT</label>
+                  <label className={adminStyles.inputLabel}>OPTIONAL TARGET OUTPUT (FALLBACK)</label>
                   <textarea
                     className={adminStyles.configTextarea}
                     value={c.target_output || ""}

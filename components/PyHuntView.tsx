@@ -502,7 +502,9 @@ export default function PyHuntView() {
       return;
     }
     setOutput(result.stdout || "No output generated.");
-    const isValid = validateRound(currentRound, result.stdout);
+    
+    const targetExpected = activeProblem?.target_output;
+    const isValid = validateRound(currentRound, result.stdout, targetExpected);
     if (isValid) {
        setShowSuccessRipple(true);
        if (currentRound === 4) {
@@ -582,11 +584,11 @@ export default function PyHuntView() {
     return userFlat.includes(expectedFlat);
   };
 
-  const validateRound = (round: number, stdout: string) => {
+  const validateRound = (round: number, stdout: string, expectedTarget?: string) => {
     const roundConfig = globalConfigs.find((c: any) => c.round === round);
-    if (!roundConfig) return false;
+    if (!roundConfig && !expectedTarget) return false;
 
-    const targetRaw = roundConfig.target_output || "";
+    const targetRaw = expectedTarget || roundConfig?.target_output || "";
     
     // Fallback defaults if no config target
     const fallbackTargets: Record<number, string> = {
