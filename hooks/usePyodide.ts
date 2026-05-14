@@ -97,10 +97,13 @@ export function usePyodide(enabled: boolean = true) {
     if (!pyodide) return { error: "Logic Engine not ready." };
     
     try {
-      // Ensure input is a string. If it's an object/array (from JSON config), stringify it.
+      // Ensure input is a string.
       let inputStr = "";
       if (typeof input === 'string') {
         inputStr = input;
+      } else if (Array.isArray(input)) {
+        // If it's an array, join with spaces to support standard .split() in student code
+        inputStr = input.join(' ');
       } else if (input !== null && input !== undefined) {
         inputStr = JSON.stringify(input);
       }
