@@ -407,6 +407,19 @@ export default function PyHuntView() {
 
   const handleExecute = async () => {
     if (currentRound === 1) {
+      // ─── Calculate MCQ Score ───
+      let mcqScore = 0;
+      let mcqTotal = 0;
+      mcqSet.forEach((q, idx) => {
+        mcqTotal += q.posMarks;
+        if (mcqSelectionMap[idx] === q.correct) {
+          mcqScore += q.posMarks;
+        } else if (mcqSelectionMap[idx] !== undefined) {
+          mcqScore -= q.negMarks;
+        }
+      });
+      // ──────────────────────────
+
       const allCorrect = mcqSet.every((q, idx) => mcqSelectionMap[idx] === q.correct);
       const answeredCount = Object.keys(mcqSelectionMap).length;
       if (answeredCount < mcqSet.length) {
@@ -435,6 +448,18 @@ export default function PyHuntView() {
         console.error("Clue assignment failed:", err);
       }
       // ------------------------------
+
+      // Persist the score in round_1_state
+      const studentId = student?.id || student?.student_id;
+      if (studentId) {
+        await supabase.from('odyssey_progress').update({ 
+          round_1_state: { 
+            mcq_score: mcqScore, 
+            mcq_total: mcqTotal,
+            submitted_at: new Date().toISOString()
+          } 
+        }).eq('student_id', studentId);
+      }
 
       setIsAtGate(true);
       setGateError(false);

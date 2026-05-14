@@ -466,8 +466,14 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                     totalTime = `${mins}m ${secs}s`;
                   }
 
-                  // Points
-                  const points = p.score !== undefined && p.score !== null ? `${p.score}/${p.total_marks || 100}` : "—";
+                  // Points (Show Round 1 MCQ marks if available)
+                  let points = "—";
+                  const r1State = p.pyhunt?.round_1_state;
+                  if (r1State && r1State.mcq_score !== undefined) {
+                    points = `${r1State.mcq_score}/${r1State.mcq_total || 0}`;
+                  } else if (p.score !== undefined && p.score !== null) {
+                    points = `${p.score}/${p.total_marks || 100}`;
+                  }
 
                   return (
                   <tr key={p.student_id} className={isCompleted ? adminStyles.rowFinished : ""}>
