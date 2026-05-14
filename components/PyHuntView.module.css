@@ -217,9 +217,10 @@
 
 .terminal pre {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   color: #fff;
-  opacity: 0.8;
+  font-weight: 600;
+  opacity: 1;
   white-space: pre-wrap;
 }
 
@@ -1558,12 +1559,14 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: rgba(15, 23, 42, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(10, 15, 30, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 242, 255, 0.1);
   border-radius: 24px;
   padding: 24px;
   animation: slideInRight 0.4s ease-out;
   height: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
 }
 
 @keyframes slideInRight {
@@ -1586,16 +1589,22 @@
 
 .scratchpadEditor {
   flex: 1;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 242, 255, 0.2);
   border-radius: 12px;
   padding: 16px;
-  color: #fff;
+  color: #00f2ff;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 600;
   resize: none;
   outline: none;
   min-height: 250px;
+  caret-color: #00f2ff;
+}
+
+.scratchpadEditor::placeholder {
+  color: rgba(0, 242, 255, 0.3);
 }
 
 .scratchpadActions {
@@ -1620,13 +1629,15 @@
 }
 
 .scratchOutput {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 255, 163, 0.2);
   border-radius: 8px;
   padding: 12px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 600;
   color: #00ffa3;
-  height: 100px;
+  height: 120px;
   overflow-y: auto;
   white-space: pre-wrap;
 }

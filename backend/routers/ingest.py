@@ -328,7 +328,11 @@ def _extract_questions_from_text(raw_text: str) -> Tuple[List[ParsedQuestion], L
     questions: List[ParsedQuestion] = []
     warnings: List[str] = []
 
-    q_marker_pattern = re.compile(r"(?:\n|^|\s{3,})(?:Question\s*|Q\s*)?(\d+)[.)]\s*", re.IGNORECASE)
+    # Supports: "1.", "1)", "(1)", "[1]", "Q1.", "Question 1:", etc.
+    q_marker_pattern = re.compile(
+        r"(?:\n|^|\s{3,})(?:Question\s*|Q\s*|Q\.)?\s*[(\[]?(\d+)[)\]\s.:]+", 
+        re.IGNORECASE
+    )
     matches = list(q_marker_pattern.finditer(raw_text))
 
     for i in range(len(matches)):
@@ -343,9 +347,9 @@ def _extract_questions_from_text(raw_text: str) -> Tuple[List[ParsedQuestion], L
         # Robust Option Extraction (A. A) (A) [A] etc.)
         for label in _OPTION_LABELS:
             # Look for label at start of line or after space, followed by various delimiters
-            # and non-greedily capture until next option, next question, or end of block
+            # and non-greedily capture until next option, next question, answer tag, or end of block
             opt_pat = re.compile(
-                fr"(?:\s|^|\n)[\(\[\{{]?{label}[\.\)\s\]\}}]\s*(.+?)(?=\s*[\(\[\{{]?[A-Da-d][\.\)\s\]\}}]\s|\s*(?:Question\s*|Q\s*)?\d+[.)]|\Z)",
+                fr"(?:\s|^|\n)[\(\[\{{]?{label}[\.\)\s\]\}}]\s*(.+?)(?=\s+[\(\[\{{]?[A-Da-d][\.\)\s\]\}}](?:\s|\Z)|\s*(?:Question\s*|Q\s*|Q\.)?\s*[(\[]?\d+[)\]\s.:]+|\s*(?:Answer|Ans|Correct\s*Answer)[:\s]+|\Z)",
                 re.IGNORECASE | re.DOTALL,
             )
             m = opt_pat.search(block, last_found_pos)
@@ -353,8 +357,8 @@ def _extract_questions_from_text(raw_text: str) -> Tuple[List[ParsedQuestion], L
                 opts[label] = _clean(m.group(1))
                 last_found_pos = m.end() - 1
             else:
-                # Secondary attempt: Try to find just the label if first one fails
-                fallback_pat = re.compile(fr"\b{label}\b[:\s]+(.+?)(?=\b[A-D]\b[:\s]|\Z)", re.IGNORECASE | re.DOTALL)
+                # Secondary attempt: Try to find "A: text" or "A text"
+                fallback_pat = re.compile(fr"\b{label}[:\s]+(.+?)(?=\b[A-D]\b[:\s]|\Z)", re.IGNORECASE | re.DOTALL)
                 fm = fallback_pat.search(block, last_found_pos)
                 if fm:
                     opts[label] = _clean(fm.group(1))
@@ -744,6 +748,14 @@ async def commit_questions(
         error_str = str(e)
         logger.error(f"Ingest commit failed: {error_str}")
         
+        # ── Step 6: Permission Guard ──
+        if "42501" in error_str or "violates row-level security" in error_str.lower():
+            raise HTTPException(
+                status_code=403,
+                detail="PERMISSION_DENIED: The SUPABASE_SERVICE_KEY provided is an 'anon' key, not a 'service_role' key. "
+                       "Please update your .env with a proper Service Role Key from Supabase Settings -> API."
+            )
+
         # Raise explicit error so the UI shows it
         raise HTTPException(
             status_code=500,

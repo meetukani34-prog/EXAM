@@ -216,6 +216,9 @@ export default function IngestPage() {
         setResult(data);
         setPhase("previewing");
         setEvaporating(false);
+        if (!data.ai_powered) {
+          console.warn("Harvester: Falling back to legacy regex mode.");
+        }
       }, 600);
     } catch (e: any) {
       setError(e.message);
@@ -279,7 +282,10 @@ export default function IngestPage() {
       setCommitted(data.committed);
       setPhase("done");
     } catch (e: any) {
-      setError(e.message);
+      const detailedError = e.message.includes("PERMISSION_DENIED") 
+        ? "Access Denied: Service Role Key required for database commit." 
+        : e.message;
+      setError(detailedError);
       setPhase("previewing");
     }
   };
@@ -417,7 +423,7 @@ export default function IngestPage() {
                 <div className={styles.dropIcon}>🌌</div>
                 <div className={styles.dropTitle}>Drop your question bank here</div>
                 <div className={styles.dropSubtitle}>
-                  Powered by Inception AI — multi-column, complex layouts handled with zero data loss.
+                  Powered by Inception AI — High-fidelity extraction with legacy regex fallback.
                 </div>
               </>
             )}
