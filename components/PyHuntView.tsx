@@ -151,6 +151,15 @@ export default function PyHuntView() {
           .eq('student_id', studentId)
           .filter('exam_name', 'ilike', 'pyhunt');
 
+        // Insert into exam_results for the export tool
+        await supabase.from('exam_results').upsert({
+          student_id: studentId,
+          exam_name: 'PyHunt',
+          score: 100,
+          total_marks: 100,
+          submitted_at: new Date().toISOString()
+        }, { onConflict: 'student_id,exam_name' });
+
         // Mark odyssey_progress as completed
         await supabase.from('odyssey_progress')
           .update({ 

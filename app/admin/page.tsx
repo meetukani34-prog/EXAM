@@ -523,8 +523,9 @@ function PyHuntConfig({
             <h4 style={{ margin: '0 0 16px 0', color: 'var(--accent)', fontSize: 16 }}>🌍 GLOBAL PROTOCOL</h4>
             <div className={adminStyles.inputGroup}>
               <label className={adminStyles.inputLabel}>INITIAL ACCESS CODE (ORBIT 0)</label>
-              <input
-                className={adminStyles.configInput}
+              <textarea
+                className={adminStyles.configTextarea}
+                style={{ minHeight: 60, height: 60 }}
                 value={globalAuth.startCode}
                 onChange={(e) => saveGlobalAuth({ ...globalAuth, startCode: e.target.value })}
               />
@@ -557,9 +558,9 @@ function PyHuntConfig({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 <div className={adminStyles.inputGroup}>
                   <label className={adminStyles.inputLabel}>{labelConfig.phase.toUpperCase()} NAME</label>
-                  <input
-                    type="text"
-                    className={adminStyles.configInput}
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    style={{ minHeight: 44, height: 44, padding: '10px 16px' }}
                     value={c.name}
                     onChange={(e) => updateConfig(c.round, 'name', e.target.value)}
                   />

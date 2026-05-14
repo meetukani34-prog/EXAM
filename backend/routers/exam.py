@@ -558,9 +558,14 @@ async def start_exam(
     new_start = datetime.now(timezone.utc).isoformat()
     new_count = (attempts_count or 0) + 1
 
+    # Normalize exam name for PyHunt to ensure case consistency in results
+    normalized_title = title
+    if title.lower() == "pyhunt":
+        normalized_title = "PyHunt"
+
     update_payload = {
         "student_id": student_id,
-        "exam_name": title,
+        "exam_name": normalized_title,
         "status": "active",
         "started_at": new_start,
         "last_active": new_start,
@@ -572,7 +577,7 @@ async def start_exam(
         db.table("exam_status").upsert(update_payload, on_conflict="student_id,exam_name").execute()
         
         # ── PyHunt Specialized Initialization ──
-        if title.lower() == "pyhunt":
+        if normalized_title == "PyHunt":
             # Reset or Initialize odyssey_progress
             try:
                 # Use upsert to either create a new record or reset the existing one to round 1

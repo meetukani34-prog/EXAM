@@ -820,55 +820,52 @@ async def export_results(
 
     db = get_supabase()
     
-    # ── Filtering Logic ──
-    student_ids = None
+    # ── Filtering & Data Gathering ──
+    # 1. Fetch relevant exam results
+    results_query = db.table("exam_results").select("student_id, score, total_marks, submitted_at, exam_name")
     if quiz_name:
-        # 1. Find all question IDs for this quiz
-        qs = db.table("questions").select("id").eq("exam_name", quiz_name).execute()
-        q_ids = [str(q["id"]) for q in (qs.data or [])]
-        
-        # 2. Find result records that have at least one answer for these questions
-        # This is a bit tricky with Supabase's JSON filtering, so we'll fetch all and filter in memory
-        # to ensure accuracy across all result formats.
-        all_res = db.table("exam_results").select("student_id, answers").execute()
-        targeted_student_ids = []
-        for r in (all_res.data or []):
-            ans_keys = r.get("answers", {}).keys()
-            if any(str(qid) in ans_keys for qid in q_ids):
-                targeted_student_ids.append(r["student_id"])
-        
-        student_ids = set(targeted_student_ids)
-
-    # Gather data
-    results_query = db.table("exam_results").select("student_id, score, total_marks, submitted_at")
-    if student_ids is not None:
-        if not student_ids: # No one took this quiz
-            return JSONResponse(status_code=200, content={"detail": f"No results found for quiz: {quiz_name}"})
-        results_query = results_query.in_("student_id", list(student_ids))
-    
+        results_query = results_query.ilike("exam_name", f"%{quiz_name}%")
     results = results_query.execute()
-    statuses = db.table("exam_status").select("student_id, started_at, status, warnings").execute()
+
+    # 2. Fetch statuses for time tracking and warnings
+    status_query = db.table("exam_status").select("student_id, started_at, status, warnings, exam_name, last_score, last_total, submitted_at")
+    if quiz_name:
+        status_query = status_query.ilike("exam_name", f"%{quiz_name}%")
+    statuses = status_query.execute()
+
+    # 3. Fetch student info
     students = db.table("students").select("id, usn, name, branch, email").execute()
 
+    status_map = {s["student_id"]: s for s in (statuses.data or [])}
     status_map = {s["student_id"]: s for s in (statuses.data or [])}
     student_map = {s["id"]: s for s in (students.data or [])}
 
     # Build rows
     rows = []
-    for r in (results.data or []):
-        sid = r["student_id"]
-        student = student_map.get(sid, {})
-        exam_st = status_map.get(sid, {})
+    # Map results by student_id for quick lookup
+    res_map = {r["student_id"]: r for r in (results.data or [])}
 
-        score = r.get("score") or 0
-        total = r.get("total_marks") or 0
-        pct = round(score / total * 100, 1) if total else 0.0
+    # Iterate over students who have an exam status (those who at least started)
+    for sid, exam_st in status_map.items():
+        # Only export submitted exams unless we want to include in-progress (usually we don't for final results)
+        if exam_st.get("status") != "submitted":
+            continue
+
+        student = student_map.get(sid, {})
+        res = res_map.get(sid, {})
+
+        # Use score from exam_results if available, fallback to exam_status for PyHunt or legacy data
+        score = res.get("score") if res.get("score") is not None else exam_st.get("last_score", 0)
+        total = res.get("total_marks") if res.get("total_marks") is not None else exam_st.get("last_total", 0)
+        pct = round(float(score) / float(total) * 100, 1) if total else 0.0
+        
+        submitted_at = res.get("submitted_at") or exam_st.get("submitted_at", "")
 
         time_taken = ""
-        if r.get("submitted_at") and exam_st.get("started_at"):
+        if submitted_at and exam_st.get("started_at"):
             try:
                 t0 = datetime.fromisoformat(exam_st["started_at"].replace("Z", "+00:00"))
-                t1 = datetime.fromisoformat(r["submitted_at"].replace("Z", "+00:00"))
+                t1 = datetime.fromisoformat(submitted_at.replace("Z", "+00:00"))
                 secs = int((t1 - t0).total_seconds())
                 time_taken = f"{secs // 60}m {secs % 60}s"
             except Exception:
@@ -885,8 +882,11 @@ async def export_results(
             "Percentage (%)": pct,
             "Time Taken": time_taken,
             "Warnings": exam_st.get("warnings", 0),
-            "Submitted At": r.get("submitted_at", ""),
+            "Submitted At": submitted_at,
         })
+
+    if not rows:
+        return JSONResponse(status_code=200, content={"detail": f"No submitted results found for quiz: {quiz_name or 'All'}"})
 
     # Sort by percentage descending
     rows.sort(key=lambda x: -x["Percentage (%)"])
