@@ -88,12 +88,12 @@ input, textarea, select, button, span, p, div, td, th, li, label, h1, h2, h3, h4
 
 /* Universal Visibility Patch */
 label, .label {
-  color: var(--text-secondary) !important;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
 input, select, textarea {
-  color: var(--text-primary) !important;
+  color: var(--text-primary);
 }
 
 h1, h2, h3, h4, h5, h6 {
