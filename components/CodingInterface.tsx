@@ -114,7 +114,7 @@ export default function CodingInterface({
                       <span>Input:</span> <code>{tc.input || "None"}</code>
                     </div>
                     <div className={styles.exampleItem}>
-                      <span>Output:</span> <code>{tc.expected || tc.output || "None"}</code>
+                      <span>Output:</span> <code>{tc.expected || tc.output || tc.expected_output || "None"}</code>
                     </div>
                   </div>
                 ))}
@@ -244,7 +244,7 @@ export default function CodingInterface({
                       </div>
                       <div className={styles.dataBlock}>
                         <div className={styles.dataLabel}>Expected Output</div>
-                        <code className={styles.dataValue}>{testCases[selectedCase]?.expected || testCases[selectedCase]?.output || "(Empty Output)"}</code>
+                        <code className={styles.dataValue}>{testCases[selectedCase]?.expected || testCases[selectedCase]?.output || testCases[selectedCase]?.expected_output || "(Empty Output)"}</code>
                       </div>
                       {hasRun && testResults?.[selectedCase] && (
                         <div className={styles.dataBlock}>

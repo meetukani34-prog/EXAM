@@ -588,7 +588,7 @@ function PyHuntConfig({
         const tc = testCases[i];
         const res: any = await runCode(previewCode, tc.input || "");
         
-        const expected = (tc.expected || tc.output || "").toString().trim();
+        const expected = (tc.expected || tc.output || tc.expected_output || "").toString().trim();
         const actual = (res.stdout || "").toString().trim();
         const passed = validateOutput(res.stdout, expected);
 

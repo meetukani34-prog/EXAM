@@ -162,7 +162,7 @@ _stderr_val = sys.stderr.getvalue()
    */
   const runTestSuite = useCallback(async (
     code: string,
-    testCases: Array<{ input?: string; expected?: string; output?: string }>,
+    testCases: Array<{ input?: string; expected?: string; output?: string; expected_output?: string }>,
     validateFn: (stdout: string, expected: string) => boolean
   ): Promise<TestSuiteResult> => {
     // Prevent concurrent execution (200-user safety)
@@ -185,7 +185,7 @@ _stderr_val = sys.stderr.getvalue()
     for (let i = 0; i < testCases.length; i++) {
       const tc = testCases[i];
       const caseStart = performance.now();
-      const expectedStr = (tc.expected || tc.output || "").toString().trim();
+      const expectedStr = (tc.expected || tc.output || tc.expected_output || "").toString().trim();
 
       const res = await runCode(code, tc.input || "");
       const executionTimeMs = Math.round(performance.now() - caseStart);
