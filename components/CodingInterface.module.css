@@ -252,44 +252,101 @@
 .testcaseArea {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  height: 100%;
 }
 
 .testSummary {
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.overallStatus {
+  font-size: 20px;
+  font-weight: 800;
+  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+}
+
+.statusAccepted { color: #10b981; }
+.statusFailed { color: #ef4444; }
+
+.caseTabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.caseTab {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.caseTab:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.caseTabActive {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.caseStatusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.caseContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 4px;
+}
+
+.dataBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dataLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.dataValue {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
-  margin-bottom: 4px;
-}
-
-.summaryLabel {
-  font-size: 11px;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.allPassed {
-  color: #10b981;
-  font-weight: 800;
+  padding: 12px 16px;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 14px;
-}
-
-.someFailed {
-  color: #ef4444;
-  font-weight: 800;
-  font-size: 14px;
+  color: #fff;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .testcaseRow {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 12px;
+  display: none; /* Hide old row style */
 }
 
 .testcaseLabel {

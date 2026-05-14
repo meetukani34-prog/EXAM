@@ -42,16 +42,18 @@ export default function CodingInterface({
   isRound4Passed,
   testResults
 }: CodingInterfaceProps) {
-  const [activeTab, setActiveTab] = useState<'description' | 'testcases'>('description');
-  const [terminalTab, setTerminalTab] = useState<'output' | 'testcase_details'>('output');
+  const [activeTerminalTab, setActiveTerminalTab] = useState<'console' | 'testcases'>('console');
+  const [selectedCase, setSelectedCase] = useState(0);
+
+  const hasRun = testResults && testResults.length > 0;
+  const allPassed = hasRun && testResults.every(r => r.passed);
 
   // Parse test cases if available
-  let testCases = [];
+  let testCases: any[] = [];
   try {
     if (problem.test_cases) {
       const parsed = JSON.parse(problem.test_cases);
       if (Array.isArray(parsed)) {
-        // Handle nested structure: [{ test_cases: [...] }] or simple array [...]
         if (parsed.length > 0 && parsed[0].test_cases && Array.isArray(parsed[0].test_cases)) {
           testCases = parsed[0].test_cases;
         } else {
@@ -60,7 +62,7 @@ export default function CodingInterface({
       }
     }
   } catch (e) {
-    console.error("Failed to parse test cases", e);
+    console.error("Failed to parse test cases:", e);
   }
 
   return (
@@ -70,12 +72,7 @@ export default function CodingInterface({
         <div className={styles.leftPane}>
           <div className={styles.paneHeader}>
             <div className={styles.tabGroup}>
-              <button 
-                className={`${styles.tab} ${activeTab === 'description' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('description')}
-              >
-                📜 Description
-              </button>
+              <div className={`${styles.tab} ${styles.activeTab}`}>📜 Description</div>
             </div>
           </div>
           <div className={styles.paneContent}>
@@ -116,9 +113,6 @@ export default function CodingInterface({
               <div className={styles.tabGroup}>
                 <div className={`${styles.tab} ${styles.activeTab}`}>🐍 Python 3</div>
               </div>
-              <div className={styles.editorActions}>
-                {/* Potentially reset button or others */}
-              </div>
             </div>
             <div className={styles.editorWrapper}>
               <textarea
@@ -141,15 +135,15 @@ export default function CodingInterface({
             <div className={styles.paneHeader}>
               <div className={styles.tabGroup}>
                 <button 
-                  className={`${styles.tab} ${terminalTab === 'output' ? styles.activeTab : ''}`}
-                  onClick={() => setTerminalTab('output')}
+                  className={`${styles.tab} ${activeTerminalTab === 'console' ? styles.activeTab : ''}`}
+                  onClick={() => setActiveTerminalTab('console')}
                 >
                   📟 Console
                 </button>
                 {testCases.length > 0 && (
                   <button 
-                    className={`${styles.tab} ${terminalTab === 'testcase_details' ? styles.activeTab : ''}`}
-                    onClick={() => setTerminalTab('testcase_details')}
+                    className={`${styles.tab} ${activeTerminalTab === 'testcases' ? styles.activeTab : ''}`}
+                    onClick={() => setActiveTerminalTab('testcases')}
                   >
                     🧪 Testcases
                   </button>
@@ -158,9 +152,9 @@ export default function CodingInterface({
             </div>
             <div className={styles.terminalContent}>
               <AnimatePresence mode="wait">
-                {terminalTab === 'output' ? (
+                {activeTerminalTab === 'console' ? (
                   <motion.div 
-                    key="output"
+                    key="console"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -182,58 +176,59 @@ export default function CodingInterface({
                     exit={{ opacity: 0 }}
                     className={styles.testcaseArea}
                   >
-                    {testResults && testResults.length > 0 && (
-                      <div className={styles.testSummary}>
-                        <span className={styles.summaryLabel}>Test Result:</span>
-                        <span className={testResults.every(r => r.passed) ? styles.allPassed : styles.someFailed}>
-                          {testResults.filter(r => r.passed).length} / {testResults.length} Case(s) Passed
-                        </span>
+                    <div className={styles.caseTabsWrapper}>
+                      <div className={styles.caseTabs}>
+                        {testCases.map((_: any, i: number) => {
+                          const passed = testResults?.[i]?.passed;
+                          return (
+                            <button 
+                              key={i}
+                              onClick={() => setSelectedCase(i)}
+                              className={`${styles.caseTab} ${selectedCase === i ? styles.caseTabActive : ''}`}
+                            >
+                              {hasRun && <span className={styles.caseStatusDot} style={{ background: passed ? '#10b981' : '#ef4444' }} />}
+                              Case {i + 1}
+                            </button>
+                          );
+                        })}
                       </div>
-                    )}
-                    {testCases.map((tc: any, i: number) => {
-                      const result = testResults?.[i];
-                      const isPassed = result?.passed;
-                      const hasRun = !!result;
-
-                      return (
-                        <div key={i} className={`${styles.testcaseRow} ${hasRun ? (isPassed ? styles.passedRow : styles.failedRow) : ''}`}>
-                          <div className={styles.testcaseHeader}>
-                            <div className={styles.testcaseLabel}>Case {i + 1}</div>
-                            {hasRun && (
-                              <span className={isPassed ? styles.passBadge : styles.failBadge}>
-                                {isPassed ? '✓ PASSED' : '✗ FAILED'}
-                              </span>
-                            )}
-                          </div>
-                          <div className={styles.testcaseData}>
-                            <div className={styles.dataItem}>
-                              <span className={styles.dataLabel}>IN:</span>
-                              <code>{tc.input || "None"}</code>
-                            </div>
-                            <div className={styles.dataItem}>
-                              <span className={styles.dataLabel}>EXP:</span>
-                              <code>{tc.expected || tc.output || "(Empty Output)"}</code>
-                            </div>
-                            {hasRun && (
-                              <div className={styles.dataItem}>
-                                <span className={styles.dataLabel}>ACT:</span>
-                                <code style={{ color: isPassed ? '#10b981' : '#ef4444', fontWeight: 700 }}>
-                                  {result.actual || result.error || "(No Output)"}
-                                </code>
-                              </div>
-                            )}
-                          </div>
+                    </div>
+                    <div className={styles.caseContent}>
+                      <div className={styles.dataBlock}>
+                        <div className={styles.dataLabel}>Input</div>
+                        <code className={styles.dataValue}>{testCases[selectedCase]?.input || "None"}</code>
+                      </div>
+                      <div className={styles.dataBlock}>
+                        <div className={styles.dataLabel}>Expected Output</div>
+                        <code className={styles.dataValue}>{testCases[selectedCase]?.expected || testCases[selectedCase]?.output || "(Empty Output)"}</code>
+                      </div>
+                      {hasRun && testResults?.[selectedCase] && (
+                        <div className={styles.dataBlock}>
+                          <div className={styles.dataLabel}>Actual Output</div>
+                          <code className={`${styles.dataValue} ${testResults[selectedCase].passed ? styles.statusAccepted : styles.statusFailed}`}>
+                            {testResults[selectedCase].actual || testResults[selectedCase].error || "(No Output)"}
+                          </code>
                         </div>
-                      );
-                    })}
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
+            
             <div className={styles.terminalFooter}>
               <div className={styles.statusIndicator}>
-                <div className={pyLoading ? styles.statusPulse : styles.statusReady} />
-                <span>{pyLoading ? 'EXECUTING...' : 'READY'}</span>
+                {pyLoading ? (
+                  <>
+                    <div className={styles.statusPulse} />
+                    <span>EXECUTING...</span>
+                  </>
+                ) : (
+                  <>
+                    <div className={styles.statusReady} />
+                    <span>READY</span>
+                  </>
+                )}
               </div>
               <div className={styles.buttonGroup}>
                 <button 
@@ -244,7 +239,7 @@ export default function CodingInterface({
                   ▶ Run
                 </button>
                 <button 
-                  className={styles.submitBtn} 
+                  className={styles.submitBtn}
                   onClick={onSubmit}
                   disabled={pyLoading || (currentRound === 4 && isRound4Passed)}
                 >
