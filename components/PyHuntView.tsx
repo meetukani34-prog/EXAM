@@ -120,6 +120,8 @@ export default function PyHuntView() {
   const [showScratchpad, setShowScratchpad] = useState(false);
   const [scratchOutput, setScratchOutput] = useState("");
   const [round4Passed, setRound4Passed] = useState(false);
+  const [codingChallenges, setCodingChallenges] = useState<any>({});
+  const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   
   const lastFetchRef = useRef<number>(0);
   const isFetchingRef = useRef<boolean>(false);
@@ -257,6 +259,8 @@ export default function PyHuntView() {
              if (j && j.length > 0) setJumbleSet(j);
             const l = data.find((c: any) => c.config_key === 'labels')?.config_value;
             if (l) setLabelConfig(l);
+            const cc = data.find((c: any) => c.config_key === 'coding_challenges')?.config_value;
+            if (cc) setCodingChallenges(cc);
          }
        } finally {
          isFetchingRef.current = false;
@@ -424,11 +428,17 @@ export default function PyHuntView() {
 
     setOutput("Executing Logic...");
     
+    const roundChallenges = codingChallenges[currentRound] || [];
+    const currentChallenge = roundChallenges[currentProblemIndex];
+    
+    // Fallback to legacy single-config if no challenge set found
     const roundConfig = globalConfigs.find((c: any) => c.round === currentRound);
+    const activeProblem = currentChallenge || roundConfig;
+
     let testCases: any[] = [];
     try {
-      if (roundConfig?.test_cases) {
-        testCases = JSON.parse(roundConfig.test_cases);
+      if (activeProblem?.test_cases) {
+        testCases = JSON.parse(activeProblem.test_cases);
       }
     } catch (e) {
       console.error("Invalid test cases JSON configuration.");
@@ -462,14 +472,20 @@ export default function PyHuntView() {
 
       if (allPassed) {
          setShowSuccessRipple(true);
-         if (currentRound === 4) {
-           setTimeout(() => setShowSuccessRipple(false), 1000);
-           setRound4Passed(true);
+         setTimeout(() => setShowSuccessRipple(false), 1000);
+
+         // Sequence Check: More problems in this round?
+         if (currentProblemIndex < roundChallenges.length - 1) {
+            setOutput(`Problem ${currentProblemIndex + 1} solved. Initializing next data node...`);
+            setCurrentProblemIndex(prev => prev + 1);
+            setCode(""); // Clear for next problem
          } else {
-           setTimeout(() => {
-             setShowSuccessRipple(false);
-             setIsAtGate(true);
-           }, 1000);
+            // Round finished
+            if (currentRound === 4) {
+              setRound4Passed(true);
+            } else {
+              setIsAtGate(true);
+            }
          }
       } else {
          setWrongAttempts(prev => prev + 1);
@@ -761,12 +777,20 @@ export default function PyHuntView() {
               </header>
 
               {(() => {
-                const c = globalConfigs.find((conf: any) => conf.round === currentRound);
-                if (!c?.prompt && !c?.imageUrl) return null;
+                const roundChallenges = codingChallenges[currentRound] || [];
+                const currentChallenge = roundChallenges[currentProblemIndex];
+                const c = currentChallenge || globalConfigs.find((conf: any) => conf.round === currentRound);
+                
+                if (!c?.prompt && !c?.imageUrl && roundChallenges.length <= 1) return null;
                 return (
                   <div className={styles.roundMeta}>
-                    {c.imageUrl && <img src={c.imageUrl} alt="Logic Challenge" className={styles.roundImage} />}
-                    {c.prompt && <p className={styles.roundPrompt}>{c.prompt}</p>}
+                    {roundChallenges.length > 1 && (
+                      <div className={styles.challengeProgress} style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', marginBottom: 8 }}>
+                        CHALLENGE {currentProblemIndex + 1} OF {roundChallenges.length}
+                      </div>
+                    )}
+                    {c?.imageUrl && <img src={c.imageUrl} alt="Logic Challenge" className={styles.roundImage} />}
+                    {c?.prompt && <p className={styles.roundPrompt}>{c.prompt}</p>}
                   </div>
                 );
               })()}

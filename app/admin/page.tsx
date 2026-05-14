@@ -221,6 +221,10 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
   const [jumbles, setJumbles] = useState<any[]>([
     { id: 1, blocks: ["def hello():", "  print('world')", "hello()"], target: "def hello():\n  print('world')\nhello()" },
   ]);
+  const [codingChallenges, setCodingChallenges] = useState<any>({
+    3: [{ id: 1, prompt: "", imageUrl: "", target_output: "", test_cases: "[]" }],
+    4: [{ id: 2, prompt: "", imageUrl: "", target_output: "", test_cases: "[]" }]
+  });
   const [globalAuth, setGlobalAuth] = useState<any>({ startCode: "PYHUNT67", authorizedUsns: "" });
   const [labelConfig, setLabelConfig] = useState<any>({ phase: "Phase", orbit: "Orbit" });
 
@@ -238,6 +242,8 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
         if (j) setJumbles(j);
         const l = data.find((c: any) => c.config_key === 'labels')?.config_value;
         if (l) setLabelConfig(l || { phase: "Phase", orbit: "Orbit" });
+        const cc = data.find((c: any) => c.config_key === 'coding_challenges')?.config_value;
+        if (cc) setCodingChallenges(cc);
       }
     } catch (error) {
       console.error("Fetch error:", error);
@@ -302,6 +308,30 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
       alert("Failed to save Jumble: " + err.message);
     }
   };
+  const updateCodingChallenge = async (round: number, id: number, field: string, val: any) => {
+    const updated = {
+      ...codingChallenges,
+      [round]: codingChallenges[round].map((c: any) => c.id === id ? { ...c, [field]: val } : c)
+    };
+    setCodingChallenges(updated);
+    await updatePyHuntConfig('coding_challenges', updated);
+  };
+  const addCodingChallenge = async (round: number) => {
+    const updated = {
+      ...codingChallenges,
+      [round]: [...(codingChallenges[round] || []), { id: Date.now(), prompt: "", imageUrl: "", target_output: "", test_cases: "[]" }]
+    };
+    setCodingChallenges(updated);
+    await updatePyHuntConfig('coding_challenges', updated);
+  };
+  const removeCodingChallenge = async (round: number, id: number) => {
+    const updated = {
+      ...codingChallenges,
+      [round]: codingChallenges[round].filter((c: any) => c.id !== id)
+    };
+    setCodingChallenges(updated);
+    await updatePyHuntConfig('coding_challenges', updated);
+  };
   const saveLabelConfig = async (newLabels: any) => {
     setLabelConfig(newLabels);
     try {
@@ -359,7 +389,8 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                 updatePyHuntConfig('mcqs', mcqs),
                 updatePyHuntConfig('auth', globalAuth),
                 updatePyHuntConfig('jumbles', jumbles),
-                updatePyHuntConfig('labels', labelConfig)
+                updatePyHuntConfig('labels', labelConfig),
+                updatePyHuntConfig('coding_challenges', codingChallenges)
               ]);
 
               btn.innerText = "✅ SYNCHRONIZED";
@@ -505,6 +536,10 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
            removeJumble={removeJumble}
            labelConfig={labelConfig}
            saveLabelConfig={saveLabelConfig}
+           codingChallenges={codingChallenges}
+           updateCodingChallenge={updateCodingChallenge}
+           addCodingChallenge={addCodingChallenge}
+           removeCodingChallenge={removeCodingChallenge}
         />
       )}
     </div>
@@ -513,7 +548,8 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
 
 function PyHuntConfig({ 
   activeTab, configs, mcqs, jumbles, globalAuth, updateConfig, updateMcq, addMcq, removeMcq, 
-  saveGlobalAuth, saveJumbles, addJumble, removeJumble, labelConfig, saveLabelConfig 
+  saveGlobalAuth, saveJumbles, addJumble, removeJumble, labelConfig, saveLabelConfig,
+  codingChallenges, updateCodingChallenge, addCodingChallenge, removeCodingChallenge
 }: any) {
   return (
     <div className={adminStyles.configContent}>
@@ -720,101 +756,111 @@ function PyHuntConfig({
 
       {activeTab === "r3" && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <h4 style={{ color: '#fff', margin: 0 }}>Round 3: Palindrome Logic Configuration</h4>
-          <div className={adminStyles.configCard}>
-             <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>QUESTION / PROMPT</label>
-                <textarea
-                  className={adminStyles.configTextarea}
-                  value={configs.find((c: any) => c.round === 3)?.prompt || ""}
-                  onChange={(e) => updateConfig(3, 'prompt', e.target.value)}
-                  placeholder="Describe the palindrome challenge..."
-                />
-             </div>
-             <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>OPTIONAL IMAGE URL</label>
-                <input
-                  className={adminStyles.configInput}
-                  value={configs.find((c: any) => c.round === 3)?.imageUrl || ""}
-                  onChange={(e) => updateConfig(3, 'imageUrl', e.target.value)}
-                  placeholder="https://example.com/image.png"
-                />
-             </div>
-             <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>OUTPUT</label>
-                <textarea
-                  className={adminStyles.configTextarea}
-                  value={configs.find((c: any) => c.round === 3)?.target_output || "palindrome: true"}
-                  onChange={(e) => updateConfig(3, 'target_output', e.target.value)}
-                  placeholder="e.g., palindrome: true"
-                  style={{ minHeight: 120, fontFamily: 'monospace' }}
-                />
-                <p style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>The student's code must print this exact string (case-insensitive) to pass.</p>
-             </div>
-             <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>TEST CASES (JSON ARRAY)</label>
-                <textarea
-                  className={adminStyles.configTextarea}
-                  value={configs.find((c: any) => c.round === 3)?.test_cases || "[]"}
-                  onChange={(e) => updateConfig(3, 'test_cases', e.target.value)}
-                  placeholder='[{"input": "radar", "expected": "palindrome: true"}]'
-                  style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
-                />
-                <p style={{ fontSize: 11, opacity: 0.5, marginTop: 4 }}>
-                  Format: {"[{\"input\": \"...\", \"expected\": \"...\"}]"}. If empty, only the single OUTPUT above is used.
-                </p>
-             </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ color: '#fff', margin: 0 }}>Round 3: Logic Sequence Challenges</h4>
+            <button className={adminStyles.addMcqBtn} onClick={() => addCodingChallenge(3)}>+ ADD CHALLENGE</button>
           </div>
+          {(codingChallenges[3] || []).map((c: any, idx: number) => (
+            <div key={c.id} className={adminStyles.configCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span className={adminStyles.codeBadge}>CHALLENGE {idx + 1}</span>
+                <button onClick={() => removeCodingChallenge(3, c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
+              </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>QUESTION / PROMPT</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={c.prompt || ""}
+                    onChange={(e) => updateCodingChallenge(3, c.id, 'prompt', e.target.value)}
+                    placeholder="Describe the challenge..."
+                  />
+               </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>OPTIONAL IMAGE URL</label>
+                  <input
+                    className={adminStyles.configInput}
+                    value={c.imageUrl || ""}
+                    onChange={(e) => updateCodingChallenge(3, c.id, 'imageUrl', e.target.value)}
+                    placeholder="https://example.com/image.png"
+                  />
+               </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>OUTPUT</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={c.target_output || ""}
+                    onChange={(e) => updateCodingChallenge(3, c.id, 'target_output', e.target.value)}
+                    placeholder="e.g., palindrome: true"
+                    style={{ minHeight: 80, fontFamily: 'monospace' }}
+                  />
+               </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>TEST CASES (JSON ARRAY)</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={c.test_cases || "[]"}
+                    onChange={(e) => updateCodingChallenge(3, c.id, 'test_cases', e.target.value)}
+                    placeholder='[{"input": "radar", "expected": "palindrome: true"}]'
+                    style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
+                  />
+               </div>
+            </div>
+          ))}
         </div>
       )}
 
       {activeTab === "r4" && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <h4 style={{ color: '#fff', margin: 0 }}>Round 4: FizzBuzz Logic Configuration</h4>
-          <div className={adminStyles.configCard}>
-             <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>QUESTION / PROMPT</label>
-                <textarea
-                  className={adminStyles.configTextarea}
-                  value={configs.find((c: any) => c.round === 4)?.prompt || ""}
-                  onChange={(e) => updateConfig(4, 'prompt', e.target.value)}
-                  placeholder="Describe the FizzBuzz challenge..."
-                />
-             </div>
-             <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>OPTIONAL IMAGE URL</label>
-                <input
-                  className={adminStyles.configInput}
-                  value={configs.find((c: any) => c.round === 4)?.imageUrl || ""}
-                  onChange={(e) => updateConfig(4, 'imageUrl', e.target.value)}
-                  placeholder="https://example.com/image.png"
-                />
-             </div>
-             <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>OUTPUT</label>
-                <textarea
-                  className={adminStyles.configTextarea}
-                  value={configs.find((c: any) => c.round === 4)?.target_output || "1, 2, Fizz, 4, Buzz"}
-                  onChange={(e) => updateConfig(4, 'target_output', e.target.value)}
-                  placeholder="e.g., 1, 2, Fizz, 4, Buzz"
-                  style={{ minHeight: 120, fontFamily: 'monospace' }}
-                />
-                <p style={{ fontSize: 12, opacity: 0.5, marginTop: 8 }}>The student's code must print this exact string (case-insensitive) to pass.</p>
-             </div>
-             <div className={adminStyles.inputGroup}>
-                <label className={adminStyles.inputLabel}>TEST CASES (JSON ARRAY)</label>
-                <textarea
-                  className={adminStyles.configTextarea}
-                  value={configs.find((c: any) => c.round === 4)?.test_cases || "[]"}
-                  onChange={(e) => updateConfig(4, 'test_cases', e.target.value)}
-                  placeholder='[{"input": "3", "expected": "1, 2, Fizz"}]'
-                  style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
-                />
-                <p style={{ fontSize: 11, opacity: 0.5, marginTop: 4 }}>
-                  Format: {"[{\"input\": \"...\", \"expected\": \"...\"}]"}. If empty, only the single OUTPUT above is used.
-                </p>
-             </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ color: '#fff', margin: 0 }}>Round 4: Final Sequence Challenges</h4>
+            <button className={adminStyles.addMcqBtn} onClick={() => addCodingChallenge(4)}>+ ADD CHALLENGE</button>
           </div>
+          {(codingChallenges[4] || []).map((c: any, idx: number) => (
+            <div key={c.id} className={adminStyles.configCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span className={adminStyles.codeBadge}>CHALLENGE {idx + 1}</span>
+                <button onClick={() => removeCodingChallenge(4, c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
+              </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>QUESTION / PROMPT</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={c.prompt || ""}
+                    onChange={(e) => updateCodingChallenge(4, c.id, 'prompt', e.target.value)}
+                    placeholder="Describe the FizzBuzz challenge..."
+                  />
+               </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>OPTIONAL IMAGE URL</label>
+                  <input
+                    className={adminStyles.configInput}
+                    value={c.imageUrl || ""}
+                    onChange={(e) => updateCodingChallenge(4, c.id, 'imageUrl', e.target.value)}
+                    placeholder="https://example.com/image.png"
+                  />
+               </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>OUTPUT</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={c.target_output || ""}
+                    onChange={(e) => updateCodingChallenge(4, c.id, 'target_output', e.target.value)}
+                    placeholder="e.g., 1, 2, Fizz, 4, Buzz"
+                    style={{ minHeight: 80, fontFamily: 'monospace' }}
+                  />
+               </div>
+               <div className={adminStyles.inputGroup}>
+                  <label className={adminStyles.inputLabel}>TEST CASES (JSON ARRAY)</label>
+                  <textarea
+                    className={adminStyles.configTextarea}
+                    value={c.test_cases || "[]"}
+                    onChange={(e) => updateCodingChallenge(4, c.id, 'test_cases', e.target.value)}
+                    placeholder='[{"input": "3", "expected": "1, 2, Fizz"}]'
+                    style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
+                  />
+               </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
