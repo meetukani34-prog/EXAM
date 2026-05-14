@@ -109,6 +109,63 @@
   color: #fff;
 }
 
+.exampleBox {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.exampleTitle {
+  font-size: 12px;
+  font-weight: 800;
+  color: #00f2ff;
+  opacity: 0.8;
+  margin: 0;
+}
+
+.exampleGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exampleRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exampleLabel {
+  font-size: 10px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.15em;
+}
+
+.exampleCode {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  white-space: pre-wrap;
+  word-break: break-all;
+  display: block;
+}
+
+.exampleHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
 .examplesSection h4 {
   font-size: 14px;
   text-transform: uppercase;

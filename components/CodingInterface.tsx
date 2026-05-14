@@ -47,6 +47,19 @@ export default function CodingInterface({
   const [activeTerminalTab, setActiveTerminalTab] = useState<'console' | 'testcases'>('console');
   const [selectedCase, setSelectedCase] = useState(0);
 
+  const formatValue = (val: any) => {
+    if (!val) return "None";
+    const str = val.toString().trim();
+    try {
+      // If it's already a JSON-like string (starts with [ or {), try to parse and prettify
+      if ((str.startsWith('[') && str.endsWith(']')) || (str.startsWith('{') && str.endsWith('}'))) {
+        return JSON.stringify(JSON.parse(str), null, 2);
+      }
+    } catch (e) {}
+    return str;
+  };
+
+
   const hasRun = testResults && testResults.length > 0;
   const allPassed = hasRun && testResults.every(r => r.passed);
   const passedCount = hasRun ? testResults.filter(r => r.passed).length : 0;
@@ -123,17 +136,26 @@ export default function CodingInterface({
             </div>
             {testCases.length > 0 && (
               <div className={styles.examplesSection}>
-                <h4>Examples:</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <div style={{ width: 4, height: 16, background: 'var(--accent)', borderRadius: 2 }} />
+                  <h4 style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Examples & Patterns</h4>
+                </div>
                 {testCases.slice(0, 2).map((tc: any, i: number) => (
-                  <div key={i} className={styles.exampleBox}>
-                    <div className={styles.exampleTitle}>Example {i + 1}</div>
-                    <div className={styles.exampleItem}>
-                      <span>Input:</span> <code>{tc.input || "None"}</code>
+                    <div key={i} className={styles.exampleBox}>
+                      <div className={styles.exampleHeader}>
+                        <span className={styles.exampleTitle}>EXAMPLE 0{i + 1}</span>
+                      </div>
+                      <div className={styles.exampleGrid}>
+                        <div className={styles.exampleRow}>
+                          <span className={styles.exampleLabel}>INPUT</span>
+                          <code className={styles.exampleCode}>{formatValue(tc.input)}</code>
+                        </div>
+                        <div className={styles.exampleRow}>
+                          <span className={styles.exampleLabel}>EXPECTED</span>
+                          <code className={styles.exampleCode}>{formatValue(tc.expected || tc.output || tc.expected_output)}</code>
+                        </div>
+                      </div>
                     </div>
-                    <div className={styles.exampleItem}>
-                      <span>Output:</span> <code>{tc.expected || tc.output || tc.expected_output || "None"}</code>
-                    </div>
-                  </div>
                 ))}
               </div>
             )}
@@ -257,11 +279,11 @@ export default function CodingInterface({
                     <div className={styles.caseContent}>
                       <div className={styles.dataBlock}>
                         <div className={styles.dataLabel}>Input</div>
-                        <code className={styles.dataValue}>{testCases[selectedCase]?.input || "None"}</code>
+                        <code className={styles.dataValue}>{formatValue(testCases[selectedCase]?.input)}</code>
                       </div>
                       <div className={styles.dataBlock}>
                         <div className={styles.dataLabel}>Expected Output</div>
-                        <code className={styles.dataValue}>{testCases[selectedCase]?.expected || testCases[selectedCase]?.output || testCases[selectedCase]?.expected_output || "(Empty Output)"}</code>
+                        <code className={styles.dataValue}>{formatValue(testCases[selectedCase]?.expected || testCases[selectedCase]?.output || testCases[selectedCase]?.expected_output)}</code>
                       </div>
                       {hasRun && testResults?.[selectedCase] && (
                         <div className={styles.dataBlock}>
@@ -275,7 +297,7 @@ export default function CodingInterface({
                           <code className={`${styles.dataValue} ${testResults[selectedCase].passed ? styles.statusAccepted : styles.statusFailed}`}>
                             {testResults[selectedCase].error 
                               ? `Error: ${testResults[selectedCase].error}`
-                              : testResults[selectedCase].actual || "(No Output)"
+                              : formatValue(testResults[selectedCase].actual)
                             }
                           </code>
                         </div>
