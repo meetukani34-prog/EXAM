@@ -302,13 +302,17 @@
   border: none;
   padding: 20px 20px 20px 50px;
   color: #ffffff !important;
+  caret-color: #00f2ff !important;
   font-family: 'JetBrains Mono', monospace;
   font-size: 15px;
+  font-weight: 500;
   line-height: 1.5;
   resize: none;
   outline: none;
   z-index: 2;
   position: relative;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .codeEditor::placeholder {
