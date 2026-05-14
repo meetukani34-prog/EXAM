@@ -160,7 +160,8 @@ async def get_all_students(exam: Optional[str] = Query(None), _: bool = Depends(
     try:
         db = get_supabase()
         # Query students joined with ALL their exam_status records
-        result = db.table("students").select("*, exam_status(*)").execute()
+        # Explicitly list columns for exam_status to avoid stale schema expansion of non-existent columns
+        result = db.table("students").select("*, exam_status(id, student_id, exam_name, status, warnings, last_active, submitted_at, started_at)").execute()
 
         rows = []
         if result.data:
@@ -233,8 +234,8 @@ async def get_student_fidelity(student_id: str, _: bool = Depends(verify_admin))
         raise HTTPException(status_code=404, detail="Student not found")
     s = student_res.data[0]
 
-    # 2. Fetch Relations
-    status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
+    # 2. Fetch Relations (Explicit columns to avoid last_score/last_total issues)
+    status_res = db.table("exam_status").select("id, student_id, exam_name, status, warnings, last_active, submitted_at, started_at").eq("student_id", student_id).execute()
     results_res = db.table("exam_results").select("*").eq("student_id", student_id).execute()
     
     # Odyssey is optional, handle missing table (PGRST205)
@@ -828,7 +829,7 @@ async def export_results(
     results = results_query.execute()
 
     # 2. Fetch statuses for time tracking and warnings
-    status_query = db.table("exam_status").select("student_id, started_at, status, warnings, exam_name, last_score, last_total, submitted_at")
+    status_query = db.table("exam_status").select("student_id, started_at, status, warnings, exam_name, submitted_at")
     if quiz_name:
         status_query = status_query.ilike("exam_name", f"%{quiz_name}%")
     statuses = status_query.execute()
@@ -837,26 +838,20 @@ async def export_results(
     students = db.table("students").select("id, usn, name, branch, email").execute()
 
     status_map = {s["student_id"]: s for s in (statuses.data or [])}
-    status_map = {s["student_id"]: s for s in (statuses.data or [])}
     student_map = {s["id"]: s for s in (students.data or [])}
 
-    # Build rows
+    # 4. Build rows
     rows = []
-    # Map results by student_id for quick lookup
-    res_map = {r["student_id"]: r for r in (results.data or [])}
-
-    # Iterate over students who have an exam status (those who at least started)
-    for sid, exam_st in status_map.items():
-        # Only export submitted exams unless we want to include in-progress (usually we don't for final results)
-        if exam_st.get("status") != "submitted":
-            continue
-
+    # Map results by student_id + exam_name for quick lookup
+    # We want to export every unique student-exam combination
+    for res in (results.data or []):
+        sid = res["student_id"]
+        ename = res.get("exam_name") or "Unknown"
         student = student_map.get(sid, {})
-        res = res_map.get(sid, {})
+        exam_st = status_map.get(sid, {}) # This might match any exam for the student, but it's a fallback
 
-        # Use score from exam_results if available, fallback to exam_status for PyHunt or legacy data
-        score = res.get("score") if res.get("score") is not None else exam_st.get("last_score", 0)
-        total = res.get("total_marks") if res.get("total_marks") is not None else exam_st.get("last_total", 0)
+        score = res.get("score") if res.get("score") is not None else 0
+        total = res.get("total_marks") if res.get("total_marks") is not None else 0
         pct = round(float(score) / float(total) * 100, 1) if total else 0.0
         
         submitted_at = res.get("submitted_at") or exam_st.get("submitted_at", "")
@@ -876,20 +871,52 @@ async def export_results(
             "Name": student.get("name", ""),
             "Branch": student.get("branch", ""),
             "Email": student.get("email", ""),
-            "Status": exam_st.get("status", ""),
+            "Exam": ename,
             "Score": score,
-            "Total Marks": total,
-            "Percentage (%)": pct,
+            "Total": total,
+            "Percentage": f"{pct}%",
             "Time Taken": time_taken,
-            "Warnings": exam_st.get("warnings", 0),
             "Submitted At": submitted_at,
+            "Warnings": exam_st.get("warnings", 0)
         })
+
+    # 5. Handle PyHunt/Odyssey specifically if not already in results
+    if not quiz_name or "pyhunt" in quiz_name.lower():
+        try:
+            odyssey = db.table("odyssey_progress").select("*").execute()
+            for p in (odyssey.data or []):
+                sid = p["student_id"]
+                # Skip if already added via results
+                if any(r["USN"] == student_map.get(sid, {}).get("usn") and r["Exam"] == "PyHunt" for r in rows):
+                    continue
+                
+                student = student_map.get(sid, {})
+                exam_st = status_map.get(sid, {})
+                
+                rounds_comp = (p.get("current_round") or 1) - 1
+                if p.get("is_completed"): rounds_comp = 5
+                
+                rows.append({
+                    "USN": student.get("usn", ""),
+                    "Name": student.get("name", ""),
+                    "Branch": student.get("branch", ""),
+                    "Email": student.get("email", ""),
+                    "Exam": "PyHunt (Live)",
+                    "Score": rounds_comp,
+                    "Total": 5,
+                    "Percentage": f"{round(rounds_comp/5*100, 1)}%",
+                    "Time Taken": "Live",
+                    "Submitted At": p.get("last_ping", ""),
+                    "Warnings": exam_st.get("warnings", 0)
+                })
+        except Exception as e:
+            print(f"Odyssey export fallback failed: {e}")
 
     if not rows:
         return JSONResponse(status_code=200, content={"detail": f"No submitted results found for quiz: {quiz_name or 'All'}"})
 
-    # Sort by percentage descending
-    rows.sort(key=lambda x: -x["Percentage (%)"])
+    # Sort by score descending
+    rows.sort(key=lambda x: -x["Score"])
 
     # Build Excel in memory
     output = io.BytesIO()

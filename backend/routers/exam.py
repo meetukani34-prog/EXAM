@@ -18,8 +18,8 @@ async def get_exam_status(current: dict = Depends(get_current_student)):
     db = get_supabase()
     student_id = current["student_id"]
     try:
-        # 1. Fetch all status rows for this student
-        status_res = db.table("exam_status").select("*").eq("student_id", student_id).execute()
+        # 1. Fetch all status rows (Explicit columns to avoid stale schema issues)
+        status_res = db.table("exam_status").select("id, student_id, exam_name, status, warnings, last_active, submitted_at, started_at").eq("student_id", student_id).execute()
         status_data = status_res.data or []
         
         # 2. Fetch all result rows for this student

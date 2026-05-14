@@ -144,9 +144,7 @@ export default function PyHuntView() {
         await supabase.from('exam_status')
           .update({ 
             status: 'submitted', 
-            submitted_at: new Date().toISOString(),
-            last_score: 100,
-            last_total: 100
+            submitted_at: new Date().toISOString()
           })
           .eq('student_id', studentId)
           .filter('exam_name', 'ilike', 'pyhunt');
