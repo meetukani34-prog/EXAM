@@ -75,7 +75,7 @@ function SuccessScreen({ startTime, warningCount, wrongAttempts }: { startTime: 
         <div className={styles.successIcon}>🏆</div>
         <h2 className={styles.successTitle}>Congratulations! You've conquered PyHunt!</h2>
         <p className={styles.successSubtitle}>You are a true Python treasure hunter!</p>
-        
+
         <div className={styles.statGrid}>
           <div className={styles.statItem}>
             <span className={styles.statLabel}>Total Time</span>
@@ -105,7 +105,7 @@ export default function PyHuntView() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authForm, setAuthForm] = useState({ usn: "", missionCode: "" });
   const [authError, setAuthError] = useState("");
-  
+
   const [currentRound, setCurrentRound] = useState(1);
   const [isAutoSubmitted, setIsAutoSubmitted] = useState(false);
   const [code, setCode] = useState("");
@@ -120,13 +120,13 @@ export default function PyHuntView() {
 
   const { runCode, runTestSuite, loading: pyLoading } = usePyodide(currentRound > 1);
   const { enter: enterFullscreen } = useFullscreen();
-  
+
   const [isAtGate, setIsAtGate] = useState(false);
   const [gateInput, setGateInput] = useState("");
   const [gateError, setGateError] = useState(false);
   const [hint, setHint] = useState("");
   const [showSuccessRipple, setShowSuccessRipple] = useState(false);
-  
+
   const [assignedClueIndex, setAssignedClueIndex] = useState<number | null>(null);
   const [globalConfigs, setGlobalConfigs] = useState<any[]>([]);
   const [labelConfig, setLabelConfig] = useState<any>({ phase: "Phase", orbit: "Orbit" });
@@ -143,7 +143,7 @@ export default function PyHuntView() {
   const [codingChallenges, setCodingChallenges] = useState<any>({});
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [testResults, setTestResults] = useState<any[]>([]);
-  
+
   const lastFetchRef = useRef<number>(0);
   const isFetchingRef = useRef<boolean>(false);
 
@@ -166,8 +166,8 @@ export default function PyHuntView() {
       if (studentId) {
         // Mark exam_status as submitted
         await supabase.from('exam_status')
-          .update({ 
-            status: 'submitted', 
+          .update({
+            status: 'submitted',
             submitted_at: new Date().toISOString()
           })
           .eq('student_id', studentId)
@@ -184,7 +184,7 @@ export default function PyHuntView() {
 
         // Mark odyssey_progress as completed
         await supabase.from('odyssey_progress')
-          .update({ 
+          .update({
             is_completed: true,
             last_ping: new Date().toISOString()
           })
@@ -209,7 +209,7 @@ export default function PyHuntView() {
     async function syncProgress() {
       const studentId = info.id || info.student_id;
       if (!studentId) return;
-      
+
       const { data, error } = await withRetry(async () => {
         return await supabase
           .from('odyssey_progress')
@@ -238,7 +238,7 @@ export default function PyHuntView() {
           if (savedCode) setCode(savedCode);
         }
         setCurrentRound(data.current_round);
-        
+
         // Restore assigned clue for current round
         const currentRoundKey = `round_${data.current_round}_state`;
         const currentRoundState = (data as any)[currentRoundKey];
@@ -251,41 +251,41 @@ export default function PyHuntView() {
     syncProgress();
 
     async function fetchGlobalConfigs(force: boolean = false) {
-       // Throttling: prevent redundant fetches within 30 seconds unless forced
-       const now = Date.now();
-       if (!force && isFetchingRef.current) return;
-       if (!force && now - lastFetchRef.current < 30000) return;
-       
-       isFetchingRef.current = true;
-       try {
-         const data = await fetchPublicPyHuntConfig();
-         lastFetchRef.current = Date.now();
-         if (data && data.length > 0) {
-            const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
-            if (rounds) setGlobalConfigs(rounds);
-            const mcqs = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
-            if (mcqs) {
-                const mapped = mcqs.map((m: any) => ({
-                   id: m.id,
-                   question: m.question,
-                   options: m.options,
-                   correct: m.answer,
-                   posMarks: m.positive_marks ?? 1,
-                   negMarks: Math.abs(m.negative_marks ?? 0),
-                   output: "Key: Manifested"
-                }));
-                setMcqSet(mapped);
-            }
-             const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
-             if (j && j.length > 0) setJumbleSet(j);
-            const l = data.find((c: any) => c.config_key === 'labels')?.config_value;
-            if (l) setLabelConfig(l);
-            const cc = data.find((c: any) => c.config_key === 'coding_challenges')?.config_value;
-            if (cc) setCodingChallenges(cc);
-         }
-       } finally {
-         isFetchingRef.current = false;
-       }
+      // Throttling: prevent redundant fetches within 30 seconds unless forced
+      const now = Date.now();
+      if (!force && isFetchingRef.current) return;
+      if (!force && now - lastFetchRef.current < 30000) return;
+
+      isFetchingRef.current = true;
+      try {
+        const data = await fetchPublicPyHuntConfig();
+        lastFetchRef.current = Date.now();
+        if (data && data.length > 0) {
+          const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
+          if (rounds) setGlobalConfigs(rounds);
+          const mcqs = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
+          if (mcqs) {
+            const mapped = mcqs.map((m: any) => ({
+              id: m.id,
+              question: m.question,
+              options: m.options,
+              correct: m.answer,
+              posMarks: m.positive_marks ?? 1,
+              negMarks: Math.abs(m.negative_marks ?? 0),
+              output: "Key: Manifested"
+            }));
+            setMcqSet(mapped);
+          }
+          const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
+          if (j && j.length > 0) setJumbleSet(j);
+          const l = data.find((c: any) => c.config_key === 'labels')?.config_value;
+          if (l) setLabelConfig(l);
+          const cc = data.find((c: any) => c.config_key === 'coding_challenges')?.config_value;
+          if (cc) setCodingChallenges(cc);
+        }
+      } finally {
+        isFetchingRef.current = false;
+      }
     }
     fetchGlobalConfigs();
 
@@ -310,12 +310,12 @@ export default function PyHuntView() {
   }, [code, student]);
 
   useEffect(() => {
-     if (student?.id && Object.keys(mcqSelectionMap).length > 0) {
-        const timer = setTimeout(() => {
-           localStorage.setItem(`pyhunt_mcq_map_${student.id}`, JSON.stringify(mcqSelectionMap));
-        }, 1000);
-        return () => clearTimeout(timer);
-     }
+    if (student?.id && Object.keys(mcqSelectionMap).length > 0) {
+      const timer = setTimeout(() => {
+        localStorage.setItem(`pyhunt_mcq_map_${student.id}`, JSON.stringify(mcqSelectionMap));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
   }, [mcqSelectionMap, student]);
 
   useEffect(() => {
@@ -326,13 +326,13 @@ export default function PyHuntView() {
   }, [jumbleSet, currentJumbleIndex]);
 
   useEffect(() => {
-     if (typeof window !== "undefined") {
-        if (currentRound === 2 && originalJumbleCode && jumbledLines.length === 0) {
-           const lines = originalJumbleCode.split('\n').filter((l: string) => l.trim() !== "");
-           const shuffled = [...lines].sort(() => Math.random() - 0.5);
-           setJumbledLines(shuffled);
-        }
-     }
+    if (typeof window !== "undefined") {
+      if (currentRound === 2 && originalJumbleCode && jumbledLines.length === 0) {
+        const lines = originalJumbleCode.split('\n').filter((l: string) => l.trim() !== "");
+        const shuffled = [...lines].sort(() => Math.random() - 0.5);
+        setJumbledLines(shuffled);
+      }
+    }
   }, [currentRound, originalJumbleCode, jumbledLines.length]);
 
   // --- Initialization Singularity: Seed editor with starter code ---
@@ -343,7 +343,7 @@ export default function PyHuntView() {
       const roundConfig = globalConfigs.find((c: any) => c.round === currentRound);
       const activeProblem = currentChallenge || roundConfig;
       const starter = activeProblem?.starter_code || '';
-      
+
       if (starter && !code.startsWith(starter)) {
         // Check for a saved draft first
         const draftKey = `pyhunt_code_draft_${student?.id || student?.student_id}`;
@@ -363,7 +363,7 @@ export default function PyHuntView() {
 
     // 1. Try to use already-fetched config first to avoid API call
     const authConfig = globalConfigs.find((c: any) => c.config_key === 'auth')?.config_value;
-    
+
     if (authConfig) {
       targetCode = authConfig.startCode || "PYHUNT67";
       allowedUsns = authConfig.authorizedUsns || "";
@@ -371,23 +371,23 @@ export default function PyHuntView() {
       // 2. Fallback to API if not in state yet (unlikely)
       const data = await fetchPublicPyHuntConfig();
       if (data && data.length > 0) {
-         const auth = data.find((c: any) => c.config_key === 'auth')?.config_value;
-         if (auth) {
-            targetCode = auth.startCode || "PYHUNT67";
-            allowedUsns = auth.authorizedUsns || "";
-         }
+        const auth = data.find((c: any) => c.config_key === 'auth')?.config_value;
+        if (auth) {
+          targetCode = auth.startCode || "PYHUNT67";
+          allowedUsns = auth.authorizedUsns || "";
+        }
       }
     }
 
     if (authForm.missionCode.toUpperCase() === targetCode.toUpperCase()) {
       if (allowedUsns.trim()) {
-         const list = allowedUsns.split(',').map(u => u.trim().toUpperCase());
-         if (!list.includes(student?.usn?.toUpperCase())) {
-            setAuthError("CRITICAL: Your USN is not authorized.");
-            return;
-         }
+        const list = allowedUsns.split(',').map(u => u.trim().toUpperCase());
+        if (!list.includes(student?.usn?.toUpperCase())) {
+          setAuthError("CRITICAL: Your USN is not authorized.");
+          return;
+        }
       }
-      
+
       const studentId = student?.id || student?.student_id;
       if (studentId) {
         try {
@@ -406,15 +406,15 @@ export default function PyHuntView() {
         const distRes = await fetch('/api/pyhunt/distribute', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            studentId, 
-            roundNum: 1, 
-            totalClues: 4 
+          body: JSON.stringify({
+            studentId,
+            roundNum: 1,
+            totalClues: 4
           })
         });
         const distData = await distRes.json();
         if (distData.success) {
-           setAssignedClueIndex(distData.clueIndex);
+          setAssignedClueIndex(distData.clueIndex);
         }
       } catch (err) {
         console.warn("[Orbital Engine] Initial crystallization failed.");
@@ -427,24 +427,18 @@ export default function PyHuntView() {
   const handleRevealHint = async () => {
     const studentId = student?.id || student?.student_id;
     if (!studentId || isHintRevealed) return;
-    
+
     setIsHintRevealed(true);
-    const newHintsCount = (student?.hints_taken || 0) + 1;
-    
+
     // Update local state for immediate feedback
     setStudent((prev: any) => ({
       ...prev,
-      hints_taken: newHintsCount
+      hints_taken: (prev?.hints_taken || 0) + 1
     }));
 
-    // Push to regular state for admin visibility
-    syncOdysseyState({
-      hints_taken: newHintsCount
-    });
-
     try {
-      await supabase.rpc('increment_hints_taken', { 
-        student_id_val: studentId 
+      await supabase.rpc('increment_hints_taken', {
+        student_id_val: studentId
       });
     } catch (err) {
       console.error("Hint increment failed:", err);
@@ -457,14 +451,11 @@ export default function PyHuntView() {
       let mcqScore = 0;
       let mcqTotal = 0;
       mcqSet.forEach((q, idx) => {
-        const pMarks = q.posMarks || q.marks || 1;
-        const nMarks = q.negMarks || 0;
-        mcqTotal += pMarks;
-        
+        mcqTotal += q.posMarks;
         if (mcqSelectionMap[idx] === q.correct) {
-          mcqScore += pMarks;
+          mcqScore += q.posMarks;
         } else if (mcqSelectionMap[idx] !== undefined) {
-          mcqScore -= nMarks;
+          mcqScore -= q.negMarks;
         }
       });
       // ──────────────────────────
@@ -475,7 +466,7 @@ export default function PyHuntView() {
         setOutput(`ERROR: Incomplete logic chain. Answer all ${mcqSet.length} nodes.`);
         return;
       }
-      
+
       if (!allCorrect) {
         setWrongAttempts(prev => prev + 1);
         setOutput("Logic sequence discrepancies detected. Mission bypass authorized.");
@@ -485,8 +476,8 @@ export default function PyHuntView() {
 
       // --- Clue Logic Integration ---
       try {
-        const { data: rankData } = await supabase.rpc('increment_completion_count', { 
-          round: currentRound 
+        const { data: rankData } = await supabase.rpc('increment_completion_count', {
+          round: currentRound
         });
         if (rankData) {
           const totalClues = 4;
@@ -501,12 +492,12 @@ export default function PyHuntView() {
       // Persist the score in round_1_state
       const studentId = student?.id || student?.student_id;
       if (studentId) {
-        await syncOdysseyState({ 
-          round_1_state: { 
-            mcq_score: mcqScore, 
+        await syncOdysseyState({
+          round_1_state: {
+            mcq_score: mcqScore,
             mcq_total: mcqTotal,
             submitted_at: new Date().toISOString()
-          } 
+          }
         });
       }
 
@@ -530,8 +521,8 @@ export default function PyHuntView() {
         } else {
           // --- Clue Logic Integration ---
           try {
-            const { data: rankData } = await supabase.rpc('increment_completion_count', { 
-              round: currentRound 
+            const { data: rankData } = await supabase.rpc('increment_completion_count', {
+              round: currentRound
             });
             if (rankData) {
               const totalClues = 4;
@@ -555,22 +546,23 @@ export default function PyHuntView() {
     }
 
     setOutput("Executing Logic...");
-    
+
     const roundChallenges = codingChallenges[currentRound] || [];
     const currentChallenge = roundChallenges[currentProblemIndex];
-    
+
     // Fallback to legacy single-config if no challenge set found
     const roundConfig = globalConfigs.find((c: any) => c.round === currentRound);
     const activeProblem = currentChallenge || roundConfig;
 
     let testCases: any[] = [];
+    let testCaseParseError = false;
     try {
       if (activeProblem?.test_cases) {
         let parsed = activeProblem.test_cases;
         if (typeof parsed === 'string') {
           parsed = JSON.parse(parsed);
         }
-        
+
         if (Array.isArray(parsed)) {
           // Handle nested Supabase JSON structure
           if (parsed.length > 0 && parsed[0].test_cases && Array.isArray(parsed[0].test_cases)) {
@@ -584,7 +576,64 @@ export default function PyHuntView() {
       }
     } catch (e) {
       console.error("Invalid test cases JSON configuration.");
+      testCaseParseError = true;
     }
+
+    // ═══ Round 4 AI Validation Fallback ═══
+    // If Round 4 has no valid test cases OR test cases errored, use AI validator
+    if (currentRound === 4 && (testCaseParseError || testCases.length === 0)) {
+      setOutput("🧠 Analyzing code with AI validator...");
+      try {
+        const aiRes = await fetch('/api/pyhunt/validate-r4', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentCode: code,
+            problemPrompt: activeProblem?.prompt || activeProblem?.description || "FizzBuzz problem",
+            expectedOutput: activeProblem?.target_output || ""
+          })
+        });
+        const aiResult = await aiRes.json();
+
+        if (aiResult.passed) {
+          setOutput("✅ AI Validator: Code is correct!");
+          setShowSuccessRipple(true);
+          setTimeout(() => setShowSuccessRipple(false), 1000);
+
+          try {
+            const { data: rankData } = await supabase.rpc('increment_completion_count', { round: currentRound });
+            if (rankData) {
+              const totalClues = 4;
+              const count = typeof rankData === 'object' ? (rankData.current_count || 1) : rankData;
+              setAssignedClueIndex((count - 1) % totalClues);
+            } else {
+              setAssignedClueIndex(Math.floor(Math.random() * 4));
+            }
+          } catch (err) {
+            console.error("Clue assignment failed:", err);
+            setAssignedClueIndex(0);
+          }
+
+          if (currentProblemIndex < roundChallenges.length - 1) {
+            setOutput(`Problem ${currentProblemIndex + 1} solved. Initializing next data node...`);
+            setCurrentProblemIndex(prev => prev + 1);
+            setCode("");
+          } else {
+            setIsAtGate(true);
+          }
+        } else {
+          setWrongAttempts(prev => prev + 1);
+          setOutput(`❌ AI Validator: ${aiResult.feedback || "Code has errors. Check your logic and indentation."}`);
+          setHint(aiResult.feedback || "Your code has errors. Review logic, indentation, and output format.");
+          setTimeout(() => setHint(""), 6000);
+        }
+      } catch (aiErr) {
+        console.error("AI validation failed:", aiErr);
+        setOutput("❌ Validation engine temporarily unavailable. Please retry.");
+      }
+      return;
+    }
+
     if (Array.isArray(testCases) && testCases.length > 0) {
       // ═══ Neural Test-Runner Execution ═══
       const suite = await runTestSuite(code, testCases, sharedValidateOutput);
@@ -594,11 +643,11 @@ export default function PyHuntView() {
       for (let i = 0; i < suite.results.length; i++) {
         const r = suite.results[i];
         if (r.error) {
-          finalResults += `❌ CASE ${i+1}: LOGIC ERROR (${r.executionTimeMs}ms)\n   ${r.error}\n`;
+          finalResults += `❌ CASE ${i + 1}: LOGIC ERROR (${r.executionTimeMs}ms)\n   ${r.error}\n`;
         } else if (r.passed) {
-          finalResults += `✅ CASE ${i+1}: PASSED (${r.executionTimeMs}ms)\n`;
+          finalResults += `✅ CASE ${i + 1}: PASSED (${r.executionTimeMs}ms)\n`;
         } else {
-          finalResults += `❌ CASE ${i+1}: FAILED (${r.executionTimeMs}ms)\n   Input: ${r.input || "None"}\n   Expected: ${r.expected}\n   Got: ${r.actual || "(empty)"}\n`;
+          finalResults += `❌ CASE ${i + 1}: FAILED (${r.executionTimeMs}ms)\n   Input: ${r.input || "None"}\n   Expected: ${r.expected}\n   Got: ${r.actual || "(empty)"}\n`;
         }
       }
       finalResults += `\n━━━ ${suite.passedCount}/${suite.totalCases} passed · ${suite.totalTimeMs}ms ━━━`;
@@ -607,72 +656,155 @@ export default function PyHuntView() {
       setOutput(finalResults);
 
       if (suite.allPassed) {
-         setShowSuccessRipple(true);
-         setTimeout(() => setShowSuccessRipple(false), 1000);
+        setShowSuccessRipple(true);
+        setTimeout(() => setShowSuccessRipple(false), 1000);
 
-         // ─── Orbital Clue Manifestation (Modulo Integration) ───
-         try {
-           const { data: rankData } = await supabase.rpc('increment_completion_count', { 
-             round: currentRound 
-           });
-           if (rankData) {
-             const totalClues = 4;
-             const count = typeof rankData === 'object' ? (rankData.current_count || 1) : rankData;
-             setAssignedClueIndex((count - 1) % totalClues);
-           } else {
-             setAssignedClueIndex(Math.floor(Math.random() * 4));
-           }
-         } catch (err) {
-           console.error("Clue assignment failed:", err);
-           setAssignedClueIndex(0);
-         }
+        // ─── Orbital Clue Manifestation (Modulo Integration) ───
+        try {
+          const { data: rankData } = await supabase.rpc('increment_completion_count', {
+            round: currentRound
+          });
+          if (rankData) {
+            const totalClues = 4;
+            const count = typeof rankData === 'object' ? (rankData.current_count || 1) : rankData;
+            setAssignedClueIndex((count - 1) % totalClues);
+          } else {
+            setAssignedClueIndex(Math.floor(Math.random() * 4));
+          }
+        } catch (err) {
+          console.error("Clue assignment failed:", err);
+          setAssignedClueIndex(0);
+        }
 
-         // Sequence Check: More problems in this round?
-         if (currentProblemIndex < roundChallenges.length - 1) {
-            setOutput(`Problem ${currentProblemIndex + 1} solved. Initializing next data node...`);
-            setCurrentProblemIndex(prev => prev + 1);
-            setCode(""); // Clear for next problem
-         } else {
-            // Round finished
-            if (currentRound === 4) {
-              setIsAtGate(true);
+        // Sequence Check: More problems in this round?
+        if (currentProblemIndex < roundChallenges.length - 1) {
+          setOutput(`Problem ${currentProblemIndex + 1} solved. Initializing next data node...`);
+          setCurrentProblemIndex(prev => prev + 1);
+          setCode(""); // Clear for next problem
+        } else {
+          // Round finished
+          if (currentRound === 4) {
+            setIsAtGate(true);
+          } else {
+            setIsAtGate(true);
+          }
+        }
+      } else if (currentRound === 4) {
+        // ═══ Round 4: AI Fallback when test cases FAIL ═══
+        setOutput("🧠 Re-analyzing with AI validator...");
+        try {
+          const aiRes = await fetch('/api/pyhunt/validate-r4', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              studentCode: code,
+              problemPrompt: activeProblem?.prompt || activeProblem?.description || "FizzBuzz problem",
+              expectedOutput: activeProblem?.target_output || ""
+            })
+          });
+          const aiResult = await aiRes.json();
+
+          if (aiResult.passed) {
+            setOutput("✅ AI Validator: Code is correct!");
+            setShowSuccessRipple(true);
+            setTimeout(() => setShowSuccessRipple(false), 1000);
+
+            try {
+              const { data: rankData } = await supabase.rpc('increment_completion_count', { round: currentRound });
+              if (rankData) {
+                const count = typeof rankData === 'object' ? (rankData.current_count || 1) : rankData;
+                setAssignedClueIndex((count - 1) % 4);
+              } else {
+                setAssignedClueIndex(Math.floor(Math.random() * 4));
+              }
+            } catch (clueErr) {
+              console.error("Clue assignment failed:", clueErr);
+              setAssignedClueIndex(0);
+            }
+
+            if (currentProblemIndex < roundChallenges.length - 1) {
+              setOutput(`Problem ${currentProblemIndex + 1} solved. Initializing next data node...`);
+              setCurrentProblemIndex(prev => prev + 1);
+              setCode("");
             } else {
               setIsAtGate(true);
             }
-         }
+          } else {
+            setWrongAttempts(prev => prev + 1);
+            setOutput(`❌ AI Validator: ${aiResult.feedback || "Code has errors."}\n\n${finalResults}`);
+            setHint(aiResult.feedback || "Check your logic and indentation.");
+            setTimeout(() => setHint(""), 6000);
+          }
+        } catch (aiErr) {
+          // AI also failed, show original test results
+          setWrongAttempts(prev => prev + 1);
+          setHint("Logic discrepancies detected. Debug and retry.");
+          setTimeout(() => setHint(""), 4000);
+        }
       } else {
-         setWrongAttempts(prev => prev + 1);
-         setHint("Logic discrepancies detected across test nodes. Debug and retry.");
-         setTimeout(() => setHint(""), 4000);
+        setWrongAttempts(prev => prev + 1);
+        setHint("Logic discrepancies detected across test nodes. Debug and retry.");
+        setTimeout(() => setHint(""), 4000);
       }
       return;
     }
 
-    // Legacy Single-Output Validation (Fallback)
+    // Legacy Single-Output Validation (Fallback for Round 3 or non-test-case rounds)
     const result = await runCode(code);
     if (result.error) {
       setOutput(`ERROR: ${result.error}`);
       return;
     }
     setOutput(result.stdout || "No output generated.");
-    
+
     const targetExpected = activeProblem?.target_output;
     const isValid = validateRound(currentRound, result.stdout, targetExpected);
     if (isValid) {
-       setShowSuccessRipple(true);
-       if (currentRound === 4) {
-         setTimeout(() => setShowSuccessRipple(false), 1000);
-         setIsAtGate(true);
-       } else {
-         setTimeout(() => {
-           setShowSuccessRipple(false);
-           setIsAtGate(true);
-         }, 1000);
-       }
+      setShowSuccessRipple(true);
+      if (currentRound === 4) {
+        setTimeout(() => setShowSuccessRipple(false), 1000);
+        setIsAtGate(true);
+      } else {
+        setTimeout(() => {
+          setShowSuccessRipple(false);
+          setIsAtGate(true);
+        }, 1000);
+      }
+    } else if (currentRound === 4) {
+      // ═══ Round 4: AI Fallback for legacy validation failure ═══
+      setOutput("🧠 Re-analyzing with AI validator...");
+      try {
+        const aiRes = await fetch('/api/pyhunt/validate-r4', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentCode: code,
+            problemPrompt: activeProblem?.prompt || activeProblem?.description || "FizzBuzz problem",
+            expectedOutput: targetExpected || ""
+          })
+        });
+        const aiResult = await aiRes.json();
+
+        if (aiResult.passed) {
+          setOutput("✅ AI Validator: Code is correct!");
+          setShowSuccessRipple(true);
+          setTimeout(() => setShowSuccessRipple(false), 1000);
+          setIsAtGate(true);
+        } else {
+          setWrongAttempts(prev => prev + 1);
+          setOutput(`❌ AI Validator: ${aiResult.feedback || "Code has errors."}`);
+          setHint(aiResult.feedback || "Check your logic and indentation.");
+          setTimeout(() => setHint(""), 6000);
+        }
+      } catch (aiErr) {
+        setWrongAttempts(prev => prev + 1);
+        setHint("Drift detected. Check your logic pattern.");
+        setTimeout(() => setHint(""), 4000);
+      }
     } else {
-       setWrongAttempts(prev => prev + 1);
-       setHint("Drift detected. Check your logic pattern (formatting is ignored).");
-       setTimeout(() => setHint(""), 4000);
+      setWrongAttempts(prev => prev + 1);
+      setHint("Drift detected. Check your logic pattern (formatting is ignored).");
+      setTimeout(() => setHint(""), 4000);
     }
   };
 
@@ -729,23 +861,15 @@ export default function PyHuntView() {
     const newMap = { ...mcqSelectionMap, [idx]: optIdx };
     setMcqSelectionMap(newMap);
     if (output.startsWith("ERROR")) setOutput("");
-    
+
     // Live Sync Progress to Admin
     if (currentRound === 1) {
-      let correctCount = 0;
-      let totalMarks = 0;
-      mcqSet.forEach((q, i) => {
-        const pMarks = q.posMarks || q.marks || 1;
-        totalMarks += pMarks;
-        if (newMap[i] === q.correct) {
-          correctCount += pMarks;
-        }
-      });
-
+      const totalQuestions = mcqSet.length || ROUND_1_QUESTIONS.length;
+      const correctCount = mcqSet.reduce((acc, q, i) => acc + (newMap[i] === q.correct ? 1 : 0), 0);
       syncOdysseyState({
         round_1_state: {
           mcq_score: correctCount,
-          mcq_total: totalMarks,
+          mcq_total: totalQuestions,
           answered_count: Object.keys(newMap).length,
           current_index: idx
         }
@@ -764,7 +888,7 @@ export default function PyHuntView() {
     if (!roundConfig && !expectedTarget) return false;
 
     const targetRaw = expectedTarget || roundConfig?.target_output || "";
-    
+
     // Fallback defaults if no config target
     const fallbackTargets: Record<number, string> = {
       3: "palindrome: true",
@@ -800,7 +924,7 @@ export default function PyHuntView() {
 
       setIsHintRevealed(false);
 
-      
+
       localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
       localStorage.removeItem(`pyhunt_mcq_map_${studentId}`);
 
@@ -810,15 +934,15 @@ export default function PyHuntView() {
         const distRes = await fetch('/api/pyhunt/distribute', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            studentId, 
-            roundNum: next, 
-            totalClues: 4 
+          body: JSON.stringify({
+            studentId,
+            roundNum: next,
+            totalClues: 4
           })
         });
         const distData = await distRes.json();
         if (distData.success) {
-           setAssignedClueIndex(distData.clueIndex);
+          setAssignedClueIndex(distData.clueIndex);
         }
       } catch (err) {
         console.warn("[Orbital Engine] Fallback engaged due to gravitational drift.");
@@ -884,18 +1008,18 @@ export default function PyHuntView() {
   if (!hasStarted) {
     return (
       <div className={styles.lobbyContainer}>
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className={styles.lobbyContent}
         >
           <div className={styles.lobbyIcon}>
             <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path 
-                d="M40 85C40 85 20 85 20 60C20 35 40 20 60 20C80 20 100 35 100 60C100 85 80 100 60 100C40 100 35 85 45 75C55 65 75 65 75 45C75 25 55 25 45 35" 
-                stroke="url(#snake_grad_lobby)" 
-                strokeWidth="12" 
-                strokeLinecap="round" 
+              <path
+                d="M40 85C40 85 20 85 20 60C20 35 40 20 60 20C80 20 100 35 100 60C100 85 80 100 60 100C40 100 35 85 45 75C55 65 75 65 75 45C75 25 55 25 45 35"
+                stroke="url(#snake_grad_lobby)"
+                strokeWidth="12"
+                strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <circle cx="45" cy="45" r="4" fill="#00FFA3" />
@@ -911,13 +1035,13 @@ export default function PyHuntView() {
           <p className={styles.lobbySubtitle}>
             Python Treasure Hunt — Solve {ROUNDS.length - 1} rounds of challenges to unlock the final transmission!
           </p>
-          
+
           <div className={styles.nexusBadge}>
             NEXUS
           </div>
 
-          <button 
-            className={styles.startBtn} 
+          <button
+            className={styles.startBtn}
             onClick={() => { setHasStarted(true); enterFullscreen(); }}
           >
             🚀 Start PyHunt
@@ -930,7 +1054,7 @@ export default function PyHuntView() {
   return (
     <div className={styles.pyhuntShell}>
       <AntiCheat isSubmitted={currentRound > ROUNDS.length || isAutoSubmitted} examName="PyHunt" onAutoSubmit={handleAutoSubmit} onWarningUpdate={setWarningCount} />
-      
+
       {showSuccessRipple && (
         <div className={styles.successRipple}>
           <div className={styles.rippleCircle} />
@@ -941,7 +1065,7 @@ export default function PyHuntView() {
           <div key={r.id} className={`${styles.orbitNode} ${currentRound >= r.id ? styles.active : ""} ${currentRound === r.id ? styles.pulsing : ""}`}>
             <div className={styles.orbitNumber}>{r.id}</div>
             <div className={styles.orbitMeta}>
-               <div className={styles.orbitName}>{labelConfig.phase} {r.id}: {globalConfigs.find((c: any) => c.round === r.id)?.name || r.name}</div>
+              <div className={styles.orbitName}>{labelConfig.phase} {r.id}: {globalConfigs.find((c: any) => c.round === r.id)?.name || r.name}</div>
             </div>
           </div>
         ))}
@@ -949,283 +1073,283 @@ export default function PyHuntView() {
 
       <main className={styles.logicChamber}>
         <AnimatePresence mode="wait">
-            <motion.div key={currentRound} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <header className={styles.chamberHeader}>
-                 <h2>{labelConfig.orbit} {currentRound}: {globalConfigs.find((c: any) => c.round === currentRound)?.name || ROUNDS[currentRound-1].name}</h2>
-                 <div className={styles.engineStatus}>
-                   <div className={styles.pulseDot} />
-                   {pyLoading ? "Caching Logic Engine..." : "Engine Ready"}
-                 </div>
-                 {hint && (
-                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={styles.hintDrift}>
-                     {hint}
-                   </motion.div>
-                 )}
-              </header>
+          <motion.div key={currentRound} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <header className={styles.chamberHeader}>
+              <h2>{labelConfig.orbit} {currentRound}: {globalConfigs.find((c: any) => c.round === currentRound)?.name || ROUNDS[currentRound - 1].name}</h2>
+              <div className={styles.engineStatus}>
+                <div className={styles.pulseDot} />
+                {pyLoading ? "Caching Logic Engine..." : "Engine Ready"}
+              </div>
+              {hint && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={styles.hintDrift}>
+                  {hint}
+                </motion.div>
+              )}
+            </header>
 
-              {(currentRound > 2 && currentRound < 5) ? (
-                <CodingInterface 
-                  problem={{
-                    prompt: (codingChallenges[currentRound] || [])[currentProblemIndex]?.prompt || globalConfigs.find((c: any) => c.round === currentRound)?.prompt || "",
-                    imageUrl: (codingChallenges[currentRound] || [])[currentProblemIndex]?.imageUrl || globalConfigs.find((c: any) => c.round === currentRound)?.imageUrl || "",
-                    test_cases: (codingChallenges[currentRound] || [])[currentProblemIndex]?.test_cases || globalConfigs.find((c: any) => c.round === currentRound)?.test_cases || "[]",
-                    target_output: (codingChallenges[currentRound] || [])[currentProblemIndex]?.target_output || globalConfigs.find((c: any) => c.round === currentRound)?.target_output || "",
-                    starter_code: (codingChallenges[currentRound] || [])[currentProblemIndex]?.starter_code || globalConfigs.find((c: any) => c.round === currentRound)?.starter_code || ""
-                  }}
-                  code={code}
-                  setCode={setCode}
-                  output={output}
-                  onRun={handleExecute}
-                  onSubmit={handleExecute}
-                  pyLoading={pyLoading}
-                  currentRound={currentRound}
-                  labelConfig={labelConfig}
-                  testResults={testResults}
-                  hint={ATMOSPHERIC_HINTS[currentRound]}
-                  isHintRevealed={isHintRevealed}
-                  onRevealHint={handleRevealHint}
-                />
+            {(currentRound > 2 && currentRound < 5) ? (
+              <CodingInterface
+                problem={{
+                  prompt: (codingChallenges[currentRound] || [])[currentProblemIndex]?.prompt || globalConfigs.find((c: any) => c.round === currentRound)?.prompt || "",
+                  imageUrl: (codingChallenges[currentRound] || [])[currentProblemIndex]?.imageUrl || globalConfigs.find((c: any) => c.round === currentRound)?.imageUrl || "",
+                  test_cases: (codingChallenges[currentRound] || [])[currentProblemIndex]?.test_cases || globalConfigs.find((c: any) => c.round === currentRound)?.test_cases || "[]",
+                  target_output: (codingChallenges[currentRound] || [])[currentProblemIndex]?.target_output || globalConfigs.find((c: any) => c.round === currentRound)?.target_output || "",
+                  starter_code: (codingChallenges[currentRound] || [])[currentProblemIndex]?.starter_code || globalConfigs.find((c: any) => c.round === currentRound)?.starter_code || ""
+                }}
+                code={code}
+                setCode={setCode}
+                output={output}
+                onRun={handleExecute}
+                onSubmit={handleExecute}
+                pyLoading={pyLoading}
+                currentRound={currentRound}
+                labelConfig={labelConfig}
+                testResults={testResults}
+                hint={ATMOSPHERIC_HINTS[currentRound]}
+                isHintRevealed={isHintRevealed}
+                onRevealHint={handleRevealHint}
+              />
 
-              ) : (
-                <>
-                  {(() => {
-                    const roundChallenges = codingChallenges[currentRound] || [];
-                    const currentChallenge = roundChallenges[currentProblemIndex];
-                    const c = currentChallenge || globalConfigs.find((conf: any) => conf.round === currentRound);
-                    
-                    if (!c?.prompt && !c?.imageUrl && roundChallenges.length <= 1) return null;
-                    return (
-                      <div className={styles.roundMeta}>
-                        {roundChallenges.length > 1 && (
-                          <div className={styles.challengeProgress} style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', marginBottom: 8 }}>
-                            CHALLENGE {currentProblemIndex + 1} OF {roundChallenges.length}
+            ) : (
+              <>
+                {(() => {
+                  const roundChallenges = codingChallenges[currentRound] || [];
+                  const currentChallenge = roundChallenges[currentProblemIndex];
+                  const c = currentChallenge || globalConfigs.find((conf: any) => conf.round === currentRound);
+
+                  if (!c?.prompt && !c?.imageUrl && roundChallenges.length <= 1) return null;
+                  return (
+                    <div className={styles.roundMeta}>
+                      {roundChallenges.length > 1 && (
+                        <div className={styles.challengeProgress} style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', marginBottom: 8 }}>
+                          CHALLENGE {currentProblemIndex + 1} OF {roundChallenges.length}
+                        </div>
+                      )}
+                      {c?.imageUrl && <img src={c.imageUrl} alt="Logic Challenge" className={styles.roundImage} />}
+                      {c?.prompt && <p className={styles.roundPrompt} style={{ whiteSpace: 'pre-wrap' }}>{c.prompt}</p>}
+                    </div>
+                  );
+                })()}
+
+                <div className={styles.editorContainer}>
+                  {currentRound === 1 ? (
+                    <div className={styles.mcqWrapper}>
+                      <div className={styles.mcqHeader}>
+                        <span className={styles.mcqProgress}>Node {currentMcqIndex + 1} of {mcqSet.length}</span>
+                        <span className={styles.scoringBadge}>+{mcqSet[currentMcqIndex].posMarks} / -{mcqSet[currentMcqIndex].negMarks}</span>
+                      </div>
+
+                      <div className={styles.mcqQuestionSection}>
+                        <p className={styles.mcqQuestion}>{mcqSet[currentMcqIndex].question}</p>
+                        {mcqSet[currentMcqIndex].imageUrl && (
+                          <div style={{ marginTop: 16, textAlign: 'center' }}>
+                            <img
+                              src={mcqSet[currentMcqIndex].imageUrl}
+                              alt="Question Visual"
+                              style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)' }}
+                            />
                           </div>
                         )}
-                        {c?.imageUrl && <img src={c.imageUrl} alt="Logic Challenge" className={styles.roundImage} />}
-                        {c?.prompt && <p className={styles.roundPrompt} style={{ whiteSpace: 'pre-wrap' }}>{c.prompt}</p>}
                       </div>
-                    );
-                  })()}
 
-                  <div className={styles.editorContainer}>
-                    {currentRound === 1 ? (
-                      <div className={styles.mcqWrapper}>
-                        <div className={styles.mcqHeader}>
-                          <span className={styles.mcqProgress}>Node {currentMcqIndex + 1} of {mcqSet.length}</span>
-                          <span className={styles.scoringBadge}>+{mcqSet[currentMcqIndex].posMarks} / -{mcqSet[currentMcqIndex].negMarks}</span>
-                        </div>
-                        
-                        <div className={styles.mcqQuestionSection}>
-                          <p className={styles.mcqQuestion}>{mcqSet[currentMcqIndex].question}</p>
-                          {mcqSet[currentMcqIndex].imageUrl && (
-                            <div style={{ marginTop: 16, textAlign: 'center' }}>
-                               <img 
-                                 src={mcqSet[currentMcqIndex].imageUrl} 
-                                 alt="Question Visual" 
-                                 style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)' }} 
-                               />
+                      <div className={styles.mcqOptions}>
+                        {mcqSet[currentMcqIndex].options.map((opt: string, i: number) => (
+                          <button
+                            key={i}
+                            className={`${styles.mcqOption} ${mcqSelectionMap[currentMcqIndex] === i ? styles.selected : ""}`}
+                            onClick={() => handleMcqSelect(currentMcqIndex, i)}
+                          >
+                            <span className={styles.optionLetter}>{String.fromCharCode(65 + i)}</span>
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className={styles.mcqNav}>
+                        <button disabled={currentMcqIndex === 0} onClick={() => {
+                          const prevIdx = currentMcqIndex - 1;
+                          setCurrentMcqIndex(prevIdx);
+                          syncOdysseyState({
+                            round_1_state: {
+                              mcq_score: mcqSet.reduce((acc, q, i) => acc + (mcqSelectionMap[i] === q.correct ? 1 : 0), 0),
+                              mcq_total: mcqSet.length,
+                              answered_count: Object.keys(mcqSelectionMap).length,
+                              current_index: prevIdx
+                            }
+                          });
+                        }} className={styles.navBtn}>← Previous Node</button>
+                        {mcqSelectionMap[currentMcqIndex] !== undefined && currentMcqIndex < mcqSet.length - 1 && (
+                          <button onClick={() => {
+                            const nextIdx = currentMcqIndex + 1;
+                            setCurrentMcqIndex(nextIdx);
+                            syncOdysseyState({
+                              round_1_state: {
+                                mcq_score: mcqSet.reduce((acc, q, i) => acc + (mcqSelectionMap[i] === q.correct ? 1 : 0), 0),
+                                mcq_total: mcqSet.length,
+                                answered_count: Object.keys(mcqSelectionMap).length,
+                                current_index: nextIdx
+                              }
+                            });
+                          }} className={styles.navBtn}>Next Node →</button>
+                        )}
+                      </div>
+
+                      <CognitiveBeacon
+                        hint={ATMOSPHERIC_HINTS[1]}
+                        isRevealed={isHintRevealed}
+                        onReveal={handleRevealHint}
+                      />
+                    </div>
+
+                  ) : currentRound === 2 ? (
+                    <div className={`${styles.jumbleSplitLayout} ${showScratchpad ? styles.withScratchpad : ""}`}>
+                      <div className={styles.jumbleCard}>
+                        <div className={styles.jumbleHeader}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                            <h3 style={{ margin: 0 }}>Fix the Logic Sequence</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              {jumbleSet.length > 1 && (
+                                <span className={styles.mcqProgress}>Node {currentJumbleIndex + 1} of {jumbleSet.length}</span>
+                              )}
+                              <button
+                                className={`${styles.toggleScratchBtn} ${showScratchpad ? styles.active : ""}`}
+                                onClick={() => setShowScratchpad(!showScratchpad)}
+                              >
+                                {showScratchpad ? "✕ Close Scratchpad" : "⌨ Open Scratchpad"}
+                              </button>
                             </div>
-                          )}
+                          </div>
+                          <p className={styles.jumbleSubtitle}>Drag lines into correct order so the logic is valid.</p>
                         </div>
-
-                        <div className={styles.mcqOptions}>
-                          {mcqSet[currentMcqIndex].options.map((opt: string, i: number) => (
-                            <button
-                              key={i}
-                              className={`${styles.mcqOption} ${mcqSelectionMap[currentMcqIndex] === i ? styles.selected : ""}`}
-                              onClick={() => handleMcqSelect(currentMcqIndex, i)}
+                        <Reorder.Group
+                          axis="y"
+                          values={jumbledLines}
+                          onReorder={setJumbledLines}
+                          className={styles.jumbleList}
+                        >
+                          {jumbledLines.map((line, idx) => (
+                            <Reorder.Item
+                              key={line + idx}
+                              value={line}
+                              className={styles.jumbleItem}
+                              whileDrag={{ scale: 1.05, boxShadow: "0 10px 30px rgba(0, 242, 255, 0.2)" }}
                             >
-                              <span className={styles.optionLetter}>{String.fromCharCode(65 + i)}</span>
-                              {opt}
-                            </button>
+                              <div className={styles.jumbleItemLeft}>
+                                <span className={styles.jumbleNumber}>{idx + 1}</span>
+                                <code>{line}</code>
+                              </div>
+                              <div className={styles.jumbleActions}>
+                                <button disabled={idx === 0} onClick={() => moveLine(idx, 'up')} className={styles.orderBtn}>▲</button>
+                                <button disabled={idx === jumbledLines.length - 1} onClick={() => moveLine(idx, 'down')} className={styles.orderBtn}>▼</button>
+                                <div className={styles.dragHandle}>
+                                  <span></span><span></span><span></span>
+                                </div>
+                              </div>
+                            </Reorder.Item>
                           ))}
+                        </Reorder.Group>
+                        <div className={styles.jumbleFooter}>
+                          <button onClick={handleExecute} className={styles.submitOrderBtn}>
+                            ✓ Submit Order
+                          </button>
                         </div>
 
-                        <div className={styles.mcqNav}>
-                           <button disabled={currentMcqIndex === 0} onClick={() => {
-                             const prevIdx = currentMcqIndex - 1;
-                             setCurrentMcqIndex(prevIdx);
-                             syncOdysseyState({ 
-                               round_1_state: { 
-                                 mcq_score: mcqSet.reduce((acc, q, i) => acc + (mcqSelectionMap[i] === q.correct ? 1 : 0), 0),
-                                 mcq_total: mcqSet.length,
-                                 answered_count: Object.keys(mcqSelectionMap).length,
-                                 current_index: prevIdx
-                               } 
-                             });
-                           }} className={styles.navBtn}>← Previous Node</button>
-                           {mcqSelectionMap[currentMcqIndex] !== undefined && currentMcqIndex < mcqSet.length - 1 && (
-                             <button onClick={() => {
-                               const nextIdx = currentMcqIndex + 1;
-                               setCurrentMcqIndex(nextIdx);
-                               syncOdysseyState({ 
-                                 round_1_state: { 
-                                   mcq_score: mcqSet.reduce((acc, q, i) => acc + (mcqSelectionMap[i] === q.correct ? 1 : 0), 0),
-                                   mcq_total: mcqSet.length,
-                                   answered_count: Object.keys(mcqSelectionMap).length,
-                                   current_index: nextIdx
-                                 } 
-                               });
-                             }} className={styles.navBtn}>Next Node →</button>
-                           )}
-                        </div>
-
-                        <CognitiveBeacon 
-                          hint={ATMOSPHERIC_HINTS[1]}
+                        <CognitiveBeacon
+                          hint={ATMOSPHERIC_HINTS[2]}
                           isRevealed={isHintRevealed}
                           onReveal={handleRevealHint}
                         />
                       </div>
 
-                    ) : currentRound === 2 ? (
-                      <div className={`${styles.jumbleSplitLayout} ${showScratchpad ? styles.withScratchpad : ""}`}>
-                        <div className={styles.jumbleCard}>
-                          <div className={styles.jumbleHeader}>
-                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                               <h3 style={{ margin: 0 }}>Fix the Logic Sequence</h3>
-                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                 {jumbleSet.length > 1 && (
-                                   <span className={styles.mcqProgress}>Node {currentJumbleIndex + 1} of {jumbleSet.length}</span>
-                                 )}
-                                 <button 
-                                   className={`${styles.toggleScratchBtn} ${showScratchpad ? styles.active : ""}`}
-                                   onClick={() => setShowScratchpad(!showScratchpad)}
-                                 >
-                                   {showScratchpad ? "✕ Close Scratchpad" : "⌨ Open Scratchpad"}
-                                 </button>
-                               </div>
-                             </div>
-                             <p className={styles.jumbleSubtitle}>Drag lines into correct order so the logic is valid.</p>
+                      {showScratchpad && (
+                        <div className={styles.scratchpadContainer}>
+                          <div className={styles.scratchpadHeader}>
+                            <span className={styles.scratchpadTitle}>LOGIC SCRATCHPAD (OPTIONAL)</span>
                           </div>
-                          <Reorder.Group 
-                            axis="y" 
-                            values={jumbledLines} 
-                            onReorder={setJumbledLines} 
-                            className={styles.jumbleList}
-                          >
-                            {jumbledLines.map((line, idx) => (
-                              <Reorder.Item 
-                                key={line + idx} 
-                                value={line}
-                                className={styles.jumbleItem}
-                                whileDrag={{ scale: 1.05, boxShadow: "0 10px 30px rgba(0, 242, 255, 0.2)" }}
-                              >
-                                <div className={styles.jumbleItemLeft}>
-                                  <span className={styles.jumbleNumber}>{idx + 1}</span>
-                                  <code>{line}</code>
-                                </div>
-                                <div className={styles.jumbleActions}>
-                                   <button disabled={idx === 0} onClick={() => moveLine(idx, 'up')} className={styles.orderBtn}>▲</button>
-                                   <button disabled={idx === jumbledLines.length - 1} onClick={() => moveLine(idx, 'down')} className={styles.orderBtn}>▼</button>
-                                   <div className={styles.dragHandle}>
-                                      <span></span><span></span><span></span>
-                                   </div>
-                                </div>
-                              </Reorder.Item>
-                            ))}
-                          </Reorder.Group>
-                          <div className={styles.jumbleFooter}>
-                            <button onClick={handleExecute} className={styles.submitOrderBtn}>
-                              ✓ Submit Order
+                          <textarea
+                            className={styles.scratchpadEditor}
+                            value={scratchCode}
+                            onChange={(e) => setScratchCode(e.target.value)}
+                            placeholder="# Test your Python logic here..."
+                            spellCheck={false}
+                          />
+                          <div className={styles.scratchpadActions}>
+                            <button className={styles.runScratchBtn} onClick={handleRunScratch}>
+                              ▷ RUN LOGIC
                             </button>
                           </div>
-
-                          <CognitiveBeacon 
-                            hint={ATMOSPHERIC_HINTS[2]}
-                            isRevealed={isHintRevealed}
-                            onReveal={handleRevealHint}
-                          />
+                          {scratchOutput && (
+                            <div className={styles.scratchOutput}>
+                              {scratchOutput}
+                            </div>
+                          )}
                         </div>
-
-                        {showScratchpad && (
-                          <div className={styles.scratchpadContainer}>
-                             <div className={styles.scratchpadHeader}>
-                                <span className={styles.scratchpadTitle}>LOGIC SCRATCHPAD (OPTIONAL)</span>
-                             </div>
-                             <textarea 
-                               className={styles.scratchpadEditor}
-                               value={scratchCode}
-                               onChange={(e) => setScratchCode(e.target.value)}
-                               placeholder="# Test your Python logic here..."
-                               spellCheck={false}
-                             />
-                             <div className={styles.scratchpadActions}>
-                                <button className={styles.runScratchBtn} onClick={handleRunScratch}>
-                                  ▷ RUN LOGIC
-                                </button>
-                             </div>
-                             {scratchOutput && (
-                               <div className={styles.scratchOutput}>
-                                  {scratchOutput}
-                               </div>
-                             )}
-                          </div>
-                        )}
-                      </div>
-                    ) : currentRound === 5 ? (
-                      <div className={styles.finalSubmitWrapper}>
-                        <div className={styles.finalIcon}>🛸</div>
-                        <h3>MISSION PROTOCOL COMPLETE</h3>
-                        <p>All logic nodes have been synchronized. The final transmission is ready for uplink to the central nexus.</p>
-                        
-                        {assignedClueIndex !== null && (
-                          <div className={styles.finalClueBox} style={{ margin: '20px 0', padding: '15px', background: 'rgba(0, 242, 255, 0.05)', borderRadius: '8px', border: '1px border rgba(0, 242, 255, 0.2)' }}>
-                            <span style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>CONCLUDING CLUE:</span>
-                            <p style={{ margin: 0, fontSize: '1.1rem' }}>
-                              {(() => {
-                                const c = globalConfigs.find((conf: any) => conf.round === 4);
-                                if (!c) return "The treasure is within reach.";
-                                if (c.clues && Array.isArray(c.clues)) return c.clues[assignedClueIndex] || c.clue;
-                                if (c.clue_variants) {
-                                  const variants = c.clue_variants.split('|');
-                                  return variants[assignedClueIndex % variants.length] || c.clue;
-                                }
-                                return c.clue || "The treasure is within reach.";
-                              })()}
-                            </p>
-                          </div>
-                        )}
-
-                        <button 
-                          onClick={handleFinalSubmit} 
-                          className={styles.finalSubmitBtn}
-                          disabled={loading}
-                        >
-                          {loading ? "TRANSMITTING..." : "UPLINK FINAL RESULTS"}
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <textarea 
-                          className={styles.codeArea} 
-                          value={code} 
-                          onChange={(e) => setCode(e.target.value)} 
-                          placeholder="# Manifest your Python logic here..." 
-                          spellCheck={false} 
-                          autoComplete="off" 
-                        />
-                        <div className={styles.editorGlow} />
-                      </>
-                    )}
-                  </div>
-
-                  <div className={styles.controlPanel}>
-                     {currentRound === 1 && (
-                       (currentMcqIndex === mcqSet.length - 1 && Object.keys(mcqSelectionMap).length === mcqSet.length) && (
-                         <button onClick={handleExecute} className={styles.executeBtn}>SUBMIT MISSION SEQUENCE</button>
-                       )
-                     )}
-                  </div>
-
-                  {(currentRound === 2 || (output && output.includes("ERROR"))) && (
-                    <div className={styles.terminal}>
-                       <div className={styles.terminalLabel}>TRANSMISSION OUTPUT</div>
-                       <pre style={{ color: output.includes("ERROR") ? "#ff4d4d" : "inherit" }}>{output}</pre>
+                      )}
                     </div>
+                  ) : currentRound === 5 ? (
+                    <div className={styles.finalSubmitWrapper}>
+                      <div className={styles.finalIcon}>🛸</div>
+                      <h3>MISSION PROTOCOL COMPLETE</h3>
+                      <p>All logic nodes have been synchronized. The final transmission is ready for uplink to the central nexus.</p>
+
+                      {assignedClueIndex !== null && (
+                        <div className={styles.finalClueBox} style={{ margin: '20px 0', padding: '15px', background: 'rgba(0, 242, 255, 0.05)', borderRadius: '8px', border: '1px border rgba(0, 242, 255, 0.2)' }}>
+                          <span style={{ color: 'var(--accent)', fontWeight: 'bold', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>CONCLUDING CLUE:</span>
+                          <p style={{ margin: 0, fontSize: '1.1rem' }}>
+                            {(() => {
+                              const c = globalConfigs.find((conf: any) => conf.round === 4);
+                              if (!c) return "The treasure is within reach.";
+                              if (c.clues && Array.isArray(c.clues)) return c.clues[assignedClueIndex] || c.clue;
+                              if (c.clue_variants) {
+                                const variants = c.clue_variants.split('|');
+                                return variants[assignedClueIndex % variants.length] || c.clue;
+                              }
+                              return c.clue || "The treasure is within reach.";
+                            })()}
+                          </p>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={handleFinalSubmit}
+                        className={styles.finalSubmitBtn}
+                        disabled={loading}
+                      >
+                        {loading ? "TRANSMITTING..." : "UPLINK FINAL RESULTS"}
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <textarea
+                        className={styles.codeArea}
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        placeholder="# Manifest your Python logic here..."
+                        spellCheck={false}
+                        autoComplete="off"
+                      />
+                      <div className={styles.editorGlow} />
+                    </>
                   )}
-                </>
-              )}
-            </motion.div>
+                </div>
+
+                <div className={styles.controlPanel}>
+                  {currentRound === 1 && (
+                    (currentMcqIndex === mcqSet.length - 1 && Object.keys(mcqSelectionMap).length === mcqSet.length) && (
+                      <button onClick={handleExecute} className={styles.executeBtn}>SUBMIT MISSION SEQUENCE</button>
+                    )
+                  )}
+                </div>
+
+                {(currentRound === 2 || (output && output.includes("ERROR"))) && (
+                  <div className={styles.terminal}>
+                    <div className={styles.terminalLabel}>TRANSMISSION OUTPUT</div>
+                    <pre style={{ color: output.includes("ERROR") ? "#ff4d4d" : "inherit" }}>{output}</pre>
+                  </div>
+                )}
+              </>
+            )}
+          </motion.div>
         </AnimatePresence>
       </main>
 
@@ -1236,7 +1360,7 @@ export default function PyHuntView() {
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className={styles.gateCard}>
               <div className={styles.gateIcon}>🔒</div>
               <h2>{labelConfig.orbit.toUpperCase()} UNLOCK REQUIRED</h2>
-              
+
               {currentRound === 1 && student?.id && (
                 <div style={{ marginBottom: 20, textAlign: 'center', padding: '10px', background: 'rgba(0, 242, 255, 0.1)', borderRadius: '8px', border: '1px solid rgba(0, 242, 255, 0.2)' }}>
                   <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent)', display: 'block', textTransform: 'uppercase', marginBottom: '4px' }}>Round 1 Scorecard</span>
@@ -1257,7 +1381,7 @@ export default function PyHuntView() {
                   {(() => {
                     const c = globalConfigs.find((conf: any) => conf.round === currentRound);
                     if (!c) return "Locate the physical node to find your code.";
-                    
+
                     // Support multiple clues if provided in config as comma-separated or array
                     if (assignedClueIndex !== null && c.clues && Array.isArray(c.clues)) {
                       return c.clues[assignedClueIndex] || c.clue || "Locate the physical node.";
@@ -1266,21 +1390,21 @@ export default function PyHuntView() {
                       const variants = c.clue_variants.split('|');
                       return variants[assignedClueIndex % variants.length] || c.clue;
                     }
-                    
+
                     return c.clue || "Locate the physical node to find your code.";
                   })()}
                 </p>
               </div>
               <div className={styles.gateInputGroup}>
                 <label>{labelConfig.orbit.toUpperCase()} UNLOCK CODE</label>
-                <input 
-                  type="text" 
-                  value={gateInput} 
-                  onChange={(e) => setGateInput(e.target.value)} 
-                  className={`${styles.gateInput} ${gateError ? styles.gateError : ""}`} 
+                <input
+                  type="text"
+                  value={gateInput}
+                  onChange={(e) => setGateInput(e.target.value)}
+                  className={`${styles.gateInput} ${gateError ? styles.gateError : ""}`}
                   spellCheck={false}
                   autoComplete="off"
-                  onKeyDown={(e) => e.key === 'Enter' && handleGateUnlock()} 
+                  onKeyDown={(e) => e.key === 'Enter' && handleGateUnlock()}
                 />
                 {gateError && <div className={styles.errorMsg}>Invalid Unlock Code. Transmission Rejected.</div>}
               </div>

@@ -101,10 +101,10 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
   const [violations, setViolations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [tableMissing, setTableMissing] = useState(false);
-  
+
   const activeTabRef = useRef(activeTab);
   const lastSyncRef = useRef(0);
-  
+
   useEffect(() => {
     activeTabRef.current = activeTab;
   }, [activeTab]);
@@ -142,7 +142,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
   useEffect(() => {
     fetchOdyssey();
     fetchPyHuntStudents();
-    
+
     const sub = supabase.channel('odyssey_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'odyssey_progress' }, () => {
       if (activeTabRef.current !== 'live_status') return;
 
@@ -195,10 +195,10 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
     try {
       // 1. Clear odyssey progress
       await supabase.from('odyssey_progress').delete().eq('student_id', s.student_id);
-      
+
       // 2. Clear exam status for PyHunt (Case-insensitive robust delete)
       await supabase.from('exam_status').delete().eq('student_id', s.student_id).ilike('exam_name', 'pyhunt');
-      
+
       // 3. Clear exam results for PyHunt
       await supabase.from('exam_results').delete().eq('student_id', s.student_id).ilike('exam_name', 'pyhunt');
 
@@ -374,14 +374,14 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
             Changes are saved to the global database and immediately visible to all students in real-time.
           </p>
         </div>
-        <button 
-          className={adminStyles.saveAllBtn} 
+        <button
+          className={adminStyles.saveAllBtn}
           onClick={async () => {
             const btn = document.activeElement as HTMLButtonElement;
             const originalText = btn.innerText;
             btn.innerText = "🔄 SYNCING...";
             btn.disabled = true;
-            
+
             try {
               // Re-sync all current local states via backend API
               await Promise.all([
@@ -438,19 +438,19 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
             <div style={{ padding: 16, background: 'rgba(0, 242, 255, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 242, 255, 0.1)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 4 }}>TOTAL GUIDANCE BEACONS</div>
               <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)' }}>
-                {participants.reduce((acc, p) => acc + (p.pyhunt?.hints_taken || 0), 0)}
+                {odysseyData.reduce((acc, curr) => acc + (curr.hints_taken || 0), 0)}
               </div>
             </div>
             <div style={{ padding: 16, background: 'rgba(0, 242, 255, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 242, 255, 0.1)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 4 }}>COGNITIVE ENTROPY (AVG)</div>
               <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)' }}>
-                {participants.length > 0 ? (participants.reduce((acc, p) => acc + (p.pyhunt?.hints_taken || 0), 0) / participants.length).toFixed(2) : "0.00"}
+                {odysseyData.length > 0 ? (odysseyData.reduce((acc, curr) => acc + (curr.hints_taken || 0), 0) / odysseyData.length).toFixed(2) : "0.00"}
               </div>
             </div>
             <div style={{ padding: 16, background: 'rgba(0, 242, 255, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 242, 255, 0.1)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 4 }}>FRICTION SENSOR</div>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>
-                {(participants.length > 0 && (participants.reduce((acc, p) => acc + (p.pyhunt?.hints_taken || 0), 0) / participants.length) > 0.5) ? "⚠️ HIGH FRICTION" : "✅ STABLE"}
+                {(odysseyData.reduce((acc, curr) => acc + (curr.hints_taken || 0), 0) / odysseyData.length) > 0.5 ? "⚠️ HIGH FRICTION" : "✅ STABLE"}
               </div>
             </div>
           </div>
@@ -477,7 +477,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                 {participants.map(p => {
                   const isCompleted = p.pyhunt?.is_completed === true || p.status === 'submitted';
                   const currentRound = p.pyhunt?.current_round || 1;
-                  
+
                   // Calculate total time
                   let totalTime = "—";
                   if (p.started_at) {
@@ -493,75 +493,73 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                   let points = "—";
                   let r1State = p.pyhunt?.round_1_state || p.round_1_state;
                   if (typeof r1State === 'string') {
-                    try { r1State = JSON.parse(r1State); } catch(e) {}
+                    try { r1State = JSON.parse(r1State); } catch (e) { }
                   }
 
                   if (r1State && typeof r1State === 'object' && r1State.mcq_score !== undefined) {
-                    const score = r1State.mcq_score;
-                    const total = r1State.mcq_total || (mcqs.length > 0 ? mcqs.length : 3);
-                    points = `${score}/${total}`;
+                    points = `${r1State.mcq_score}/${r1State.mcq_total || 0}`;
                   } else if (p.score !== undefined && p.score !== null) {
                     points = `${p.score}/${p.total_marks || 100}`;
                   }
 
                   return (
-                  <tr key={p.student_id} className={isCompleted ? adminStyles.rowFinished : ""}>
-                    <td>
-                      <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{p.name}</div>
-                      <div style={{ fontSize: 11, opacity: 0.5 }}>{p.usn}</div>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span className={adminStyles.roundBadge}>{isCompleted ? "✓" : currentRound}</span>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
-                          {isCompleted ? "ALL COMPLETE" : (configs.find((c: any) => c.round === currentRound)?.name || "Entry")}
+                    <tr key={p.student_id} className={isCompleted ? adminStyles.rowFinished : ""}>
+                      <td>
+                        <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{p.name}</div>
+                        <div style={{ fontSize: 11, opacity: 0.5 }}>{p.usn}</div>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span className={adminStyles.roundBadge}>{isCompleted ? "✓" : currentRound}</span>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                            {isCompleted ? "ALL COMPLETE" : (configs.find((c: any) => c.round === currentRound)?.name || "Entry")}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`${adminStyles.statusTag} ${isCompleted ? adminStyles.tagSuccess : adminStyles.tagWarning}`}>
-                        {isCompleted ? "COMPLETED" : "IN PROGRESS"}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={adminStyles.warningCount}>{p.warnings}/3</span>
-                    </td>
-                    <td style={{ fontSize: 12, fontWeight: 600 }}>
-                      {totalTime}
-                    </td>
-                    <td style={{ fontSize: 12, fontWeight: 700, color: isCompleted ? 'var(--success, #22c55e)' : 'var(--text-muted)' }}>
-                      {points}
-                    </td>
-                    <td>
-                      <span className={adminStyles.warningCount} style={{ background: (p.pyhunt?.hints_taken || 0) > 0 ? 'rgba(0, 242, 255, 0.1)' : 'rgba(255,255,255,0.05)', color: (p.pyhunt?.hints_taken || 0) > 0 ? 'var(--accent)' : 'inherit' }}>
-                        {p.pyhunt?.hints_taken || 0}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>
-                      {(() => {
-                         if (isCompleted) return "100%";
-                         if (currentRound === 1 && r1State) {
-                           return `Q${(r1State.current_index || 0) + 1} (${r1State.answered_count || 0}/${r1State.mcq_total || 0})`;
-                         }
-                         return `Orbit ${currentRound}`;
-                      })()}
-                    </td>
+                      </td>
+                      <td>
+                        <span className={`${adminStyles.statusTag} ${isCompleted ? adminStyles.tagSuccess : adminStyles.tagWarning}`}>
+                          {isCompleted ? "COMPLETED" : "IN PROGRESS"}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={adminStyles.warningCount}>{p.warnings}/3</span>
+                      </td>
+                      <td style={{ fontSize: 12, fontWeight: 600 }}>
+                        {totalTime}
+                      </td>
+                      <td style={{ fontSize: 12, fontWeight: 700, color: isCompleted ? 'var(--success, #22c55e)' : 'var(--text-muted)' }}>
+                        {points}
+                      </td>
+                      <td>
+                        <span className={adminStyles.warningCount} style={{ background: (p.pyhunt?.hints_taken || 0) > 0 ? 'rgba(0, 242, 255, 0.1)' : 'rgba(255,255,255,0.05)', color: (p.pyhunt?.hints_taken || 0) > 0 ? 'var(--accent)' : 'inherit' }}>
+                          {p.pyhunt?.hints_taken || 0}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                        {(() => {
+                          if (isCompleted) return "100%";
+                          if (currentRound === 1 && r1State) {
+                            return `Q${(r1State.current_index || 0) + 1} (${r1State.answered_count || 0}/${r1State.mcq_total || 0})`;
+                          }
+                          return `Orbit ${currentRound}`;
+                        })()}
+                      </td>
 
-                    <td>
-                      <span className={`${adminStyles.liveStatus} ${isCompleted ? adminStyles.statusFinished : (p.status === 'active' ? adminStyles.statusActive : adminStyles.statusPending)}`}>
-                        {isCompleted ? "FINISHED" : (p.is_blocked ? "STOPPED" : (p.status === 'not_started' ? "NOT STARTED" : "ACTIVE"))}
-                      </span>
-                    </td>
-                    <td>
-                      <div className={adminStyles.actionGroup}>
-                        <button className={`${adminStyles.actionBtn} ${adminStyles.btnReset}`} onClick={() => handleReExam(p)}>RESET</button>
-                        <button className={`${adminStyles.actionBtn} ${adminStyles.btnStop}`} onClick={() => handleToggleBlock(p)}>
-                          {p.is_blocked ? "RESUME" : "STOP"}
-                        </button>
-                        <button className={`${adminStyles.actionBtn} ${adminStyles.btnDelete}`} onClick={() => handleDeleteStudent(p)}>DELETE</button>
-                      </div>
-                    </td>
-                  </tr>
+                      <td>
+                        <span className={`${adminStyles.liveStatus} ${isCompleted ? adminStyles.statusFinished : (p.status === 'active' ? adminStyles.statusActive : adminStyles.statusPending)}`}>
+                          {isCompleted ? "FINISHED" : (p.is_blocked ? "STOPPED" : (p.status === 'not_started' ? "NOT STARTED" : "ACTIVE"))}
+                        </span>
+                      </td>
+                      <td>
+                        <div className={adminStyles.actionGroup}>
+                          <button className={`${adminStyles.actionBtn} ${adminStyles.btnReset}`} onClick={() => handleReExam(p)}>RESET</button>
+                          <button className={`${adminStyles.actionBtn} ${adminStyles.btnStop}`} onClick={() => handleToggleBlock(p)}>
+                            {p.is_blocked ? "RESUME" : "STOP"}
+                          </button>
+                          <button className={`${adminStyles.actionBtn} ${adminStyles.btnDelete}`} onClick={() => handleDeleteStudent(p)}>DELETE</button>
+                        </div>
+                      </td>
+                    </tr>
                   );
                 })}
               </tbody>
@@ -569,38 +567,38 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
           </div>
         </div>
       ) : (
-        <PyHuntConfig 
-           activeTab={activeTab} 
-           configs={configs}
-           setConfigs={setConfigs}
-           mcqs={mcqs}
-           setMcqs={setMcqs}
-           jumbles={jumbles}
-           setJumbles={setJumbles}
-           globalAuth={globalAuth}
-           setGlobalAuth={setGlobalAuth}
-           updateConfig={updateConfig}
-           updateMcq={updateMcq}
-           addMcq={addMcq}
-           removeMcq={removeMcq}
-           saveGlobalAuth={saveGlobalAuth}
-           saveJumbles={saveJumbles}
-           addJumble={addJumble}
-           removeJumble={removeJumble}
-           labelConfig={labelConfig}
-           saveLabelConfig={saveLabelConfig}
-           codingChallenges={codingChallenges}
-           updateCodingChallenge={updateCodingChallenge}
-           addCodingChallenge={addCodingChallenge}
-           removeCodingChallenge={removeCodingChallenge}
+        <PyHuntConfig
+          activeTab={activeTab}
+          configs={configs}
+          setConfigs={setConfigs}
+          mcqs={mcqs}
+          setMcqs={setMcqs}
+          jumbles={jumbles}
+          setJumbles={setJumbles}
+          globalAuth={globalAuth}
+          setGlobalAuth={setGlobalAuth}
+          updateConfig={updateConfig}
+          updateMcq={updateMcq}
+          addMcq={addMcq}
+          removeMcq={removeMcq}
+          saveGlobalAuth={saveGlobalAuth}
+          saveJumbles={saveJumbles}
+          addJumble={addJumble}
+          removeJumble={removeJumble}
+          labelConfig={labelConfig}
+          saveLabelConfig={saveLabelConfig}
+          codingChallenges={codingChallenges}
+          updateCodingChallenge={updateCodingChallenge}
+          addCodingChallenge={addCodingChallenge}
+          removeCodingChallenge={removeCodingChallenge}
         />
       )}
     </div>
   );
 }
 
-function PyHuntConfig({ 
-  activeTab, configs, mcqs, jumbles, globalAuth, updateConfig, updateMcq, addMcq, removeMcq, 
+function PyHuntConfig({
+  activeTab, configs, mcqs, jumbles, globalAuth, updateConfig, updateMcq, addMcq, removeMcq,
   saveGlobalAuth, saveJumbles, addJumble, removeJumble, labelConfig, saveLabelConfig,
   codingChallenges, updateCodingChallenge, addCodingChallenge, removeCodingChallenge
 }: any) {
@@ -613,7 +611,7 @@ function PyHuntConfig({
   const handleRunPreview = async () => {
     if (!previewChallenge) return;
     setPreviewOutput("Initializing Logic...");
-    
+
     let testCases: any[] = [];
     try {
       if (previewChallenge.test_cases) {
@@ -621,7 +619,7 @@ function PyHuntConfig({
         if (typeof parsed === 'string') {
           parsed = JSON.parse(parsed);
         }
-        
+
         if (Array.isArray(parsed)) {
           if (parsed.length > 0 && parsed[0].test_cases && Array.isArray(parsed[0].test_cases)) {
             testCases = parsed[0].test_cases;
@@ -643,7 +641,7 @@ function PyHuntConfig({
       for (let i = 0; i < testCases.length; i++) {
         const tc = testCases[i];
         const res: any = await runCode(previewCode, tc.input || "");
-        
+
         const expected = (tc.expected || tc.output || tc.expected_output || "").toString().trim();
         const actual = (res.stdout || "").toString().trim();
         const passed = validateOutput(res.stdout, expected);
@@ -657,9 +655,9 @@ function PyHuntConfig({
         });
 
         if (res.error) {
-          finalResults += `❌ CASE ${i+1}: ERROR\n   ${res.error}\n`;
+          finalResults += `❌ CASE ${i + 1}: ERROR\n   ${res.error}\n`;
         } else {
-          finalResults += `${passed ? '✅' : '❌'} CASE ${i+1} ${passed ? 'PASSED' : 'FAILED'}\n   Output: ${actual}\n`;
+          finalResults += `${passed ? '✅' : '❌'} CASE ${i + 1} ${passed ? 'PASSED' : 'FAILED'}\n   Output: ${actual}\n`;
         }
       }
       setPreviewTestResults(results);
@@ -680,7 +678,7 @@ function PyHuntConfig({
               <button onClick={() => setPreviewChallenge(null)} className={adminStyles.actionBtn} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>✕ Close Preview</button>
             </div>
             <div style={{ height: 'calc(100% - 60px)' }}>
-              <CodingInterface 
+              <CodingInterface
                 problem={previewChallenge}
                 code={previewCode}
                 setCode={setPreviewCode}
@@ -912,8 +910,8 @@ function PyHuntConfig({
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <span className={adminStyles.codeBadge}>CHALLENGE {idx + 1}</span>
-                  <button 
-                    className={adminStyles.actionBtn} 
+                  <button
+                    className={adminStyles.actionBtn}
                     style={{ background: 'rgba(0, 242, 255, 0.1)', color: '#00f2ff', borderColor: 'rgba(0, 242, 255, 0.2)' }}
                     onClick={() => {
                       setPreviewChallenge({ ...c, round: 3 });
@@ -926,72 +924,72 @@ function PyHuntConfig({
                 </div>
                 <button onClick={() => removeCodingChallenge(3, c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>QUESTION / PROMPT</label>
-                  <textarea
-                    className={adminStyles.configTextarea}
-                    value={c.prompt || ""}
-                    onChange={(e) => updateCodingChallenge(3, c.id, 'prompt', e.target.value)}
-                    placeholder="Describe the challenge..."
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>OPTIONAL IMAGE URL</label>
-                  <input
-                    className={adminStyles.configInput}
-                    value={c.imageUrl || ""}
-                    onChange={(e) => updateCodingChallenge(3, c.id, 'imageUrl', e.target.value)}
-                    placeholder="https://example.com/image.png"
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>OPTIONAL TARGET OUTPUT (FALLBACK)</label>
-                  <textarea
-                    className={adminStyles.configTextarea}
-                    value={c.target_output || ""}
-                    onChange={(e) => updateCodingChallenge(3, c.id, 'target_output', e.target.value)}
-                    placeholder="e.g., palindrome: true"
-                    style={{ minHeight: 80, fontFamily: 'monospace' }}
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>TEST CASES (JSON ARRAY)</label>
-                  <textarea
-                    className={adminStyles.configTextarea}
-                    value={c.test_cases || "[]"}
-                    onChange={(e) => updateCodingChallenge(3, c.id, 'test_cases', e.target.value)}
-                    placeholder='[{"input": "radar", "expected": "palindrome: true"}]'
-                    style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>CLUE (VISIBLE AT GATE)</label>
-                  <input
-                    className={adminStyles.configInput}
-                    value={c.clue || ""}
-                    onChange={(e) => updateCodingChallenge(3, c.id, 'clue', e.target.value)}
-                    placeholder="Enter the clue for this challenge..."
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>ASSIGNED CLUE VARIANTS (Separated by |)</label>
-                  <textarea
-                    className={adminStyles.configTextarea}
-                    value={c.clue_variants || ""}
-                    onChange={(e) => updateCodingChallenge(3, c.id, 'clue_variants', e.target.value)}
-                    placeholder="Variant 1 | Variant 2 | Variant 3"
-                    style={{ minHeight: 60 }}
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>UNLOCK CODE(S) (Use | for multiple)</label>
-                  <input
-                    className={adminStyles.configInput}
-                    value={c.unlock_code || ""}
-                    onChange={(e) => updateCodingChallenge(3, c.id, 'unlock_code', e.target.value)}
-                    placeholder="e.g., SECRET123 or CODE1|CODE2"
-                  />
-               </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>QUESTION / PROMPT</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={c.prompt || ""}
+                  onChange={(e) => updateCodingChallenge(3, c.id, 'prompt', e.target.value)}
+                  placeholder="Describe the challenge..."
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>OPTIONAL IMAGE URL</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={c.imageUrl || ""}
+                  onChange={(e) => updateCodingChallenge(3, c.id, 'imageUrl', e.target.value)}
+                  placeholder="https://example.com/image.png"
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>OPTIONAL TARGET OUTPUT (FALLBACK)</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={c.target_output || ""}
+                  onChange={(e) => updateCodingChallenge(3, c.id, 'target_output', e.target.value)}
+                  placeholder="e.g., palindrome: true"
+                  style={{ minHeight: 80, fontFamily: 'monospace' }}
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>TEST CASES (JSON ARRAY)</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={c.test_cases || "[]"}
+                  onChange={(e) => updateCodingChallenge(3, c.id, 'test_cases', e.target.value)}
+                  placeholder='[{"input": "radar", "expected": "palindrome: true"}]'
+                  style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>CLUE (VISIBLE AT GATE)</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={c.clue || ""}
+                  onChange={(e) => updateCodingChallenge(3, c.id, 'clue', e.target.value)}
+                  placeholder="Enter the clue for this challenge..."
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>ASSIGNED CLUE VARIANTS (Separated by |)</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={c.clue_variants || ""}
+                  onChange={(e) => updateCodingChallenge(3, c.id, 'clue_variants', e.target.value)}
+                  placeholder="Variant 1 | Variant 2 | Variant 3"
+                  style={{ minHeight: 60 }}
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>UNLOCK CODE(S) (Use | for multiple)</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={c.unlock_code || ""}
+                  onChange={(e) => updateCodingChallenge(3, c.id, 'unlock_code', e.target.value)}
+                  placeholder="e.g., SECRET123 or CODE1|CODE2"
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -1008,8 +1006,8 @@ function PyHuntConfig({
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <span className={adminStyles.codeBadge}>CHALLENGE {idx + 1}</span>
-                  <button 
-                    className={adminStyles.actionBtn} 
+                  <button
+                    className={adminStyles.actionBtn}
                     style={{ background: 'rgba(0, 242, 255, 0.1)', color: '#00f2ff', borderColor: 'rgba(0, 242, 255, 0.2)' }}
                     onClick={() => {
                       setPreviewChallenge({ ...c, round: 4 });
@@ -1022,72 +1020,72 @@ function PyHuntConfig({
                 </div>
                 <button onClick={() => removeCodingChallenge(4, c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>DELETE</button>
               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>QUESTION / PROMPT</label>
-                  <textarea
-                    className={adminStyles.configTextarea}
-                    value={c.prompt || ""}
-                    onChange={(e) => updateCodingChallenge(4, c.id, 'prompt', e.target.value)}
-                    placeholder="Describe the FizzBuzz challenge..."
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>OPTIONAL IMAGE URL</label>
-                  <input
-                    className={adminStyles.configInput}
-                    value={c.imageUrl || ""}
-                    onChange={(e) => updateCodingChallenge(4, c.id, 'imageUrl', e.target.value)}
-                    placeholder="https://example.com/image.png"
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>OPTIONAL TARGET OUTPUT (FALLBACK)</label>
-                  <textarea
-                    className={adminStyles.configTextarea}
-                    value={c.target_output || ""}
-                    onChange={(e) => updateCodingChallenge(4, c.id, 'target_output', e.target.value)}
-                    placeholder="e.g., 1, 2, Fizz, 4, Buzz"
-                    style={{ minHeight: 80, fontFamily: 'monospace' }}
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>TEST CASES (JSON ARRAY)</label>
-                  <textarea
-                    className={adminStyles.configTextarea}
-                    value={c.test_cases || "[]"}
-                    onChange={(e) => updateCodingChallenge(4, c.id, 'test_cases', e.target.value)}
-                    placeholder='[{"input": "3", "expected": "1, 2, Fizz"}]'
-                    style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>CLUE (VISIBLE AT GATE)</label>
-                  <input
-                    className={adminStyles.configInput}
-                    value={c.clue || ""}
-                    onChange={(e) => updateCodingChallenge(4, c.id, 'clue', e.target.value)}
-                    placeholder="Enter the clue for this challenge..."
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>ASSIGNED CLUE VARIANTS (Separated by |)</label>
-                  <textarea
-                    className={adminStyles.configTextarea}
-                    value={c.clue_variants || ""}
-                    onChange={(e) => updateCodingChallenge(4, c.id, 'clue_variants', e.target.value)}
-                    placeholder="Variant 1 | Variant 2 | Variant 3"
-                    style={{ minHeight: 60 }}
-                  />
-               </div>
-               <div className={adminStyles.inputGroup}>
-                  <label className={adminStyles.inputLabel}>UNLOCK CODE(S) (Use | for multiple)</label>
-                  <input
-                    className={adminStyles.configInput}
-                    value={c.unlock_code || ""}
-                    onChange={(e) => updateCodingChallenge(4, c.id, 'unlock_code', e.target.value)}
-                    placeholder="e.g., SECRET123 or CODE1|CODE2"
-                  />
-               </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>QUESTION / PROMPT</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={c.prompt || ""}
+                  onChange={(e) => updateCodingChallenge(4, c.id, 'prompt', e.target.value)}
+                  placeholder="Describe the FizzBuzz challenge..."
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>OPTIONAL IMAGE URL</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={c.imageUrl || ""}
+                  onChange={(e) => updateCodingChallenge(4, c.id, 'imageUrl', e.target.value)}
+                  placeholder="https://example.com/image.png"
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>OPTIONAL TARGET OUTPUT (FALLBACK)</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={c.target_output || ""}
+                  onChange={(e) => updateCodingChallenge(4, c.id, 'target_output', e.target.value)}
+                  placeholder="e.g., 1, 2, Fizz, 4, Buzz"
+                  style={{ minHeight: 80, fontFamily: 'monospace' }}
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>TEST CASES (JSON ARRAY)</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={c.test_cases || "[]"}
+                  onChange={(e) => updateCodingChallenge(4, c.id, 'test_cases', e.target.value)}
+                  placeholder='[{"input": "3", "expected": "1, 2, Fizz"}]'
+                  style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>CLUE (VISIBLE AT GATE)</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={c.clue || ""}
+                  onChange={(e) => updateCodingChallenge(4, c.id, 'clue', e.target.value)}
+                  placeholder="Enter the clue for this challenge..."
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>ASSIGNED CLUE VARIANTS (Separated by |)</label>
+                <textarea
+                  className={adminStyles.configTextarea}
+                  value={c.clue_variants || ""}
+                  onChange={(e) => updateCodingChallenge(4, c.id, 'clue_variants', e.target.value)}
+                  placeholder="Variant 1 | Variant 2 | Variant 3"
+                  style={{ minHeight: 60 }}
+                />
+              </div>
+              <div className={adminStyles.inputGroup}>
+                <label className={adminStyles.inputLabel}>UNLOCK CODE(S) (Use | for multiple)</label>
+                <input
+                  className={adminStyles.configInput}
+                  value={c.unlock_code || ""}
+                  onChange={(e) => updateCodingChallenge(4, c.id, 'unlock_code', e.target.value)}
+                  placeholder="e.g., SECRET123 or CODE1|CODE2"
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -2202,13 +2200,13 @@ function QuestionsTab() {
     try {
       setLoading(true);
       const { startDate, startTime, endDate, endTime, autoActive } = scheduleData;
-      
+
       const s = (startDate && startTime) ? new Date(`${startDate}T${startTime}`).toISOString() : null;
       const e = (endDate && endTime) ? new Date(`${endDate}T${endTime}`).toISOString() : null;
 
-      await updateExamConfig({ 
-        exam_title: schedulingExam, 
-        scheduled_start: s, 
+      await updateExamConfig({
+        exam_title: schedulingExam,
+        scheduled_start: s,
         scheduled_end: e,
         is_active: autoActive ? true : undefined
       });
@@ -2487,7 +2485,7 @@ function QuestionsTab() {
                                 color="var(--warning)"
                                 onClick={() => handleUpdateAttempts(name, attempts)}
                               />
-                              
+
                               <ControlBtn
                                 icon={isManualActive ? "🟢" : "🔘"}
                                 label="Active"
@@ -2914,10 +2912,10 @@ function QuestionsTab() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, padding: '12px 16px', background: 'rgba(124, 58, 237, 0.1)', borderRadius: 12 }}>
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 id="autoActive"
-                checked={scheduleData.autoActive} 
+                checked={scheduleData.autoActive}
                 onChange={(e) => setScheduleData({ ...scheduleData, autoActive: e.target.checked })}
                 style={{ width: 20, height: 20, accentColor: '#8b5cf6' }}
               />
@@ -2929,8 +2927,8 @@ function QuestionsTab() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 8 }}>Start Date</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   className={adminStyles.input}
                   value={scheduleData.startDate}
                   onChange={(e) => setScheduleData({ ...scheduleData, startDate: e.target.value })}
@@ -2939,8 +2937,8 @@ function QuestionsTab() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 8 }}>Start Time</label>
-                <input 
-                  type="time" 
+                <input
+                  type="time"
                   className={adminStyles.input}
                   value={scheduleData.startTime}
                   onChange={(e) => setScheduleData({ ...scheduleData, startTime: e.target.value })}
@@ -2952,8 +2950,8 @@ function QuestionsTab() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 32 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 8 }}>End Date</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   className={adminStyles.input}
                   value={scheduleData.endDate}
                   onChange={(e) => setScheduleData({ ...scheduleData, endDate: e.target.value })}
@@ -2962,8 +2960,8 @@ function QuestionsTab() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 8 }}>End Time</label>
-                <input 
-                  type="time" 
+                <input
+                  type="time"
                   className={adminStyles.input}
                   value={scheduleData.endTime}
                   onChange={(e) => setScheduleData({ ...scheduleData, endTime: e.target.value })}
@@ -2972,14 +2970,14 @@ function QuestionsTab() {
               </div>
             </div>
 
-            <button 
-              className="btn btn-primary" 
+            <button
+              className="btn btn-primary"
               onClick={handleSaveSchedule}
-              style={{ 
-                width: '100%', 
-                padding: '16px', 
-                borderRadius: 16, 
-                fontSize: 16, 
+              style={{
+                width: '100%',
+                padding: '16px',
+                borderRadius: 16,
+                fontSize: 16,
                 fontWeight: 600,
                 background: 'linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)',
                 boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
