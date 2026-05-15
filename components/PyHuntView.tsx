@@ -555,7 +555,6 @@ export default function PyHuntView() {
     const activeProblem = currentChallenge || roundConfig;
 
     let testCases: any[] = [];
-    let testCaseParseError = false;
     try {
       if (activeProblem?.test_cases) {
         let parsed = activeProblem.test_cases;
@@ -576,64 +575,7 @@ export default function PyHuntView() {
       }
     } catch (e) {
       console.error("Invalid test cases JSON configuration.");
-      testCaseParseError = true;
     }
-
-    // ═══ Round 4 AI Validation Fallback ═══
-    // If Round 4 has no valid test cases OR test cases errored, use AI validator
-    if (currentRound === 4 && (testCaseParseError || testCases.length === 0)) {
-      setOutput("🧠 Analyzing code with AI validator...");
-      try {
-        const aiRes = await fetch('/api/pyhunt/validate-r4', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            studentCode: code,
-            problemPrompt: activeProblem?.prompt || activeProblem?.description || "FizzBuzz problem",
-            expectedOutput: activeProblem?.target_output || ""
-          })
-        });
-        const aiResult = await aiRes.json();
-
-        if (aiResult.passed) {
-          setOutput("✅ AI Validator: Code is correct!");
-          setShowSuccessRipple(true);
-          setTimeout(() => setShowSuccessRipple(false), 1000);
-
-          try {
-            const { data: rankData } = await supabase.rpc('increment_completion_count', { round: currentRound });
-            if (rankData) {
-              const totalClues = 4;
-              const count = typeof rankData === 'object' ? (rankData.current_count || 1) : rankData;
-              setAssignedClueIndex((count - 1) % totalClues);
-            } else {
-              setAssignedClueIndex(Math.floor(Math.random() * 4));
-            }
-          } catch (err) {
-            console.error("Clue assignment failed:", err);
-            setAssignedClueIndex(0);
-          }
-
-          if (currentProblemIndex < roundChallenges.length - 1) {
-            setOutput(`Problem ${currentProblemIndex + 1} solved. Initializing next data node...`);
-            setCurrentProblemIndex(prev => prev + 1);
-            setCode("");
-          } else {
-            setIsAtGate(true);
-          }
-        } else {
-          setWrongAttempts(prev => prev + 1);
-          setOutput(`❌ AI Validator: ${aiResult.feedback || "Code has errors. Check your logic and indentation."}`);
-          setHint(aiResult.feedback || "Your code has errors. Review logic, indentation, and output format.");
-          setTimeout(() => setHint(""), 6000);
-        }
-      } catch (aiErr) {
-        console.error("AI validation failed:", aiErr);
-        setOutput("❌ Validation engine temporarily unavailable. Please retry.");
-      }
-      return;
-    }
-
     if (Array.isArray(testCases) && testCases.length > 0) {
       // ═══ Neural Test-Runner Execution ═══
       const suite = await runTestSuite(code, testCases, sharedValidateOutput);
@@ -689,58 +631,6 @@ export default function PyHuntView() {
             setIsAtGate(true);
           }
         }
-      } else if (currentRound === 4) {
-        // ═══ Round 4: AI Fallback when test cases FAIL ═══
-        setOutput("🧠 Re-analyzing with AI validator...");
-        try {
-          const aiRes = await fetch('/api/pyhunt/validate-r4', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              studentCode: code,
-              problemPrompt: activeProblem?.prompt || activeProblem?.description || "FizzBuzz problem",
-              expectedOutput: activeProblem?.target_output || ""
-            })
-          });
-          const aiResult = await aiRes.json();
-
-          if (aiResult.passed) {
-            setOutput("✅ AI Validator: Code is correct!");
-            setShowSuccessRipple(true);
-            setTimeout(() => setShowSuccessRipple(false), 1000);
-
-            try {
-              const { data: rankData } = await supabase.rpc('increment_completion_count', { round: currentRound });
-              if (rankData) {
-                const count = typeof rankData === 'object' ? (rankData.current_count || 1) : rankData;
-                setAssignedClueIndex((count - 1) % 4);
-              } else {
-                setAssignedClueIndex(Math.floor(Math.random() * 4));
-              }
-            } catch (clueErr) {
-              console.error("Clue assignment failed:", clueErr);
-              setAssignedClueIndex(0);
-            }
-
-            if (currentProblemIndex < roundChallenges.length - 1) {
-              setOutput(`Problem ${currentProblemIndex + 1} solved. Initializing next data node...`);
-              setCurrentProblemIndex(prev => prev + 1);
-              setCode("");
-            } else {
-              setIsAtGate(true);
-            }
-          } else {
-            setWrongAttempts(prev => prev + 1);
-            setOutput(`❌ AI Validator: ${aiResult.feedback || "Code has errors."}\n\n${finalResults}`);
-            setHint(aiResult.feedback || "Check your logic and indentation.");
-            setTimeout(() => setHint(""), 6000);
-          }
-        } catch (aiErr) {
-          // AI also failed, show original test results
-          setWrongAttempts(prev => prev + 1);
-          setHint("Logic discrepancies detected. Debug and retry.");
-          setTimeout(() => setHint(""), 4000);
-        }
       } else {
         setWrongAttempts(prev => prev + 1);
         setHint("Logic discrepancies detected across test nodes. Debug and retry.");
@@ -749,7 +639,7 @@ export default function PyHuntView() {
       return;
     }
 
-    // Legacy Single-Output Validation (Fallback for Round 3 or non-test-case rounds)
+    // Legacy Single-Output Validation (Fallback)
     const result = await runCode(code);
     if (result.error) {
       setOutput(`ERROR: ${result.error}`);
@@ -769,37 +659,6 @@ export default function PyHuntView() {
           setShowSuccessRipple(false);
           setIsAtGate(true);
         }, 1000);
-      }
-    } else if (currentRound === 4) {
-      // ═══ Round 4: AI Fallback for legacy validation failure ═══
-      setOutput("🧠 Re-analyzing with AI validator...");
-      try {
-        const aiRes = await fetch('/api/pyhunt/validate-r4', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            studentCode: code,
-            problemPrompt: activeProblem?.prompt || activeProblem?.description || "FizzBuzz problem",
-            expectedOutput: targetExpected || ""
-          })
-        });
-        const aiResult = await aiRes.json();
-
-        if (aiResult.passed) {
-          setOutput("✅ AI Validator: Code is correct!");
-          setShowSuccessRipple(true);
-          setTimeout(() => setShowSuccessRipple(false), 1000);
-          setIsAtGate(true);
-        } else {
-          setWrongAttempts(prev => prev + 1);
-          setOutput(`❌ AI Validator: ${aiResult.feedback || "Code has errors."}`);
-          setHint(aiResult.feedback || "Check your logic and indentation.");
-          setTimeout(() => setHint(""), 6000);
-        }
-      } catch (aiErr) {
-        setWrongAttempts(prev => prev + 1);
-        setHint("Drift detected. Check your logic pattern.");
-        setTimeout(() => setHint(""), 4000);
       }
     } else {
       setWrongAttempts(prev => prev + 1);

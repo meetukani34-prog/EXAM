@@ -45,43 +45,6 @@ const extractLastLine = (raw: string): string => {
   return lines.length > 0 ? lines[lines.length - 1] : "";
 };
 
-// ─── Deep Numeric-Tolerant JSON Comparator ─────────────────────
-// Recursively compares two parsed JSON values, treating 9.0 === 9
-const deepNumericEqual = (a: unknown, b: unknown): boolean => {
-  if (a === b) return true;
-
-  // Numeric tolerance: 9.0 === 9
-  if (typeof a === 'number' && typeof b === 'number') {
-    return Math.abs(a - b) < 0.0001;
-  }
-
-  // String comparison (case insensitive, trim)
-  if (typeof a === 'string' && typeof b === 'string') {
-    return a.trim().toLowerCase() === b.trim().toLowerCase();
-  }
-
-  // Array comparison
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    return a.every((item, i) => deepNumericEqual(item, b[i]));
-  }
-
-  // Object comparison
-  if (a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a) && !Array.isArray(b)) {
-    const keysA = Object.keys(a as Record<string, unknown>);
-    const keysB = Object.keys(b as Record<string, unknown>);
-    if (keysA.length !== keysB.length) return false;
-    return keysA.every(key => 
-      keysB.includes(key) && deepNumericEqual(
-        (a as Record<string, unknown>)[key],
-        (b as Record<string, unknown>)[key]
-      )
-    );
-  }
-
-  return false;
-};
-
 // ─── Main Validation Pipeline ──────────────────────────────────
 export const validateOutput = (stdout: string, expectedRaw: string): boolean => {
   if (!stdout && !expectedRaw) return true;
@@ -118,29 +81,11 @@ export const validateOutput = (stdout: string, expectedRaw: string): boolean => 
 
   if (semanticCaptured === targetLower) return true;
 
-  // 3. Numeric-Normalized Match (9.0 === 9, 22.50 === 22.5)
-  const normalizeNumbers = (s: string) => s.replace(/\b(\d+)\.0+\b/g, '$1').replace(/(\.\d*?)0+\b/g, '$1').replace(/\.(?=\s|,|\}|$)/g, '');
-  const numNormCaptured = normalizeNumbers(semanticCaptured);
-  const numNormTarget = normalizeNumbers(targetLower);
-  if (numNormCaptured === numNormTarget) return true;
+  // 3. Deep Alphanumeric Match
+  const normalizeDeep = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (normalizeDeep(semanticCaptured) === normalizeDeep(targetLower)) return true;
 
-  // 4. Deep Alphanumeric Match
-  const normalizeDeep = (s: string) => s.toLowerCase().replace(/[^a-z0-9.]/g, '');
-  if (normalizeDeep(numNormCaptured) === normalizeDeep(numNormTarget)) return true;
-
-  // 5. JSON-aware Deep Comparison (handles {key: 9.0} vs {key: 9})
-  try {
-    const stdoutTrimmed = (stdout || "").trim();
-    const expectedTrimmed = (expectedRaw || "").trim();
-    if ((stdoutTrimmed.startsWith('{') || stdoutTrimmed.startsWith('[')) &&
-        (expectedTrimmed.startsWith('{') || expectedTrimmed.startsWith('['))) {
-      const parsedActual = JSON.parse(stdoutTrimmed);
-      const parsedExpected = JSON.parse(expectedTrimmed);
-      if (deepNumericEqual(parsedActual, parsedExpected)) return true;
-    }
-  } catch (_) { /* not valid JSON, skip */ }
-
-  // 6. Token Presence Check (Is the expected value the last word/number?)
+  // 4. Token Presence Check (Is the expected value the last word/number?)
   const tokens = capturedLower.split(/[\s,:]+/).filter(t => t.length > 0);
   if (tokens.length > 0 && tokens[tokens.length - 1] === targetLower) return true;
 
