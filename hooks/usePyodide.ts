@@ -73,7 +73,7 @@ sys.stdout = io.StringIO()
 sys.stderr = io.StringIO()
 
 try:
-\${code.split('\\n').map(line => '    ' + line).join('\\n')}
+\${code.split('\n').map(line => '    ' + line).join('\n')}
 finally:
     _stdout_val = sys.stdout.getvalue()
     _stderr_val = sys.stderr.getvalue()
