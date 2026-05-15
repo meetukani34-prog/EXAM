@@ -39,14 +39,14 @@ const workerScript = `
   }
 
   self.onmessage = async (e) => {
-    const { code, inputListStr, id } = e.data;
+    const { code, inputLines, id } = e.data;
     
     try {
       await initPyodide();
 
       // Inject variables into Python globals to avoid JS string escaping hell
       pyodide.globals.set("_student_code", code);
-      pyodide.globals.set("_input_list", inputListStr.split(', ').map(s => s.replace(/^"""|"""$/g, '')));
+      pyodide.globals.set("_input_list", inputLines);
       
       const wrapperCode = \`
 import sys
@@ -170,8 +170,21 @@ export function usePyodide(enabled: boolean = true) {
         inputStr = input.join('\n');
       }
       
-      const inputLines = inputStr.split('\n');
-      const inputListStr = inputLines.map(l => `"""${escapePythonString(l)}"""`).join(', ');
+      const inputLinesRaw = inputStr.split('\n');
+      
+      // Smart JSON Unwrapping: If the input looks like a JSON array, 
+      // treat its elements as the input lines.
+      let finalInputLines = inputLinesRaw;
+      if (inputStr.trim().startsWith('[') && inputStr.trim().endsWith(']')) {
+        try {
+          const parsed = JSON.parse(inputStr);
+          if (Array.isArray(parsed)) {
+            finalInputLines = parsed.map(item => 
+              typeof item === 'object' ? JSON.stringify(item) : String(item)
+            );
+          }
+        } catch (e) {}
+      }
 
       const timeout = setTimeout(() => {
         pendingRequests.current.delete(id);
@@ -181,7 +194,7 @@ export function usePyodide(enabled: boolean = true) {
 
       pendingRequests.current.set(id, { resolve, reject, timeout });
       
-      workerRef.current.postMessage({ id, code, inputListStr });
+      workerRef.current.postMessage({ id, code, inputLines: finalInputLines });
     });
   }, [initWorker, escapePythonString]);
 
