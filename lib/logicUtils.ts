@@ -70,12 +70,13 @@ export const validateOutput = (stdout: string, expectedRaw: string): boolean => 
   const labels = [
     "output", "result", "answer", "final", "count", "value",
     "the answer is", "the result is", "the count is", 
-    "words starting with vowels", "total", "sum"
+    "words starting with vowels", "total", "sum",
+    "ki sankhya", "hai", "is", "equal to", "hoga"
   ];
   
   let semanticCaptured = capturedLower;
   labels.forEach(label => {
-    const regex = new RegExp(`^${label}\\s*[:=>\\-]\\s*`, 'i');
+    const regex = new RegExp(`^.*?${label}\\s*[:=>\\-]\\s*`, 'i');
     semanticCaptured = semanticCaptured.replace(regex, '').trim();
   });
 
@@ -85,7 +86,14 @@ export const validateOutput = (stdout: string, expectedRaw: string): boolean => 
   const normalizeDeep = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   if (normalizeDeep(semanticCaptured) === normalizeDeep(targetLower)) return true;
 
-  // 4. Token Presence Check (Is the expected value the last word/number?)
+  // 4. Numeric Extraction Fallback
+  // If expected is a number, look for that number in the actual output
+  if (!isNaN(Number(targetLower))) {
+    const numericTokens = capturedLower.match(/\d+/g);
+    if (numericTokens && numericTokens[numericTokens.length - 1] === targetLower) return true;
+  }
+
+  // 5. Token Presence Check (Is the expected value the last word/number?)
   const tokens = capturedLower.split(/[\s,:]+/).filter(t => t.length > 0);
   if (tokens.length > 0 && tokens[tokens.length - 1] === targetLower) return true;
 

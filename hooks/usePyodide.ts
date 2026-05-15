@@ -64,6 +64,10 @@ def input(prompt=""):
         return val
     return ""
 
+# --- Legacy Compatibility ---
+# Provides the full input as a single string for older logic patterns
+input_string = "\\n".join(_input_queue)
+
 # --- Crystallized Result Capture ---
 sys.stdout = io.StringIO()
 sys.stderr = io.StringIO()
