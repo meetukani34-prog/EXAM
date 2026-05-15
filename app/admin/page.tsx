@@ -438,19 +438,19 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
             <div style={{ padding: 16, background: 'rgba(0, 242, 255, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 242, 255, 0.1)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 4 }}>TOTAL GUIDANCE BEACONS</div>
               <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)' }}>
-                {odysseyData.reduce((acc, curr) => acc + (curr.hints_taken || 0), 0)}
+                {participants.reduce((acc, p) => acc + (p.pyhunt?.hints_taken || 0), 0)}
               </div>
             </div>
             <div style={{ padding: 16, background: 'rgba(0, 242, 255, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 242, 255, 0.1)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 4 }}>COGNITIVE ENTROPY (AVG)</div>
               <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)' }}>
-                {odysseyData.length > 0 ? (odysseyData.reduce((acc, curr) => acc + (curr.hints_taken || 0), 0) / odysseyData.length).toFixed(2) : "0.00"}
+                {participants.length > 0 ? (participants.reduce((acc, p) => acc + (p.pyhunt?.hints_taken || 0), 0) / participants.length).toFixed(2) : "0.00"}
               </div>
             </div>
             <div style={{ padding: 16, background: 'rgba(0, 242, 255, 0.05)', borderRadius: 12, border: '1px solid rgba(0, 242, 255, 0.1)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 4 }}>FRICTION SENSOR</div>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>
-                {(odysseyData.reduce((acc, curr) => acc + (curr.hints_taken || 0), 0) / odysseyData.length) > 0.5 ? "⚠️ HIGH FRICTION" : "✅ STABLE"}
+                {(participants.length > 0 && (participants.reduce((acc, p) => acc + (p.pyhunt?.hints_taken || 0), 0) / participants.length) > 0.5) ? "⚠️ HIGH FRICTION" : "✅ STABLE"}
               </div>
             </div>
           </div>
@@ -497,7 +497,9 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                   }
 
                   if (r1State && typeof r1State === 'object' && r1State.mcq_score !== undefined) {
-                    points = `${r1State.mcq_score}/${r1State.mcq_total || 0}`;
+                    const score = r1State.mcq_score;
+                    const total = r1State.mcq_total || (mcqs.length > 0 ? mcqs.length : 3);
+                    points = `${score}/${total}`;
                   } else if (p.score !== undefined && p.score !== null) {
                     points = `${p.score}/${p.total_marks || 100}`;
                   }

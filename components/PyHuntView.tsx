@@ -429,12 +429,18 @@ export default function PyHuntView() {
     if (!studentId || isHintRevealed) return;
     
     setIsHintRevealed(true);
+    const newHintsCount = (student?.hints_taken || 0) + 1;
     
     // Update local state for immediate feedback
     setStudent((prev: any) => ({
       ...prev,
-      hints_taken: (prev?.hints_taken || 0) + 1
+      hints_taken: newHintsCount
     }));
+
+    // Push to regular state for admin visibility
+    syncOdysseyState({
+      hints_taken: newHintsCount
+    });
 
     try {
       await supabase.rpc('increment_hints_taken', { 
@@ -451,11 +457,14 @@ export default function PyHuntView() {
       let mcqScore = 0;
       let mcqTotal = 0;
       mcqSet.forEach((q, idx) => {
-        mcqTotal += q.posMarks;
+        const pMarks = q.posMarks || q.marks || 1;
+        const nMarks = q.negMarks || 0;
+        mcqTotal += pMarks;
+        
         if (mcqSelectionMap[idx] === q.correct) {
-          mcqScore += q.posMarks;
+          mcqScore += pMarks;
         } else if (mcqSelectionMap[idx] !== undefined) {
-          mcqScore -= q.negMarks;
+          mcqScore -= nMarks;
         }
       });
       // ──────────────────────────
@@ -723,12 +732,20 @@ export default function PyHuntView() {
     
     // Live Sync Progress to Admin
     if (currentRound === 1) {
-      const totalQuestions = mcqSet.length || ROUND_1_QUESTIONS.length;
-      const correctCount = mcqSet.reduce((acc, q, i) => acc + (newMap[i] === q.correct ? 1 : 0), 0);
+      let correctCount = 0;
+      let totalMarks = 0;
+      mcqSet.forEach((q, i) => {
+        const pMarks = q.posMarks || q.marks || 1;
+        totalMarks += pMarks;
+        if (newMap[i] === q.correct) {
+          correctCount += pMarks;
+        }
+      });
+
       syncOdysseyState({
         round_1_state: {
           mcq_score: correctCount,
-          mcq_total: totalQuestions,
+          mcq_total: totalMarks,
           answered_count: Object.keys(newMap).length,
           current_index: idx
         }
