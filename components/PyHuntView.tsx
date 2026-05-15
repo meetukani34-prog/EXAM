@@ -425,12 +425,20 @@ export default function PyHuntView() {
   };
 
   const handleRevealHint = async () => {
-    if (!student?.id || isHintRevealed) return;
+    const studentId = student?.id || student?.student_id;
+    if (!studentId || isHintRevealed) return;
     
     setIsHintRevealed(true);
+    
+    // Update local state for immediate feedback
+    setStudent((prev: any) => ({
+      ...prev,
+      hints_taken: (prev?.hints_taken || 0) + 1
+    }));
+
     try {
       await supabase.rpc('increment_hints_taken', { 
-        student_id_val: student.id || student.student_id 
+        student_id_val: studentId 
       });
     } catch (err) {
       console.error("Hint increment failed:", err);
@@ -484,13 +492,13 @@ export default function PyHuntView() {
       // Persist the score in round_1_state
       const studentId = student?.id || student?.student_id;
       if (studentId) {
-        await supabase.from('odyssey_progress').update({ 
+        await syncOdysseyState({ 
           round_1_state: { 
             mcq_score: mcqScore, 
             mcq_total: mcqTotal,
             submitted_at: new Date().toISOString()
           } 
-        }).eq('student_id', studentId);
+        });
       }
 
       setIsAtGate(true);
@@ -685,7 +693,15 @@ export default function PyHuntView() {
   };
 
   const syncOdysseyState = useCallback(async (overrides: any = {}) => {
-    if (!student?.student_id) return;
+    const studentId = student?.id || student?.student_id;
+    if (!studentId) return;
+
+    // Update local state for immediate UI feedback
+    setStudent((prev: any) => {
+      if (!prev) return prev;
+      return { ...prev, ...overrides };
+    });
+
     try {
       const { error } = await supabase
         .from('odyssey_progress')
@@ -693,12 +709,12 @@ export default function PyHuntView() {
           ...overrides,
           last_ping: new Date().toISOString()
         })
-        .eq('student_id', student.student_id);
+        .eq('student_id', studentId);
       if (error) throw error;
     } catch (err) {
       console.warn("Real-time sync drift:", err);
     }
-  }, [student?.student_id]);
+  }, [student?.id, student?.student_id]);
 
   const handleMcqSelect = (idx: number, optIdx: number) => {
     const newMap = { ...mcqSelectionMap, [idx]: optIdx };
@@ -707,14 +723,15 @@ export default function PyHuntView() {
     
     // Live Sync Progress to Admin
     if (currentRound === 1) {
+      const totalQuestions = mcqSet.length || ROUND_1_QUESTIONS.length;
       const correctCount = mcqSet.reduce((acc, q, i) => acc + (newMap[i] === q.correct ? 1 : 0), 0);
       syncOdysseyState({
-        round_1_state: JSON.stringify({
+        round_1_state: {
           mcq_score: correctCount,
-          mcq_total: mcqSet.length,
+          mcq_total: totalQuestions,
           answered_count: Object.keys(newMap).length,
           current_index: idx
-        })
+        }
       });
     }
   };
@@ -1012,12 +1029,12 @@ export default function PyHuntView() {
                              const prevIdx = currentMcqIndex - 1;
                              setCurrentMcqIndex(prevIdx);
                              syncOdysseyState({ 
-                               round_1_state: JSON.stringify({ 
+                               round_1_state: { 
                                  mcq_score: mcqSet.reduce((acc, q, i) => acc + (mcqSelectionMap[i] === q.correct ? 1 : 0), 0),
                                  mcq_total: mcqSet.length,
                                  answered_count: Object.keys(mcqSelectionMap).length,
                                  current_index: prevIdx
-                               }) 
+                               } 
                              });
                            }} className={styles.navBtn}>← Previous Node</button>
                            {mcqSelectionMap[currentMcqIndex] !== undefined && currentMcqIndex < mcqSet.length - 1 && (
@@ -1025,12 +1042,12 @@ export default function PyHuntView() {
                                const nextIdx = currentMcqIndex + 1;
                                setCurrentMcqIndex(nextIdx);
                                syncOdysseyState({ 
-                                 round_1_state: JSON.stringify({ 
+                                 round_1_state: { 
                                    mcq_score: mcqSet.reduce((acc, q, i) => acc + (mcqSelectionMap[i] === q.correct ? 1 : 0), 0),
                                    mcq_total: mcqSet.length,
                                    answered_count: Object.keys(mcqSelectionMap).length,
                                    current_index: nextIdx
-                                 }) 
+                                 } 
                                });
                              }} className={styles.navBtn}>Next Node →</button>
                            )}
