@@ -465,7 +465,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                   <th>ROUND STATUS</th>
                   <th>WARNINGS</th>
                   <th>TOTAL TIME</th>
-                  <th>POINTS</th>
+                  <th>MARKS</th>
                   <th>HINTS</th>
                   <th>PROGRESS</th>
                   <th>STATUS</th>
