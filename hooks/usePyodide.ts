@@ -2,13 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-declare global {
-  interface Window {
-    loadPyodide: any;
-    pyodide: any;
-  }
-}
-
 // --- Neural Test-Runner Configuration ---
 const PYODIDE_VERSION = "0.25.0";
 const EXECUTION_TIMEOUT_MS = 10000; // 10s hard cap per test case
@@ -32,90 +25,26 @@ export interface TestSuiteResult {
   totalTimeMs: number;
 }
 
-export function usePyodide(enabled: boolean = true) {
-  const [pyodide, setPyodide] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const executionLockRef = useRef(false);
+// ─── Spectral Worker Script (Blob-ready) ───
+// This code runs in a separate thread to prevent main UI freezes.
+const workerScript = `
+  importScripts("https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/pyodide.js");
+  
+  let pyodide;
 
-  useEffect(() => {
-    if (!enabled) {
-      setLoading(false);
-      return;
+  async function initPyodide() {
+    if (!pyodide) {
+      pyodide = await loadPyodide();
     }
+  }
 
-    async function initPyodide() {
-      if (window.pyodide) {
-        setPyodide(window.pyodide);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const script = document.createElement('script');
-        script.src = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/pyodide.js`;
-        script.async = true;
-        script.onload = async () => {
-          const py = await window.loadPyodide();
-          window.pyodide = py;
-          setPyodide(py);
-          setLoading(false);
-        };
-        script.onerror = () => {
-          setError("Failed to load the Logic Engine CDN.");
-          setLoading(false);
-        };
-        document.head.appendChild(script);
-      } catch (err) {
-        console.error("Pyodide loading failed:", err);
-        setError("Failed to ignite the Logic Engine.");
-        setLoading(false);
-      }
-    }
-
-    initPyodide();
-  }, [enabled]);
-
-  /**
-   * Escape a string for safe injection into a Python triple-quoted string.
-   * Handles backslashes, quotes, and triple-quote sequences.
-   */
-  const escapePythonString = useCallback((str: string): string => {
-    return str
-      .replace(/\\/g, '\\\\')
-      .replace(/"""/g, '\\"\\"\\"')
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '\\r');
-  }, []);
-
-  /**
-   * Spectral Input Override — Core single-case executor.
-   * Mocks Python's input() with a queue-based system that feeds
-   * multi-line inputs one at a time, preventing browser freeze.
-   */
-  const runCode = useCallback(async (code: string, input: any = "") => {
-    if (!pyodide) return { error: "Logic Engine not ready." };
+  self.onmessage = async (e) => {
+    const { code, inputListStr, id } = e.data;
     
     try {
-      // Ensure input is a string.
-      let inputStr = "";
-      if (typeof input === 'string') {
-        inputStr = input;
-      } else if (Array.isArray(input)) {
-        // If it's an array, join with spaces to support standard .split() in student code
-        inputStr = input.join(' ');
-      } else if (input !== null && input !== undefined) {
-        inputStr = JSON.stringify(input);
-      }
+      await initPyodide();
 
-      // Split input into lines for queue-based feeding
-      const inputLines = inputStr.split('\n');
-      const escapedLines = inputLines.map(l => escapePythonString(l));
-      const inputListStr = escapedLines.map(l => `"""${l}"""`).join(', ');
-
-      // Wrapper: Override input() with a queue, redirect stdout/stderr
-      // We clear global buffers first to prevent "caching" of old results
-      const wrapperCode = `
+      const wrapperCode = \`
 import sys
 import io
 
@@ -124,8 +53,7 @@ _stdout_val = ""
 _stderr_val = ""
 
 # --- Spectral Input Override ---
-# Queue-based input mock: feeds one line per call
-_input_queue = [${inputListStr}]
+_input_queue = [\${inputListStr}]
 _input_index = 0
 
 def input(prompt=""):
@@ -141,60 +69,120 @@ sys.stdout = io.StringIO()
 sys.stderr = io.StringIO()
 
 try:
-${code.split('\n').map(line => '    ' + line).join('\n')}
+\${code.split('\\n').map(line => '    ' + line).join('\\n')}
 finally:
-    # Capture crystallized results even if execution failed
     _stdout_val = sys.stdout.getvalue()
     _stderr_val = sys.stderr.getvalue()
-`;
+\`;
 
-      // Execute with timeout protection
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Execution timeout (10s). Check for infinite loops.")), EXECUTION_TIMEOUT_MS)
-      );
-
-      await Promise.race([
-        pyodide.runPythonAsync(wrapperCode),
-        timeoutPromise
-      ]);
+      await pyodide.runPythonAsync(wrapperCode);
       
-      let stdout = pyodide.runPython("_stdout_val") || "";
+      const stdout = pyodide.runPython("_stdout_val") || "";
       const stderr = pyodide.runPython("_stderr_val") || "";
       
-      // Truncate massive outputs to prevent memory issues
-      if (stdout.length > MAX_OUTPUT_LENGTH) {
-        stdout = stdout.substring(0, MAX_OUTPUT_LENGTH) + "\n... [OUTPUT TRUNCATED]";
+      self.postMessage({ id, stdout, stderr });
+    } catch (err) {
+      self.postMessage({ id, error: err.message });
+    }
+  };
+`;
+
+export function usePyodide(enabled: boolean = true) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const pendingRequests = useRef<Map<string, { resolve: Function, reject: Function, timeout: any }>>(new Map());
+
+  const initWorker = useCallback(() => {
+    if (workerRef.current) workerRef.current.terminate();
+    
+    const blob = new Blob([workerScript], { type: 'application/javascript' });
+    const worker = new Worker(URL.createObjectURL(blob));
+    
+    worker.onmessage = (e) => {
+      const { id, stdout, stderr, error } = e.data;
+      const request = pendingRequests.current.get(id);
+      
+      if (request) {
+        clearTimeout(request.timeout);
+        pendingRequests.current.delete(id);
+        if (error) {
+          request.resolve({ error });
+        } else {
+          request.resolve({ stdout, stderr });
+        }
+      }
+    };
+
+    worker.onerror = (e) => {
+      console.error("Worker Error:", e);
+      // Fail all pending requests
+      pendingRequests.current.forEach((req, id) => {
+        clearTimeout(req.timeout);
+        req.resolve({ error: "Logic Engine Crashed. Restarting..." });
+      });
+      pendingRequests.current.clear();
+      initWorker(); // Restart worker
+    };
+
+    workerRef.current = worker;
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (enabled && !workerRef.current) {
+      initWorker();
+    }
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, [enabled, initWorker]);
+
+  const escapePythonString = useCallback((str: string): string => {
+    return str
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r');
+  }, []);
+
+  const runCode = useCallback((code: string, input: any = ""): Promise<{ stdout?: string; stderr?: string; error?: string }> => {
+    return new Promise((resolve, reject) => {
+      if (!workerRef.current) {
+        resolve({ error: "Logic Engine not ready." });
+        return;
+      }
+
+      const id = Math.random().toString(36).substring(7);
+      
+      // Prep inputs
+      let inputStr = "";
+      if (typeof input === 'string') {
+        inputStr = input;
+      } else if (Array.isArray(input)) {
+        inputStr = input.join('\n');
       }
       
-      return { stdout, stderr };
-    } catch (err: any) {
-      return { error: err.message };
-    }
-  }, [pyodide, escapePythonString]);
+      const inputLines = inputStr.split('\n');
+      const inputListStr = inputLines.map(l => `"""${escapePythonString(l)}"""`).join(', ');
 
-  /**
-   * Neural Test-Runner — Orchestrates validation across all test cases.
-   * Runs each case in isolation, applies the Atmospheric Tolerance Filter,
-   * and returns a comprehensive TestSuiteResult.
-   */
+      const timeout = setTimeout(() => {
+        pendingRequests.current.delete(id);
+        initWorker(); // Terminate and restart the worker on timeout
+        resolve({ error: "Execution timeout (10s). Infinite loop detected and neutralized." });
+      }, EXECUTION_TIMEOUT_MS);
+
+      pendingRequests.current.set(id, { resolve, reject, timeout });
+      
+      workerRef.current.postMessage({ id, code, inputListStr });
+    });
+  }, [initWorker, escapePythonString]);
+
   const runTestSuite = useCallback(async (
     code: string,
     testCases: Array<{ input?: string; expected?: string; output?: string; expected_output?: string }>,
     validateFn: (stdout: string, expected: string) => boolean
   ): Promise<TestSuiteResult> => {
-    // Prevent concurrent execution (200-user safety)
-    if (executionLockRef.current) {
-      return {
-        results: [],
-        allPassed: false,
-        totalCases: testCases.length,
-        passedCount: 0,
-        failedCount: 0,
-        totalTimeMs: 0,
-      };
-    }
-
-    executionLockRef.current = true;
     const suiteStart = performance.now();
     const results: TestCaseResult[] = [];
     let allPassed = true;
@@ -217,7 +205,7 @@ finally:
           error: res.error,
           executionTimeMs,
         });
-        break; // Fail-fast like LeetCode
+        break; // Fail-fast
       }
 
       const actualStr = (res.stdout || "").toString().trim();
@@ -237,7 +225,6 @@ finally:
       }
     }
 
-    executionLockRef.current = false;
     const totalTimeMs = Math.round(performance.now() - suiteStart);
 
     return {
@@ -250,5 +237,5 @@ finally:
     };
   }, [runCode]);
 
-  return { pyodide, loading, error, runCode, runTestSuite };
+  return { loading, error, runCode, runTestSuite };
 }
