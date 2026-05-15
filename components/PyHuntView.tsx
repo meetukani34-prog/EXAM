@@ -648,7 +648,7 @@ export default function PyHuntView() {
     setOutput(result.stdout || "No output generated.");
 
     const targetExpected = activeProblem?.target_output;
-    const isValid = validateRound(currentRound, result.stdout, targetExpected);
+    const isValid = validateRound(currentRound, result.stdout || "", targetExpected);
     if (isValid) {
       setShowSuccessRipple(true);
       if (currentRound === 4) {
@@ -680,7 +680,7 @@ export default function PyHuntView() {
     if (!scratchCode.trim()) return;
     setScratchOutput("Running mission logic...");
     try {
-      const res: any = await runCode(scratchCode);
+      const res = await runCode(scratchCode);
       if (res.error) {
         setScratchOutput(`ERROR: ${res.error}`);
       } else {
