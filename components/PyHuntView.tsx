@@ -10,7 +10,9 @@ import styles from './PyHuntView.module.css';
 import AntiCheat from './AntiCheat';
 import { useFullscreen } from '@/hooks/useFullscreen';
 import CodingInterface from './CodingInterface';
+import CognitiveBeacon from './CognitiveBeacon';
 import { validateOutput as sharedValidateOutput } from '@/lib/logicUtils';
+
 
 const ROUNDS = [
   { id: 1, name: "MCQ Logic", description: "Identify the correct Python syntax and logic from the given options.", target: "syntax" },
@@ -21,9 +23,12 @@ const ROUNDS = [
 ];
 
 const ATMOSPHERIC_HINTS: Record<number, string> = {
+  1: "Focus on the syntax patterns. Operators like ** signify power, and mutability is a key trait of lists.",
+  2: "Indentation is the backbone of Python. Ensure control structures correctly nest the child statements.",
   3: "Filter the linguistic noise using .isalpha() and initiate a spatial reversal.",
   4: "Transform the string into a list node before performing a .join() transition."
 };
+
 
 
 const ROUND_1_QUESTIONS = [
@@ -978,7 +983,14 @@ export default function PyHuntView() {
                              <button onClick={() => setCurrentMcqIndex(prev => prev + 1)} className={styles.navBtn}>Next Node →</button>
                            )}
                         </div>
+
+                        <CognitiveBeacon 
+                          hint={ATMOSPHERIC_HINTS[1]}
+                          isRevealed={isHintRevealed}
+                          onReveal={handleRevealHint}
+                        />
                       </div>
+
                     ) : currentRound === 2 ? (
                       <div className={`${styles.jumbleSplitLayout} ${showScratchpad ? styles.withScratchpad : ""}`}>
                         <div className={styles.jumbleCard}>
@@ -1031,6 +1043,12 @@ export default function PyHuntView() {
                               ✓ Submit Order
                             </button>
                           </div>
+
+                          <CognitiveBeacon 
+                            hint={ATMOSPHERIC_HINTS[2]}
+                            isRevealed={isHintRevealed}
+                            onReveal={handleRevealHint}
+                          />
                         </div>
 
                         {showScratchpad && (
@@ -1132,6 +1150,21 @@ export default function PyHuntView() {
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className={styles.gateCard}>
               <div className={styles.gateIcon}>🔒</div>
               <h2>{labelConfig.orbit.toUpperCase()} UNLOCK REQUIRED</h2>
+              
+              {currentRound === 1 && student?.id && (
+                <div style={{ marginBottom: 20, textAlign: 'center', padding: '10px', background: 'rgba(0, 242, 255, 0.1)', borderRadius: '8px', border: '1px solid rgba(0, 242, 255, 0.2)' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--accent)', display: 'block', textTransform: 'uppercase', marginBottom: '4px' }}>Round 1 Scorecard</span>
+                  <span style={{ fontSize: '24px', fontWeight: 900, color: '#fff' }}>
+                    {(() => {
+                      try {
+                        const r1State = typeof student.round_1_state === 'string' ? JSON.parse(student.round_1_state) : student.round_1_state;
+                        return r1State?.mcq_score !== undefined ? `${r1State.mcq_score}/${r1State.mcq_total || 3}` : "Pending...";
+                      } catch (e) { return "Calculating..."; }
+                    })()}
+                  </span>
+                </div>
+              )}
+
               <div className={styles.clueBox}>
                 <label>CLUE {assignedClueIndex !== null ? String.fromCharCode(65 + assignedClueIndex) : ""}:</label>
                 <p>
