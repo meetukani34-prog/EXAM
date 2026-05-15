@@ -44,16 +44,16 @@ const workerScript = `
     try {
       await initPyodide();
 
+      // Inject variables into Python globals to avoid JS string escaping hell
+      pyodide.globals.set("_student_code", code);
+      pyodide.globals.set("_input_list", inputListStr.split(', ').map(s => s.replace(/^"""|"""$/g, '')));
+      
       const wrapperCode = \`
 import sys
 import io
+import json
 
-# Clear previous run artifacts
-_stdout_val = ""
-_stderr_val = ""
-
-# --- Spectral Input Override ---
-_input_queue = [\${inputListStr}]
+_input_queue = _input_list
 _input_index = 0
 
 def input(prompt=""):
@@ -64,16 +64,19 @@ def input(prompt=""):
         return val
     return ""
 
-# --- Legacy Compatibility ---
-# Provides the full input as a single string for older logic patterns
-input_string = "\\n".join(_input_queue)
+# Legacy support for input_string variable
+input_string = chr(10).join(_input_queue)
 
-# --- Crystallized Result Capture ---
+# Result capture
 sys.stdout = io.StringIO()
 sys.stderr = io.StringIO()
 
+_stdout_val = ""
+_stderr_val = ""
+
 try:
-\${code.split('\n').map(line => '    ' + line).join('\n')}
+    # Execute the student code in the context of our overrides
+    exec(_student_code)
 finally:
     _stdout_val = sys.stdout.getvalue()
     _stderr_val = sys.stderr.getvalue()
