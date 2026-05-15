@@ -684,9 +684,39 @@ export default function PyHuntView() {
     }
   };
 
+  const syncOdysseyState = useCallback(async (overrides: any = {}) => {
+    if (!student?.student_id) return;
+    try {
+      const { error } = await supabase
+        .from('odyssey_progress')
+        .update({
+          ...overrides,
+          last_ping: new Date().toISOString()
+        })
+        .eq('student_id', student.student_id);
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Real-time sync drift:", err);
+    }
+  }, [student?.student_id]);
+
   const handleMcqSelect = (idx: number, optIdx: number) => {
-    setMcqSelectionMap(prev => ({ ...prev, [idx]: optIdx }));
+    const newMap = { ...mcqSelectionMap, [idx]: optIdx };
+    setMcqSelectionMap(newMap);
     if (output.startsWith("ERROR")) setOutput("");
+    
+    // Live Sync Progress to Admin
+    if (currentRound === 1) {
+      const correctCount = mcqSet.reduce((acc, q, i) => acc + (newMap[i] === q.correct ? 1 : 0), 0);
+      syncOdysseyState({
+        round_1_state: JSON.stringify({
+          mcq_score: correctCount,
+          mcq_total: mcqSet.length,
+          answered_count: Object.keys(newMap).length,
+          current_index: idx
+        })
+      });
+    }
   };
 
   const atmosphericCrystallize = (input: string) => {
@@ -978,9 +1008,31 @@ export default function PyHuntView() {
                         </div>
 
                         <div className={styles.mcqNav}>
-                           <button disabled={currentMcqIndex === 0} onClick={() => setCurrentMcqIndex(prev => prev - 1)} className={styles.navBtn}>← Previous Node</button>
+                           <button disabled={currentMcqIndex === 0} onClick={() => {
+                             const prevIdx = currentMcqIndex - 1;
+                             setCurrentMcqIndex(prevIdx);
+                             syncOdysseyState({ 
+                               round_1_state: JSON.stringify({ 
+                                 mcq_score: mcqSet.reduce((acc, q, i) => acc + (mcqSelectionMap[i] === q.correct ? 1 : 0), 0),
+                                 mcq_total: mcqSet.length,
+                                 answered_count: Object.keys(mcqSelectionMap).length,
+                                 current_index: prevIdx
+                               }) 
+                             });
+                           }} className={styles.navBtn}>← Previous Node</button>
                            {mcqSelectionMap[currentMcqIndex] !== undefined && currentMcqIndex < mcqSet.length - 1 && (
-                             <button onClick={() => setCurrentMcqIndex(prev => prev + 1)} className={styles.navBtn}>Next Node →</button>
+                             <button onClick={() => {
+                               const nextIdx = currentMcqIndex + 1;
+                               setCurrentMcqIndex(nextIdx);
+                               syncOdysseyState({ 
+                                 round_1_state: JSON.stringify({ 
+                                   mcq_score: mcqSet.reduce((acc, q, i) => acc + (mcqSelectionMap[i] === q.correct ? 1 : 0), 0),
+                                   mcq_total: mcqSet.length,
+                                   answered_count: Object.keys(mcqSelectionMap).length,
+                                   current_index: nextIdx
+                                 }) 
+                               });
+                             }} className={styles.navBtn}>Next Node →</button>
                            )}
                         </div>
 

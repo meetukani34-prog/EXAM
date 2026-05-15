@@ -144,15 +144,12 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
     fetchPyHuntStudents();
     
     const sub = supabase.channel('odyssey_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'odyssey_progress' }, () => {
-      // 1. Tab-Awareness: Only re-fetch if currently viewing live status
       if (activeTabRef.current !== 'live_status') return;
 
-      // 2. Throttling: Prevent re-fetching more than once every 60 seconds
       const now = Date.now();
-      if (now - lastSyncRef.current < 60000) return;
+      if (now - lastSyncRef.current < 5000) return; // 5s throttle for better live feel
 
-      // 3. Jitter: Add 10-30s delay to spread the load
-      const jitter = Math.random() * 20000 + 10000;
+      const jitter = Math.random() * 2000 + 500; // 0.5 - 2.5s jitter
       setTimeout(() => {
         if (activeTabRef.current === 'live_status') {
           fetchOdyssey();
@@ -470,6 +467,7 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                   <th>TOTAL TIME</th>
                   <th>POINTS</th>
                   <th>HINTS</th>
+                  <th>PROGRESS</th>
                   <th>STATUS</th>
 
                   <th>ACTIONS</th>
@@ -536,6 +534,15 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                       <span className={adminStyles.warningCount} style={{ background: (p.pyhunt?.hints_taken || 0) > 0 ? 'rgba(0, 242, 255, 0.1)' : 'rgba(255,255,255,0.05)', color: (p.pyhunt?.hints_taken || 0) > 0 ? 'var(--accent)' : 'inherit' }}>
                         {p.pyhunt?.hints_taken || 0}
                       </span>
+                    </td>
+                    <td style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                      {(() => {
+                         if (isCompleted) return "100%";
+                         if (currentRound === 1 && r1State) {
+                           return `Q${(r1State.current_index || 0) + 1} (${r1State.answered_count || 0}/${r1State.mcq_total || 0})`;
+                         }
+                         return `Orbit ${currentRound}`;
+                      })()}
                     </td>
 
                     <td>
