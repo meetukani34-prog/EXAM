@@ -2021,7 +2021,16 @@ function QuestionsTab() {
   });
   const [folderBranchModal, setFolderBranchModal] = useState<{ name: string, branches: string[] } | null>(null);
   const [formCategory, setFormCategory] = useState<"aptitude" | "programming" | "other">("other");
+  const [challengeTargetOutput, setChallengeTargetOutput] = useState("");
+  const [challengeTestCases, setChallengeTestCases] = useState<string>("[]");
+  const [challengeStarterCode, setChallengeStarterCode] = useState("");
+  const [challengeClue, setChallengeClue] = useState("");
+  const [challengeClueVariants, setChallengeClueVariants] = useState("");
+  const [challengeUnlockCode, setChallengeUnlockCode] = useState("");
+  const [rawJsonMode, setRawJsonMode] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const isCompiler = formCategory === "programming" && formData.programming_type === "compiler";
+  const isSaveDisabled = isCompiler ? !formData.text : (!formData.text || !formData.correct_answer || formData.options.some((o) => !o));
   const [schedulingExam, setSchedulingExam] = useState<string | null>(null);
   const [scheduleData, setScheduleData] = useState({
     startDate: "",
@@ -2048,18 +2057,132 @@ function QuestionsTab() {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleAddNewQuestionClick = () => {
+    setEditing(null);
+    if (selectedCategory === "programming") {
+      setFormCategory("programming");
+      setFormData({
+        text: "",
+        options: ["", "", "", ""],
+        branch: "CS",
+        correct_answer: subCategory === "compiler" ? "COMPILER" : "",
+        order_index: questions.length,
+        marks: subCategory === "compiler" ? 10 : 1,
+        exam_name: "Coding Challenge",
+        image_url: "",
+        audio_url: "",
+        programming_type: subCategory
+      });
+      if (subCategory === "compiler") {
+        setChallengeTargetOutput("");
+        setChallengeTestCases("[]");
+        setChallengeStarterCode("");
+        setChallengeClue("");
+        setChallengeClueVariants("");
+        setChallengeUnlockCode("");
+      }
+    } else {
+      setFormCategory(selectedCategory === "all" ? "other" : selectedCategory);
+      setFormData({
+        text: "",
+        options: ["", "", "", ""],
+        branch: "CS",
+        correct_answer: "",
+        order_index: questions.length,
+        marks: 1,
+        exam_name: "General Assessment",
+        image_url: "",
+        audio_url: "",
+        programming_type: "compiler"
+      });
+    }
+    setShowModal(true);
+  };
+
+  const handleEditClick = (q: AdminQuestion) => {
+    setEditing(q);
+    setFormCategory((q.category as any) || 'other');
+    const type = q.programming_type || "compiler";
+    setFormData({
+      ...q,
+      programming_type: type
+    });
+
+    if (q.category === "programming" && type === "compiler") {
+      let parsed = {
+        target_output: "",
+        test_cases: "[]",
+        starter_code: "",
+        clue: "",
+        clue_variants: "",
+        unlock_code: ""
+      };
+      if (q.options && q.options.length > 0) {
+        try {
+          parsed = JSON.parse(q.options[0]);
+        } catch (e) {
+          console.warn("Failed to parse compiler options:", e);
+        }
+      }
+      setChallengeTargetOutput(parsed.target_output || "");
+      setChallengeTestCases(parsed.test_cases || "[]");
+      setChallengeStarterCode(parsed.starter_code || "");
+      setChallengeClue(parsed.clue || "");
+      setChallengeClueVariants(parsed.clue_variants || "");
+      setChallengeUnlockCode(parsed.unlock_code || "");
+    }
+    setShowModal(true);
+  };
+
   const handleSave = async () => {
     if (!formData.text) return alert("Please enter question text");
-    if (formData.options.some((o) => !o)) return alert("All options must be filled");
-    if (!formData.correct_answer) return alert("Please select a correct answer");
     if (!formData.branch) return alert("Please select a branch");
+
+    const isCompiler = formCategory === "programming" && formData.programming_type === "compiler";
+
+    if (!isCompiler) {
+      if (formData.options.some((o) => !o)) return alert("All options must be filled");
+      if (!formData.correct_answer) return alert("Please select a correct answer");
+    }
+
     try {
-      const payload = { ...formData, category: formCategory };
+      let finalOptions = formData.options;
+      let finalCorrectAnswer = formData.correct_answer;
+
+      if (isCompiler) {
+        const challengeData = {
+          target_output: challengeTargetOutput,
+          test_cases: challengeTestCases,
+          starter_code: challengeStarterCode,
+          clue: challengeClue,
+          clue_variants: challengeClueVariants,
+          unlock_code: challengeUnlockCode
+        };
+        finalOptions = [JSON.stringify(challengeData)];
+        finalCorrectAnswer = "COMPILER";
+      }
+
+      const payload = {
+        ...formData,
+        category: formCategory,
+        options: finalOptions,
+        correct_answer: finalCorrectAnswer,
+        programming_type: formCategory === "programming" ? formData.programming_type : undefined
+      };
+
       if (editing) await updateAdminQuestion(editing.id, payload);
       else await createAdminQuestion(payload);
-      setShowModal(false); setEditing(null);
+      
+      setShowModal(false); 
+      setEditing(null);
       setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "", audio_url: "" });
       setFormCategory("other");
+      setChallengeTargetOutput("");
+      setChallengeTestCases("[]");
+      setChallengeStarterCode("");
+      setChallengeClue("");
+      setChallengeClueVariants("");
+      setChallengeUnlockCode("");
       load();
     } catch { alert("Failed to save question"); }
   };
@@ -2337,7 +2460,7 @@ function QuestionsTab() {
             {BRANCHES.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditing(null); setFormCategory("other"); setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "", audio_url: "", programming_type: "compiler" }); setShowModal(true); }}>
+        <button className="btn btn-primary" onClick={handleAddNewQuestionClick}>
           + Add Question
         </button>
       </div>
@@ -2658,7 +2781,7 @@ function QuestionsTab() {
                               <div className={adminStyles.cardHeader}>
                                 <div className={adminStyles.cardIndex} style={{ fontSize: 11, fontWeight: 700, color: palette.accent }}>Q{q.order_index + 1}</div>
                                 <div style={{ display: "flex", gap: 8 }}>
-                                  <button className="btn-icon" onClick={() => { setEditing(q); setFormData({ ...q, programming_type: q.programming_type || "compiler" }); setFormCategory((q.category as any) || 'other'); setShowModal(true); }}>✏️</button>
+                                  <button className="btn-icon" onClick={() => handleEditClick(q)}>✏️</button>
                                   <button className="btn-icon btn-danger" onClick={() => handleDelete(q.id)}>🗑️</button>
                                 </div>
                               </div>
@@ -2695,42 +2818,71 @@ function QuestionsTab() {
 
       {showModal && (
         <div className={adminStyles.modalOverlay} onClick={() => setShowModal(false)}>
-          <div className={adminStyles.modal} onClick={(e) => e.stopPropagation()}>
+          <div className={adminStyles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 850 }}>
             <h3>{editing ? "Edit Question" : "Add Question"}</h3>
-            <div className={adminStyles.formGroup}>
-              <label>Question Text</label>
-              <textarea className={adminStyles.input} value={formData.text} onChange={(e) => setFormData({ ...formData, text: e.target.value })} rows={3} />
-            </div>
-            <div className={adminStyles.formGroup}>
-              <label>Options</label>
-              <div className={adminStyles.optionsGrid}>
-                {formData.options.map((opt, i) => (
-                  <input key={i} className={adminStyles.input} placeholder={`Option ${String.fromCharCode(65 + i)}`} value={opt}
-                    onChange={(e) => { const n = [...formData.options]; n[i] = e.target.value; setFormData({ ...formData, options: n }); }} />
-                ))}
-              </div>
-            </div>
-            <div className={adminStyles.formRow}>
-              <div className={adminStyles.formGroup}>
-                <label>Order Index</label>
-                <input type="number" className={adminStyles.input} value={formData.order_index} onChange={(e) => setFormData({ ...formData, order_index: +e.target.value })} />
-              </div>
-              <div className={adminStyles.formGroup}>
-                <label>Marks</label>
-                <input type="number" className={adminStyles.input} value={formData.marks} onChange={(e) => setFormData({ ...formData, marks: +e.target.value })} />
-              </div>
-              <div className={adminStyles.formGroup}>
-                <label>Correct Answer</label>
-                <select className={adminStyles.input} value={formData.correct_answer} onChange={(e) => setFormData({ ...formData, correct_answer: e.target.value })}>
-                  <option value="">Select correct option…</option>
-                  {formData.options.map((_, i) => <option key={i} value={String.fromCharCode(65 + i)}>Option {String.fromCharCode(65 + i)}</option>)}
+
+            {/* Shared Identity & Meta Section */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 20 }}>
+              <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                <label>Category</label>
+                <select
+                  className={adminStyles.input}
+                  style={{
+                    height: "44px",
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    background: "var(--bg-secondary) !important",
+                    border: "1.5px solid var(--border)",
+                    color: "var(--text-primary)",
+                    cursor: "pointer"
+                  }}
+                  value={formCategory}
+                  onChange={(e) => {
+                    const newCat = e.target.value as any;
+                    setFormCategory(newCat);
+                    if (newCat === "programming") {
+                      setFormData((prev) => ({ ...prev, programming_type: prev.programming_type || "compiler" }));
+                    }
+                  }}
+                >
+                  <option value="aptitude">🧠 Aptitude</option>
+                  <option value="programming">💻 Programming</option>
+                  <option value="other">📂 Other</option>
                 </select>
               </div>
-            </div>
 
-            <div className={adminStyles.formRow}>
-              <div className={adminStyles.formGroup}>
-                <label>Exam Identity (Anchor)</label>
+              {formCategory === 'programming' && (
+                <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                  <label>Programming Type</label>
+                  <select
+                    className={adminStyles.input}
+                    style={{
+                      height: "44px",
+                      fontSize: "15px",
+                      fontWeight: "600",
+                      background: "var(--bg-secondary) !important",
+                      border: "1.5px solid var(--border)",
+                      color: "var(--text-primary)",
+                      cursor: "pointer"
+                    }}
+                    value={formData.programming_type || 'compiler'}
+                    onChange={(e) => setFormData({ ...formData, programming_type: e.target.value as "compiler" | "mcq" })}
+                  >
+                    <option value="compiler">📁 Coding Challenges</option>
+                    <option value="mcq">📝 Conceptual MCQs</option>
+                  </select>
+                </div>
+              )}
+
+              <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                <label>Branch / Department</label>
+                <select className={adminStyles.input} value={formData.branch} onChange={(e) => setFormData({ ...formData, branch: e.target.value })}>
+                  {ALL_BRANCH_DATA.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+
+              <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                <label>Exam Identity (Folder Anchor)</label>
                 <select
                   className={adminStyles.input}
                   value={Array.from(new Set(questions.map(q => q.exam_name))).includes(formData.exam_name) ? formData.exam_name : "NEW_IDENTITY"}
@@ -2760,58 +2912,210 @@ function QuestionsTab() {
                   />
                 )}
               </div>
-              <div className={adminStyles.formGroup}>
-                <label>Branch</label>
-                <select className={adminStyles.input} value={formData.branch} onChange={(e) => setFormData({ ...formData, branch: e.target.value })}>
-                  {ALL_BRANCH_DATA.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-              <div className={adminStyles.formGroup}>
-                <label>Category</label>
-                <select
-                  className={adminStyles.input}
-                  style={{
-                    height: "44px",
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    background: "var(--bg-secondary) !important",
-                    border: "1.5px solid var(--border)",
-                    color: "var(--text-primary)",
-                    cursor: "pointer"
-                  }}
-                  value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value as any)}
-                >
-                  <option value="aptitude">🧠 Aptitude</option>
-                  <option value="programming">💻 Programming</option>
-                  <option value="other">📂 Other</option>
-                </select>
-              </div>
-
-              {formCategory === 'programming' && (
-                <div className={adminStyles.formGroup}>
-                  <label>Programming Type</label>
-                  <select
-                    className={adminStyles.input}
-                    style={{
-                      height: "44px",
-                      fontSize: "15px",
-                      fontWeight: "600",
-                      background: "var(--bg-secondary) !important",
-                      border: "1.5px solid var(--border)",
-                      color: "var(--text-primary)",
-                      cursor: "pointer"
-                    }}
-                    value={formData.programming_type || 'compiler'}
-                    onChange={(e) => setFormData({ ...formData, programming_type: e.target.value as "compiler" | "mcq" })}
-                  >
-                    <option value="compiler">📁 Coding Challenges</option>
-                    <option value="mcq">📝 Conceptual MCQs</option>
-                  </select>
-                </div>
-              )}
             </div>
 
+            {/* Marks & Order Index Section */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+              <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                <label>Marks</label>
+                <input type="number" className={adminStyles.input} value={formData.marks} onChange={(e) => setFormData({ ...formData, marks: +e.target.value })} />
+              </div>
+              <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                <label>Order / Question Index</label>
+                <input type="number" className={adminStyles.input} value={formData.order_index} onChange={(e) => setFormData({ ...formData, order_index: +e.target.value })} />
+              </div>
+            </div>
+
+            {/* Primary Question Content */}
+            <div className={adminStyles.formGroup}>
+              <label>{isCompiler ? "Coding Challenge Prompt / Instructions" : "Question Text / Prompt"}</label>
+              <textarea className={adminStyles.input} value={formData.text} onChange={(e) => setFormData({ ...formData, text: e.target.value })} rows={3} placeholder="Provide instructions or background problem definition here..." />
+            </div>
+
+            {/* Type-Specific Editor */}
+            {isCompiler ? (
+              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border)", borderRadius: "18px", padding: 24, margin: "20px 0", display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h4 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: "var(--accent)" }}>💻 PyHunt Coding Challenge Configurations</h4>
+                  <div className={adminStyles.codeBadge}>Compiler Enabled</div>
+                </div>
+
+                {/* Starter Code */}
+                <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                  <label>Starter Code Template (Python)</label>
+                  <textarea
+                    className={adminStyles.input}
+                    style={{ fontFamily: "var(--font-mono)", fontSize: 13, minHeight: 120, background: "rgba(0,0,0,0.3) !important", border: "1.5px solid var(--border)" }}
+                    value={challengeStarterCode}
+                    onChange={(e) => setChallengeStarterCode(e.target.value)}
+                    placeholder={`def solution(arr):\n    # Write your code here\n    return False`}
+                    rows={5}
+                  />
+                </div>
+
+                {/* Expected target output match */}
+                <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                  <label>Expected Target Output (Optional target standard stdout string match)</label>
+                  <input
+                    type="text"
+                    className={adminStyles.input}
+                    value={challengeTargetOutput}
+                    onChange={(e) => setChallengeTargetOutput(e.target.value)}
+                    placeholder="e.g. Hello, World! or Success"
+                  />
+                </div>
+
+                {/* Test Cases Builder */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <label style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-secondary)", textTransform: "uppercase" }}>Interactive Test Cases Builder</label>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      style={{ fontSize: 11, padding: "4px 10px" }}
+                      onClick={() => setRawJsonMode(!rawJsonMode)}
+                    >
+                      {rawJsonMode ? "👁️ Visual Fields" : "📝 Raw JSON View"}
+                    </button>
+                  </div>
+
+                  {rawJsonMode ? (
+                    <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                      <textarea
+                        className={adminStyles.input}
+                        style={{ fontFamily: "var(--font-mono)", fontSize: 12, minHeight: 120, background: "rgba(0,0,0,0.3) !important" }}
+                        value={challengeTestCases}
+                        onChange={(e) => setChallengeTestCases(e.target.value)}
+                        placeholder='[{"input": "5", "expected": "25"}]'
+                        rows={5}
+                      />
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{"Format: `[{\"input\": \"...\", \"expected\": \"...\"}]`"}</div>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {(() => {
+                        let cases: { input: string; expected: string }[] = [];
+                        try { cases = JSON.parse(challengeTestCases || "[]"); } catch (e) { }
+                        return (
+                          <>
+                            {cases.map((tc, index) => (
+                              <div key={index} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                <div style={{ display: "flex", flex: 1, gap: 10 }}>
+                                  <input
+                                    type="text"
+                                    placeholder={`Input #${index + 1}`}
+                                    className={adminStyles.input}
+                                    style={{ margin: 0, fontSize: 13 }}
+                                    value={tc.input}
+                                    onChange={(e) => {
+                                      const updated = [...cases];
+                                      updated[index].input = e.target.value;
+                                      setChallengeTestCases(JSON.stringify(updated));
+                                    }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder={`Expected Expected Output #${index + 1}`}
+                                    className={adminStyles.input}
+                                    style={{ margin: 0, fontSize: 13 }}
+                                    value={tc.expected}
+                                    onChange={(e) => {
+                                      const updated = [...cases];
+                                      updated[index].expected = e.target.value;
+                                      setChallengeTestCases(JSON.stringify(updated));
+                                    }}
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn-icon btn-danger"
+                                  style={{ padding: 8, height: 38, width: 38 }}
+                                  onClick={() => {
+                                    const updated = cases.filter((_, idx) => idx !== index);
+                                    setChallengeTestCases(JSON.stringify(updated));
+                                  }}
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              className="btn btn-outline"
+                              style={{ width: "max-content", fontSize: 12, padding: "8px 16px", marginTop: 4 }}
+                              onClick={() => {
+                                const updated = [...cases, { input: "", expected: "" }];
+                                setChallengeTestCases(JSON.stringify(updated));
+                              }}
+                            >
+                              ➕ Add Test Case
+                            </button>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                {/* PyHunt Security Gates */}
+                <div style={{ borderTop: "1px solid var(--border)", paddingTop: 20 }}>
+                  <h5 style={{ margin: "0 0 14px 0", fontSize: 14, fontWeight: 800, color: "var(--accent)" }}>🛡️ PyHunt Security Gate (Orbit Clues)</h5>
+                  <div className={adminStyles.formRow}>
+                    <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                      <label>Clue (Visible at Gate)</label>
+                      <input
+                        type="text"
+                        className={adminStyles.input}
+                        value={challengeClue}
+                        onChange={(e) => setChallengeClue(e.target.value)}
+                        placeholder="Clue visible to student"
+                      />
+                    </div>
+                    <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                      <label>Clue Variants (Pipe `|` separated)</label>
+                      <input
+                        type="text"
+                        className={adminStyles.input}
+                        value={challengeClueVariants}
+                        onChange={(e) => setChallengeClueVariants(e.target.value)}
+                        placeholder="Variant A | Variant B"
+                      />
+                    </div>
+                    <div className={adminStyles.formGroup} style={{ margin: 0 }}>
+                      <label>Unlock Code(s) (Pipe `|` separated)</label>
+                      <input
+                        type="text"
+                        className={adminStyles.input}
+                        value={challengeUnlockCode}
+                        onChange={(e) => setChallengeUnlockCode(e.target.value)}
+                        placeholder="CodeA | CodeB"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className={adminStyles.formGroup}>
+                  <label>Options</label>
+                  <div className={adminStyles.optionsGrid}>
+                    {formData.options.map((opt, i) => (
+                      <input key={i} className={adminStyles.input} placeholder={`Option ${String.fromCharCode(65 + i)}`} value={opt}
+                        onChange={(e) => { const n = [...formData.options]; n[i] = e.target.value; setFormData({ ...formData, options: n }); }} />
+                    ))}
+                  </div>
+                </div>
+                <div className={adminStyles.formGroup}>
+                  <label>Correct Answer</label>
+                  <select className={adminStyles.input} value={formData.correct_answer} onChange={(e) => setFormData({ ...formData, correct_answer: e.target.value })}>
+                    <option value="">Select correct option…</option>
+                    {formData.options.map((_, i) => <option key={i} value={String.fromCharCode(65 + i)}>Option {String.fromCharCode(65 + i)}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {/* Media Upload Options */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
               <div className={adminStyles.formGroup}>
                 <label>Image Asset (Optional)</label>
@@ -2879,7 +3183,6 @@ function QuestionsTab() {
                         const file = e.target.files?.[0];
                         if (!file) return;
                         try {
-                          // Using same upload logic for audio, Cloudinary handles it
                           const url = await uploadQuestionImage(file);
                           setFormData({ ...formData, audio_url: url });
                         } catch (err: any) {
@@ -2895,9 +3198,10 @@ function QuestionsTab() {
                 )}
               </div>
             </div>
+
             <div className={adminStyles.modalActions}>
               <button className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSave} disabled={!formData.text || !formData.correct_answer || formData.options.some((o) => !o)}>Save</button>
+              <button className="btn btn-primary" onClick={handleSave} disabled={isSaveDisabled}>Save</button>
             </div>
           </div>
         </div>
