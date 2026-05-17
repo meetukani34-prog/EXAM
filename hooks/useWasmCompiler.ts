@@ -16,6 +16,7 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
   // 1. Pre-Orbital Asset Ingestion (The WASM Stream)
   useEffect(() => {
     let isMounted = true;
+    let timerId: any = null;
     
     const streamWasmCompiler = async () => {
       try {
@@ -29,7 +30,10 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
         // const { instance } = await WebAssembly.instantiateStreaming(response, importObject);
         
         // Simulate background pull delay (Asset Streaming)
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise<void>((resolve) => {
+          if (!isMounted) return resolve();
+          timerId = setTimeout(resolve, 1500);
+        });
         
         if (isMounted) {
           compilerRef.current = {
@@ -50,7 +54,10 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
     
     streamWasmCompiler();
     
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+      if (timerId) clearTimeout(timerId);
+    };
   }, [compilerUrl]);
 
   // 2. The Kinetic Sandbox (The Local Compilation Node)

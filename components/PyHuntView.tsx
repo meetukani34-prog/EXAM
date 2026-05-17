@@ -238,103 +238,111 @@ export default function PyHuntView() {
 
   useEffect(() => {
     const raw = localStorage.getItem("exam_student");
-    if (!raw) return;
-    const info = JSON.parse(raw);
-    setStudent(info);
-    setAuthForm(prev => ({ ...prev, usn: info.usn || "" }));
+    let channel: any = null;
+    let timerId: any = null;
 
-    async function syncProgress() {
-      const studentId = info.id || info.student_id;
-      if (!studentId) return;
+    if (raw) {
+      const info = JSON.parse(raw);
+      setStudent(info);
+      setAuthForm(prev => ({ ...prev, usn: info.usn || "" }));
 
-      const { data, error } = await withRetry(async () => {
-        return await supabase
-          .from('odyssey_progress')
-          .select('*')
-          .eq('student_id', studentId)
-          .maybeSingle();
-      });
+      async function syncProgress() {
+        const studentId = info.id || info.student_id;
+        if (!studentId) return;
 
-      if (error) {
-        setLoading(false);
-        return;
-      }
+        const { data, error } = await withRetry(async () => {
+          return await supabase
+            .from('odyssey_progress')
+            .select('*')
+            .eq('student_id', studentId)
+            .maybeSingle();
+        });
 
-      if (data) {
-        setIsAuthorized(true);
-        if (data.round_1_state && (data.round_1_state as any).reset) {
-          localStorage.removeItem(`pyhunt_mcq_map_${studentId}`);
-          localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
-          setMcqSelectionMap({});
-          setCode("");
-          await supabase.from('odyssey_progress').update({ round_1_state: {} }).eq('student_id', studentId);
-        } else {
-          const savedMap = localStorage.getItem(`pyhunt_mcq_map_${studentId}`);
-          if (savedMap) setMcqSelectionMap(JSON.parse(savedMap));
-          const savedCode = localStorage.getItem(`pyhunt_code_draft_${studentId}`);
-          if (savedCode) setCode(savedCode);
+        if (error) {
+          setLoading(false);
+          return;
         }
-        setCurrentRound(data.current_round);
 
-        // Restore assigned clue for current round
-        const currentRoundKey = `round_${data.current_round}_state`;
-        const currentRoundState = (data as any)[currentRoundKey];
-        if (currentRoundState?.assigned_clue_index !== undefined) {
-          setAssignedClueIndex(currentRoundState.assigned_clue_index);
-        }
-      }
-      setLoading(false);
-    }
-    syncProgress();
-
-    async function fetchGlobalConfigs(force: boolean = false) {
-      // Throttling: prevent redundant fetches within 30 seconds unless forced
-      const now = Date.now();
-      if (!force && isFetchingRef.current) return;
-      if (!force && now - lastFetchRef.current < 30000) return;
-
-      isFetchingRef.current = true;
-      try {
-        const data = await fetchPublicPyHuntConfig();
-        lastFetchRef.current = Date.now();
-        if (data && data.length > 0) {
-          const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
-          if (rounds) setGlobalConfigs(rounds);
-          const mcqs = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
-          if (mcqs) {
-            const mapped = mcqs.map((m: any) => ({
-              id: m.id,
-              question: m.question,
-              options: m.options,
-              correct: m.answer,
-              posMarks: m.positive_marks ?? 1,
-              negMarks: Math.abs(m.negative_marks ?? 0),
-              output: "Key: Manifested"
-            }));
-            setMcqSet(mapped);
+        if (data) {
+          setIsAuthorized(true);
+          if (data.round_1_state && (data.round_1_state as any).reset) {
+            localStorage.removeItem(`pyhunt_mcq_map_${studentId}`);
+            localStorage.removeItem(`pyhunt_code_draft_${studentId}`);
+            setMcqSelectionMap({});
+            setCode("");
+            await supabase.from('odyssey_progress').update({ round_1_state: {} }).eq('student_id', studentId);
+          } else {
+            const savedMap = localStorage.getItem(`pyhunt_mcq_map_${studentId}`);
+            if (savedMap) setMcqSelectionMap(JSON.parse(savedMap));
+            const savedCode = localStorage.getItem(`pyhunt_code_draft_${studentId}`);
+            if (savedCode) setCode(savedCode);
           }
-          const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
-          if (j && j.length > 0) setJumbleSet(j);
-          const l = data.find((c: any) => c.config_key === 'labels')?.config_value;
-          if (l) setLabelConfig(l);
-          const cc = data.find((c: any) => c.config_key === 'coding_challenges')?.config_value;
-          if (cc) setCodingChallenges(cc);
+          setCurrentRound(data.current_round);
+
+          // Restore assigned clue for current round
+          const currentRoundKey = `round_${data.current_round}_state`;
+          const currentRoundState = (data as any)[currentRoundKey];
+          if (currentRoundState?.assigned_clue_index !== undefined) {
+            setAssignedClueIndex(currentRoundState.assigned_clue_index);
+          }
         }
-      } finally {
-        isFetchingRef.current = false;
+        setLoading(false);
       }
+      syncProgress();
+
+      async function fetchGlobalConfigs(force: boolean = false) {
+        // Throttling: prevent redundant fetches within 30 seconds unless forced
+        const now = Date.now();
+        if (!force && isFetchingRef.current) return;
+        if (!force && now - lastFetchRef.current < 30000) return;
+
+        isFetchingRef.current = true;
+        try {
+          const data = await fetchPublicPyHuntConfig();
+          lastFetchRef.current = Date.now();
+          if (data && data.length > 0) {
+            const rounds = data.find((c: any) => c.config_key === 'rounds_config')?.config_value;
+            if (rounds) setGlobalConfigs(rounds);
+            const mcqs = data.find((c: any) => c.config_key === 'mcqs')?.config_value;
+            if (mcqs) {
+              const mapped = mcqs.map((m: any) => ({
+                id: m.id,
+                question: m.question,
+                options: m.options,
+                correct: m.answer,
+                posMarks: m.positive_marks ?? 1,
+                negMarks: Math.abs(m.negative_marks ?? 0),
+                output: "Key: Manifested"
+              }));
+              setMcqSet(mapped);
+            }
+            const j = data.find((c: any) => c.config_key === 'jumbles')?.config_value;
+            if (j && j.length > 0) setJumbleSet(j);
+            const l = data.find((c: any) => c.config_key === 'labels')?.config_value;
+            if (l) setLabelConfig(l);
+            const cc = data.find((c: any) => c.config_key === 'coding_challenges')?.config_value;
+            if (cc) setCodingChallenges(cc);
+          }
+        } finally {
+          isFetchingRef.current = false;
+        }
+      }
+      fetchGlobalConfigs();
+
+      channel = supabase.channel('pyhunt_global_sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pyhunt_global_config' }, () => {
+          // Add jitter: 2-6 seconds delay to spread the load across 200 clients
+          const jitter = Math.random() * 4000 + 2000;
+          if (timerId) clearTimeout(timerId);
+          timerId = setTimeout(() => fetchGlobalConfigs(true), jitter);
+        })
+        .subscribe();
     }
-    fetchGlobalConfigs();
 
-    const channel = supabase.channel('pyhunt_global_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pyhunt_global_config' }, () => {
-        // Add jitter: 2-6 seconds delay to spread the load across 200 clients
-        const jitter = Math.random() * 4000 + 2000;
-        setTimeout(() => fetchGlobalConfigs(true), jitter);
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+      if (timerId) clearTimeout(timerId);
+    };
   }, []);
 
   useEffect(() => {

@@ -92,6 +92,30 @@ function getStoredAuth(): boolean {
   try { return localStorage.getItem(ADMIN_AUTH_KEY) === "true"; } catch { return false; }
 }
 
+const ControlBtn = ({ label, icon, color, onClick, variant = "ghost" }: any) => (
+  <button
+    onClick={onClick}
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 5,
+      fontSize: "12px",
+      fontWeight: 700,
+      padding: "5px 12px",
+      borderRadius: "8px",
+      cursor: "pointer",
+      transition: "all 0.2s",
+      background: variant === "solid" ? color : `var(--bg-secondary)`,
+      color: variant === "solid" ? "#fff" : color,
+      border: `1px solid ${variant === "solid" ? color : "var(--border)"}`,
+      textTransform: "uppercase",
+      letterSpacing: "0.02em"
+    }}
+  >
+    <span>{icon}</span> {label}
+  </button>
+);
+
 // ── PyHunt Observer Component ──────────────────────────────────
 // ── PyHunt Observer Component ──────────────────────────────────
 function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examName?: string) => void }) {
@@ -143,6 +167,8 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
     fetchOdyssey();
     fetchPyHuntStudents();
 
+    let timerId: any = null;
+
     const sub = supabase.channel('odyssey_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'odyssey_progress' }, () => {
       if (activeTabRef.current !== 'live_status') return;
 
@@ -150,7 +176,8 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
       if (now - lastSyncRef.current < 5000) return; // 5s throttle for better live feel
 
       const jitter = Math.random() * 2000 + 500; // 0.5 - 2.5s jitter
-      setTimeout(() => {
+      if (timerId) clearTimeout(timerId);
+      timerId = setTimeout(() => {
         if (activeTabRef.current === 'live_status') {
           fetchOdyssey();
           fetchPyHuntStudents();
@@ -159,7 +186,10 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
       }, jitter);
     }).subscribe();
 
-    return () => { supabase.removeChannel(sub); };
+    return () => {
+      supabase.removeChannel(sub);
+      if (timerId) clearTimeout(timerId);
+    };
   }, [fetchOdyssey, fetchPyHuntStudents]);
 
   const handleForceUnlock = async (studentId: string, nextRound: number) => {
@@ -2649,30 +2679,6 @@ function QuestionsTab() {
                           const duration = conf?.duration_minutes || 60;
                           const start = conf?.scheduled_start;
                           const end = conf?.scheduled_end;
-
-                          const ControlBtn = ({ label, icon, color, onClick, variant = "ghost" }: any) => (
-                            <button
-                              onClick={onClick}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 5,
-                                fontSize: "10px",
-                                fontWeight: 700,
-                                padding: "5px 12px",
-                                borderRadius: "8px",
-                                cursor: "pointer",
-                                transition: "all 0.2s",
-                                background: variant === "solid" ? color : `var(--bg-secondary)`,
-                                color: variant === "solid" ? "#fff" : color,
-                                border: `1px solid ${variant === "solid" ? color : "var(--border)"}`,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.02em"
-                              }}
-                            >
-                              <span>{icon}</span> {label}
-                            </button>
-                          );
 
                           return (
                             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
