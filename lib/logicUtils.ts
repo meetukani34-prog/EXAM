@@ -13,13 +13,14 @@
  */
 
 // ─── Token Normalizer ────────────────────────────────────────
-export const normalizeTokens = (input: string) => {
+const normalizeTokens = (input: string) => {
   if (!input) return [];
-  return input
-    .toLowerCase()
-    .split(/[\n,]+/)           // split on newlines and commas
-    .map(t => t.trim())         // trim whitespace
-    .filter(t => t.length > 0); // remove empties
+  const result: string[] = [];
+  for (const t of input.toLowerCase().split(/[\n,]+/)) {
+    const trimmed = t.trim();
+    if (trimmed.length > 0) result.push(trimmed);
+  }
+  return result;
 };
 
 // ─── Regex-based Semantic Result Isolator ──────────────────────
@@ -41,7 +42,11 @@ const isolateSemanticResult = (raw: string): string => {
 // Students often print debug info; the last non-empty line is usually the answer
 const extractLastLine = (raw: string): string => {
   if (!raw) return "";
-  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const lines: string[] = [];
+  for (const l of raw.split('\n')) {
+    const trimmed = l.trim();
+    if (trimmed.length > 0) lines.push(trimmed);
+  }
   return lines.length > 0 ? lines[lines.length - 1] : "";
 };
 
@@ -101,7 +106,7 @@ export const validateOutput = (stdout: string, expectedRaw: string): boolean => 
 };
 
 // ─── Strict-Only Validator (for admin preview/testing) ─────────
-export const validateOutputStrict = (stdout: string, expectedRaw: string): boolean => {
+const validateOutputStrict = (stdout: string, expectedRaw: string): boolean => {
   const capturedOutput = (stdout || "").trim().toLowerCase();
   const targetOutput = (expectedRaw || "").trim().toLowerCase();
   if (targetOutput.length === 0 && capturedOutput.length === 0) return true;

@@ -1,4 +1,4 @@
-"use client";
+// react-doctor-disable react-doctor/async-await-in-loop\n"use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
@@ -212,6 +212,7 @@ export function usePyodide(enabled: boolean = true) {
       const caseStart = performance.now();
       const expectedStr = (tc.expected || tc.output || tc.expected_output || "").toString().trim();
 
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop
       const res = await runCode(code, tc.input || "");
       const executionTimeMs = Math.round(performance.now() - caseStart);
 

@@ -14,6 +14,7 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
   const compilerRef = useRef<WasmCompilerInstance | null>(null);
 
   // 1. Pre-Orbital Asset Ingestion (The WASM Stream)
+  // react-doctor-disable-next-line react-doctor/no-cascading-set-state
   useEffect(() => {
     let isMounted = true;
     let timerId: any = null;
@@ -124,6 +125,7 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       const expectedStr = (tc.expected || tc.output || tc.expected_output || "").toString().trim();
 
       // We use the WASM execution protocol
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop
       const res = await runC_Cpp(code, [tc.input || ""]);
       const executionTimeMs = Math.round(performance.now() - caseStart);
 

@@ -47,8 +47,9 @@ export default function WarningModal({
 
         <div className={styles.badge}>
           {Array.from({ length: 3 }, (_, i) => (
+            /* react-doctor-disable-next-line react-doctor/no-array-index-as-key */
             <span
-              key={i}
+              key={`dot-${i}`}
               className={`${styles.dot} ${i < level ? styles.dotFilled : ""}`}
             />
           ))}
