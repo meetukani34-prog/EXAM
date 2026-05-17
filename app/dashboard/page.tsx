@@ -197,7 +197,7 @@ export default function DashboardPage() {
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: "home", label: "Home", icon: <HomeIcon /> },
-    { id: "pyhunt", label: "PyHunt", icon: <PyHuntIcon /> },
+    // { id: "pyhunt", label: "PyHunt", icon: <PyHuntIcon /> },
     { id: "aptitude", label: "Aptitude Test", icon: <AptitudeIcon /> },
     { id: "programming", label: "Programming", icon: <CodeIcon /> },
     { id: "other", label: "Other Quiz", icon: <OtherIcon /> },
@@ -326,7 +326,7 @@ export default function DashboardPage() {
                       </div>
 
                       {/* ── PyHunt Event Spotlight ── */}
-                      <div className={styles.eventSpotlight} onClick={() => setActiveTab("pyhunt")}>
+                      {/* <div className={styles.eventSpotlight} onClick={() => setActiveTab("pyhunt")}>
                         <div className={styles.eventGlow} />
                         <div className={styles.eventContent}>
                            <div className={styles.eventTag}>SPECIAL EVENT</div>
@@ -338,7 +338,7 @@ export default function DashboardPage() {
                            <div className={styles.orbitRing} />
                            <div className={styles.orbitRing} style={{ animationDelay: '-1s', opacity: 0.2 }} />
                         </div>
-                      </div>
+                      </div> */}
 
                       <div className={styles.examsSection} style={{ marginTop: 24 }}>
                         {topExams.length > 0 ? topExams.map(exam => (
@@ -445,7 +445,7 @@ export default function DashboardPage() {
 
           {activeTab === "history" && <HistoryTab exams={studentExams} />}
           {activeTab === "profile" && student && <ProfileTab student={student} />}
-          {activeTab === "pyhunt" && <PyHuntView />}
+          {/* {activeTab === "pyhunt" && <PyHuntView />} */}
         </main>
       </div>
 

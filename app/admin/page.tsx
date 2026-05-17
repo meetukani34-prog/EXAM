@@ -1450,7 +1450,7 @@ export default function AdminPage() {
 
   const TAB_CONFIG: { id: Tab; label: string; icon: string }[] = [
     { id: "monitor", label: "Monitor", icon: "📡" },
-    { id: "pyhunt", label: "PyHunt", icon: "🐍" },
+    // { id: "pyhunt", label: "PyHunt", icon: "🐍" },
     { id: "explorer", label: "Explorer", icon: "🛰️" },
     { id: "support", label: "SOS", icon: "🆘" },
     { id: "leaderboard", label: "Leaderboard", icon: "⚡" },
@@ -1577,9 +1577,9 @@ export default function AdminPage() {
       </AnimatePresence>
 
       {/* ── PyHunt Observer Node ── */}
-      {activeTab === "pyhunt" && (
+      {/* {activeTab === "pyhunt" && (
         <PyHuntObserver fetchStudentsGlobal={fetchStudents} />
-      )}
+      )} */}
       {activeTab === "monitor" && (
         <>
           {/* ── Canva-Style 3 Hero Stat Cards ── */}
