@@ -101,6 +101,7 @@ class AdminQuestionOut(BaseModel):
     image_url: Optional[str] = None
     audio_url: Optional[str] = None
     category: Optional[str] = None
+    programming_type: Optional[str] = None
 
 class AdminQuestionsResponse(BaseModel):
     questions: List[AdminQuestionOut]
@@ -117,6 +118,7 @@ class QuestionCreate(BaseModel):
     image_url: Optional[str] = None
     audio_url: Optional[str] = None
     category: Optional[str] = "other"
+    programming_type: Optional[str] = None
 
 class QuestionUpdate(BaseModel):
     text: Optional[str] = None
@@ -129,6 +131,7 @@ class QuestionUpdate(BaseModel):
     image_url: Optional[str] = None
     audio_url: Optional[str] = None
     category: Optional[str] = None
+    programming_type: Optional[str] = None
 
 class StudentCreate(BaseModel):
     usn: str
@@ -236,6 +239,7 @@ class ParsedQuestion(BaseModel):
     image_url: Optional[str] = None
     audio_url: Optional[str] = None
     category: Optional[str] = "other"
+    programming_type: Optional[str] = None
     confidence: float = 1.0
     needs_review: bool = False
     review_reason: Optional[str] = None

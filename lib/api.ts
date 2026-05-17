@@ -217,6 +217,7 @@ export interface AdminQuestion {
   image_url: string | null;
   audio_url?: string | null;
   category?: "aptitude" | "programming" | "other";
+  programming_type?: "compiler" | "mcq";
 }
 
 export interface AdminStudent {

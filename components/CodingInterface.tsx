@@ -34,6 +34,8 @@ interface CodingInterfaceProps {
   hint?: string;
   isHintRevealed?: boolean;
   onRevealHint?: () => void;
+  isCompiling?: boolean;
+  showSuccessRipple?: boolean;
 }
 
 
@@ -51,7 +53,9 @@ export default function CodingInterface({
   testResults,
   hint,
   isHintRevealed = false,
-  onRevealHint
+  onRevealHint,
+  isCompiling = false,
+  showSuccessRipple = false
 }: CodingInterfaceProps) {
 
   const [activeTerminalTab, setActiveTerminalTab] = useState<'console' | 'testcases'>('console');
@@ -132,7 +136,15 @@ export default function CodingInterface({
   }
 
   return (
-    <div className={styles.container}>
+    <motion.div 
+      className={styles.container}
+      animate={showSuccessRipple ? { boxShadow: [
+        "0 0 0px rgba(0,255,0,0)", 
+        "0 0 40px rgba(0,255,0,0.8)", 
+        "0 0 0px rgba(0,255,0,0)"
+      ]} : {}}
+      transition={{ duration: 1, ease: "easeInOut" }}
+    >
       <style jsx global>{`
         textarea.${styles.codeEditor} {
           color: #ffffff !important;
@@ -380,13 +392,18 @@ export default function CodingInterface({
                 )}
               </div>
               <div className={styles.buttonGroup}>
-                <button 
+                <motion.button 
                   className={styles.runBtn} 
                   onClick={onRun}
                   disabled={pyLoading}
+                  animate={isCompiling ? { 
+                    scale: [1, 0.95, 1],
+                    boxShadow: ["0 0 0px rgba(0,242,255,0)", "0 0 20px rgba(0,242,255,0.6)", "0 0 0px rgba(0,242,255,0)"]
+                  } : {}}
+                  transition={isCompiling ? { repeat: Infinity, duration: 1.5 } : {}}
                 >
-                  ▶ Run
-                </button>
+                  {isCompiling ? "⚛️ Syncing..." : "▶ Run Local WASM"}
+                </motion.button>
                 <button 
                   className={styles.submitBtn}
                   onClick={onSubmit}
@@ -399,6 +416,6 @@ export default function CodingInterface({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

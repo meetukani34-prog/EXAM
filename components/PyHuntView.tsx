@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { usePyodide } from '@/hooks/usePyodide';
+import { useWasmCompiler } from '@/hooks/useWasmCompiler';
 import { supabase } from '@/lib/supabase';
 import { withRetry } from '@/lib/apiUtils';
 import { startExam, ApiError, fetchPublicPyHuntConfig } from '@/lib/api';
@@ -118,7 +118,8 @@ export default function PyHuntView() {
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [warningCount, setWarningCount] = useState(0);
 
-  const { runCode, runTestSuite, loading: pyLoading } = usePyodide(currentRound > 1);
+  const { runC_Cpp: runCode, runTestSuite, isCompiling, isDownloading, isRunning, output: wasmOutput } = useWasmCompiler();
+  const pyLoading = isDownloading || isCompiling || isRunning;
   const { enter: enterFullscreen } = useFullscreen();
 
   const [isAtGate, setIsAtGate] = useState(false);
@@ -592,7 +593,7 @@ export default function PyHuntView() {
           finalResults += `❌ CASE ${i + 1}: FAILED (${r.executionTimeMs}ms)\n   Input: ${r.input || "None"}\n   Expected: ${r.expected}\n   Got: ${r.actual || "(empty)"}\n`;
         }
       }
-      finalResults += `\n━━━ ${suite.passedCount}/${suite.totalCases} passed · ${suite.totalTimeMs}ms ━━━`;
+      finalResults += `\n━━━ ${suite.results.filter(r => r.passed).length}/${suite.results.length} passed · ${suite.totalTimeMs}ms ━━━`;
 
       setTestResults(suite.results);
       setOutput(finalResults);
@@ -684,7 +685,7 @@ export default function PyHuntView() {
       if (res.error) {
         setScratchOutput(`ERROR: ${res.error}`);
       } else {
-        const out = (res.stdout || "") + (res.stderr || "");
+        const out = res.stdout || "";
         setScratchOutput(out || "Execution successful (no output)");
       }
     } catch (err: any) {
@@ -967,6 +968,8 @@ export default function PyHuntView() {
                 hint={ATMOSPHERIC_HINTS[currentRound]}
                 isHintRevealed={isHintRevealed}
                 onRevealHint={handleRevealHint}
+                isCompiling={isCompiling}
+                showSuccessRipple={showSuccessRipple}
               />
 
             ) : (

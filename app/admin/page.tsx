@@ -2005,6 +2005,7 @@ function QuestionsTab() {
   const [editing, setEditing] = useState<AdminQuestion | null>(null);
   const [selectedBranch, setSelectedBranch] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState<"all" | "aptitude" | "programming" | "other">("all");
+  const [subCategory, setSubCategory] = useState<"compiler" | "mcq">("compiler");
   const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "upcoming" | "inactive">("all");
   const [formData, setFormData] = useState<Omit<AdminQuestion, "id">>({
     text: "",
@@ -2015,7 +2016,8 @@ function QuestionsTab() {
     marks: 1,
     exam_name: "General Assessment",
     image_url: "",
-    audio_url: ""
+    audio_url: "",
+    programming_type: "compiler"
   });
   const [folderBranchModal, setFolderBranchModal] = useState<{ name: string, branches: string[] } | null>(null);
   const [formCategory, setFormCategory] = useState<"aptitude" | "programming" | "other">("other");
@@ -2229,7 +2231,12 @@ function QuestionsTab() {
 
   const filteredQuestions = questions.filter((q) => {
     const branchMatch = selectedBranch === "All" || q.branch === selectedBranch;
-    const categoryMatch = selectedCategory === "all" || getQCategory(q) === selectedCategory;
+    let categoryMatch = selectedCategory === "all" || getQCategory(q) === selectedCategory;
+
+    if (categoryMatch && selectedCategory === "programming") {
+      const type = q.programming_type || "compiler";
+      if (type !== subCategory) categoryMatch = false;
+    }
 
     if (selectedStatus === "all") return branchMatch && categoryMatch;
 
@@ -2330,7 +2337,7 @@ function QuestionsTab() {
             {BRANCHES.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditing(null); setFormCategory("other"); setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "", audio_url: "" }); setShowModal(true); }}>
+        <button className="btn btn-primary" onClick={() => { setEditing(null); setFormCategory("other"); setFormData({ text: "", options: ["", "", "", ""], branch: "CS", correct_answer: "", order_index: questions.length, marks: 1, exam_name: "General Assessment", image_url: "", audio_url: "", programming_type: "compiler" }); setShowModal(true); }}>
           + Add Question
         </button>
       </div>
@@ -2365,6 +2372,47 @@ function QuestionsTab() {
           </button>
         ))}
       </div>
+
+      {selectedCategory === 'programming' && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20, marginTop: -10 }}>
+           <button
+            onClick={() => setSubCategory('compiler')}
+            style={{
+              padding: '6px 16px',
+              borderRadius: '99px',
+              border: '1px solid var(--border)',
+              background: subCategory === 'compiler' ? 'var(--accent)' : 'var(--bg-secondary)',
+              color: subCategory === 'compiler' ? '#fff' : 'var(--text-secondary)',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            📁 Coding Challenges
+          </button>
+           <button
+            onClick={() => setSubCategory('mcq')}
+            style={{
+              padding: '6px 16px',
+              borderRadius: '99px',
+              border: '1px solid var(--border)',
+              background: subCategory === 'mcq' ? 'var(--accent)' : 'var(--bg-secondary)',
+              color: subCategory === 'mcq' ? '#fff' : 'var(--text-secondary)',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            📝 Conceptual MCQs
+          </button>
+        </div>
+      )}
 
       {/* ── Status Tabs ── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
@@ -2610,7 +2658,7 @@ function QuestionsTab() {
                               <div className={adminStyles.cardHeader}>
                                 <div className={adminStyles.cardIndex} style={{ fontSize: 11, fontWeight: 700, color: palette.accent }}>Q{q.order_index + 1}</div>
                                 <div style={{ display: "flex", gap: 8 }}>
-                                  <button className="btn-icon" onClick={() => { setEditing(q); setFormData({ ...q }); setFormCategory((q.category as any) || 'other'); setShowModal(true); }}>✏️</button>
+                                  <button className="btn-icon" onClick={() => { setEditing(q); setFormData({ ...q, programming_type: q.programming_type || "compiler" }); setFormCategory((q.category as any) || 'other'); setShowModal(true); }}>✏️</button>
                                   <button className="btn-icon btn-danger" onClick={() => handleDelete(q.id)}>🗑️</button>
                                 </div>
                               </div>
@@ -2739,6 +2787,29 @@ function QuestionsTab() {
                   <option value="other">📂 Other</option>
                 </select>
               </div>
+
+              {formCategory === 'programming' && (
+                <div className={adminStyles.formGroup}>
+                  <label>Programming Type</label>
+                  <select
+                    className={adminStyles.input}
+                    style={{
+                      height: "44px",
+                      fontSize: "15px",
+                      fontWeight: "600",
+                      background: "var(--bg-secondary) !important",
+                      border: "1.5px solid var(--border)",
+                      color: "var(--text-primary)",
+                      cursor: "pointer"
+                    }}
+                    value={formData.programming_type || 'compiler'}
+                    onChange={(e) => setFormData({ ...formData, programming_type: e.target.value as "compiler" | "mcq" })}
+                  >
+                    <option value="compiler">📁 Coding Challenges</option>
+                    <option value="mcq">📝 Conceptual MCQs</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
