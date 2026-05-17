@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useWasmCompiler } from '@/hooks/useWasmCompiler';
+import { usePyodide } from '@/hooks/usePyodide';
 import { supabase } from '@/lib/supabase';
 import { withRetry } from '@/lib/apiUtils';
 import { startExam, ApiError, fetchPublicPyHuntConfig } from '@/lib/api';
@@ -118,8 +119,43 @@ export default function PyHuntView() {
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [warningCount, setWarningCount] = useState(0);
 
-  const { runC_Cpp: runCode, runTestSuite, isCompiling, isDownloading, isRunning, output: wasmOutput } = useWasmCompiler();
-  const pyLoading = isDownloading || isCompiling || isRunning;
+  const [selectedLanguage, setSelectedLanguage] = useState<"python" | "c" | "cpp">("python");
+
+  // Hook 1: WASM compiler for C/C++ local browser compilation
+  const { runC_Cpp: runWasm, runTestSuite: runWasmTestSuite, isCompiling: wasmCompiling, isDownloading: wasmDownloading, isRunning: wasmRunning } = useWasmCompiler();
+
+  // Hook 2: WebWorker Pyodide sandbox for Python local browser running
+  const { runCode: runPython, runTestSuite: runPythonTestSuite, loading: pyLocalLoading } = usePyodide(currentRound === 3 || currentRound === 4);
+
+  // Combined Loading/Compiling Flags
+  const pyLoading = selectedLanguage === 'python'
+    ? pyLocalLoading
+    : (wasmDownloading || wasmCompiling || wasmRunning);
+
+  const isCompiling = selectedLanguage === 'python' ? false : wasmCompiling;
+
+  const runActiveCode = useCallback(async (code: string, input: any = ""): Promise<{ stdout: string; error?: string }> => {
+    if (selectedLanguage === 'python') {
+      const res = await runPython(code, input);
+      return { stdout: res.stdout || "", error: res.error };
+    } else {
+      const res = await runWasm(code, Array.isArray(input) ? input : [String(input)]);
+      return { stdout: res.stdout || "", error: res.error };
+    }
+  }, [selectedLanguage, runPython, runWasm]);
+
+  const runActiveTestSuite = useCallback(async (code: string, testCases: any[]) => {
+    if (selectedLanguage === 'python') {
+      return await runPythonTestSuite(code, testCases, (stdout, expected) => {
+        return sharedValidateOutput(stdout, expected);
+      });
+    } else {
+      return await runWasmTestSuite(code, testCases, (stdout, expected) => {
+        return sharedValidateOutput(stdout, expected);
+      });
+    }
+  }, [selectedLanguage, runPythonTestSuite, runWasmTestSuite]);
+
   const { enter: enterFullscreen } = useFullscreen();
 
   const [isAtGate, setIsAtGate] = useState(false);
@@ -304,11 +340,43 @@ export default function PyHuntView() {
   useEffect(() => {
     if (student?.id && code) {
       const timer = setTimeout(() => {
+        localStorage.setItem(`pyhunt_code_draft_${student.id}_${selectedLanguage}`, code);
         localStorage.setItem(`pyhunt_code_draft_${student.id}`, code);
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [code, student]);
+  }, [code, student, selectedLanguage]);
+
+  const handleLanguageChange = useCallback((lang: "python" | "c" | "cpp") => {
+    setSelectedLanguage(lang);
+    setTestResults([]);
+    setOutput("");
+
+    // Load draft or starter code for this language!
+    const roundChallenges = codingChallenges[currentRound] || [];
+    const currentChallenge = roundChallenges[currentProblemIndex];
+    const roundConfig = globalConfigs.find((c: any) => c.round === currentRound);
+    const activeProblem = currentChallenge || roundConfig;
+
+    const starter = lang === 'python'
+      ? (activeProblem?.starter_code || 'def solution(input_str):\n    # Write your logic here\n    pass')
+      : lang === 'c'
+      ? (activeProblem?.starter_code_c || `#include <stdio.h>\n#include <string.h>\n\nint main() {\n    char input[2048];\n    if (fgets(input, sizeof(input), stdin)) {\n        input[strcspn(input, "\\n")] = 0;\n        \n    }\n    return 0;\n}`)
+      : (activeProblem?.starter_code_cpp || `#include <iostream>\n#include <string>\n\nusing namespace std;\n\nint main() {\n    string input;\n    if (getline(cin, input)) {\n        \n    }\n    return 0;\n}`);
+
+    const draftKey = `pyhunt_code_draft_${student?.id || student?.student_id}_${lang}`;
+    const savedDraft = localStorage.getItem(draftKey);
+
+    if (savedDraft && savedDraft.startsWith(starter)) {
+      setCode(savedDraft);
+    } else {
+      setCode(starter + (
+        lang === 'python'
+          ? '\n\n# Transform the input string into the expected output\n# Print only the final result\n'
+          : '\n\n// Transform the input string into the expected output\n// Print only the final result\n'
+      ));
+    }
+  }, [currentRound, currentProblemIndex, codingChallenges, globalConfigs, student]);
 
   useEffect(() => {
     if (student?.id && Object.keys(mcqSelectionMap).length > 0) {
@@ -343,20 +411,29 @@ export default function PyHuntView() {
       const currentChallenge = roundChallenges[currentProblemIndex];
       const roundConfig = globalConfigs.find((c: any) => c.round === currentRound);
       const activeProblem = currentChallenge || roundConfig;
-      const starter = activeProblem?.starter_code || '';
+      
+      const starter = selectedLanguage === 'python'
+        ? (activeProblem?.starter_code || 'def solution(input_str):\n    # Write your logic here\n    pass')
+        : selectedLanguage === 'c'
+        ? (activeProblem?.starter_code_c || `#include <stdio.h>\n#include <string.h>\n\nint main() {\n    char input[2048];\n    if (fgets(input, sizeof(input), stdin)) {\n        input[strcspn(input, "\\n")] = 0;\n        \n    }\n    return 0;\n}`)
+        : (activeProblem?.starter_code_cpp || `#include <iostream>\n#include <string>\n\nusing namespace std;\n\nint main() {\n    string input;\n    if (getline(cin, input)) {\n        \n    }\n    return 0;\n}`);
 
       if (starter && !code.startsWith(starter)) {
         // Check for a saved draft first
-        const draftKey = `pyhunt_code_draft_${student?.id || student?.student_id}`;
+        const draftKey = `pyhunt_code_draft_${student?.id || student?.student_id}_${selectedLanguage}`;
         const savedDraft = localStorage.getItem(draftKey);
         if (savedDraft && savedDraft.startsWith(starter)) {
           setCode(savedDraft);
         } else {
-          setCode(starter + '\n\n# Transform the input string into the expected output\n# Print only the final result\n');
+          setCode(starter + (
+            selectedLanguage === 'python'
+              ? '\n\n# Transform the input string into the expected output\n# Print only the final result\n'
+              : '\n\n// Transform the input string into the expected output\n// Print only the final result\n'
+          ));
         }
       }
     }
-  }, [currentRound, currentProblemIndex]);
+  }, [currentRound, currentProblemIndex, selectedLanguage, codingChallenges, globalConfigs, student, code]);
 
   const handleAuthorize = async () => {
     let targetCode = "PYHUNT67";
@@ -579,7 +656,7 @@ export default function PyHuntView() {
     }
     if (Array.isArray(testCases) && testCases.length > 0) {
       // ═══ Neural Test-Runner Execution ═══
-      const suite = await runTestSuite(code, testCases, sharedValidateOutput);
+      const suite = await runActiveTestSuite(code, testCases);
 
       // Build console output from suite results
       let finalResults = "";
@@ -593,7 +670,7 @@ export default function PyHuntView() {
           finalResults += `❌ CASE ${i + 1}: FAILED (${r.executionTimeMs}ms)\n   Input: ${r.input || "None"}\n   Expected: ${r.expected}\n   Got: ${r.actual || "(empty)"}\n`;
         }
       }
-      finalResults += `\n━━━ ${suite.results.filter(r => r.passed).length}/${suite.results.length} passed · ${suite.totalTimeMs}ms ━━━`;
+      finalResults += `\n━━━ ${suite.results.filter((r: any) => r.passed).length}/${suite.results.length} passed · ${suite.totalTimeMs}ms ━━━`;
 
       setTestResults(suite.results);
       setOutput(finalResults);
@@ -641,7 +718,7 @@ export default function PyHuntView() {
     }
 
     // Legacy Single-Output Validation (Fallback)
-    const result = await runCode(code);
+    const result = await runActiveCode(code);
     if (result.error) {
       setOutput(`ERROR: ${result.error}`);
       return;
@@ -681,7 +758,7 @@ export default function PyHuntView() {
     if (!scratchCode.trim()) return;
     setScratchOutput("Running mission logic...");
     try {
-      const res = await runCode(scratchCode);
+      const res = await runActiveCode(scratchCode);
       if (res.error) {
         setScratchOutput(`ERROR: ${res.error}`);
       } else {
@@ -954,7 +1031,9 @@ export default function PyHuntView() {
                   imageUrl: (codingChallenges[currentRound] || [])[currentProblemIndex]?.imageUrl || globalConfigs.find((c: any) => c.round === currentRound)?.imageUrl || "",
                   test_cases: (codingChallenges[currentRound] || [])[currentProblemIndex]?.test_cases || globalConfigs.find((c: any) => c.round === currentRound)?.test_cases || "[]",
                   target_output: (codingChallenges[currentRound] || [])[currentProblemIndex]?.target_output || globalConfigs.find((c: any) => c.round === currentRound)?.target_output || "",
-                  starter_code: (codingChallenges[currentRound] || [])[currentProblemIndex]?.starter_code || globalConfigs.find((c: any) => c.round === currentRound)?.starter_code || ""
+                  starter_code: (codingChallenges[currentRound] || [])[currentProblemIndex]?.starter_code || globalConfigs.find((c: any) => c.round === currentRound)?.starter_code || "",
+                  starter_code_c: (codingChallenges[currentRound] || [])[currentProblemIndex]?.starter_code_c || globalConfigs.find((c: any) => c.round === currentRound)?.starter_code_c || "",
+                  starter_code_cpp: (codingChallenges[currentRound] || [])[currentProblemIndex]?.starter_code_cpp || globalConfigs.find((c: any) => c.round === currentRound)?.starter_code_cpp || ""
                 }}
                 code={code}
                 setCode={setCode}
@@ -970,6 +1049,8 @@ export default function PyHuntView() {
                 onRevealHint={handleRevealHint}
                 isCompiling={isCompiling}
                 showSuccessRipple={showSuccessRipple}
+                selectedLanguage={selectedLanguage}
+                onLanguageChange={handleLanguageChange}
               />
 
             ) : (

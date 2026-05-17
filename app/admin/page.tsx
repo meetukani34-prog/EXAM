@@ -606,6 +606,7 @@ function PyHuntConfig({
   const [previewCode, setPreviewCode] = useState("");
   const [previewOutput, setPreviewOutput] = useState("");
   const [previewTestResults, setPreviewTestResults] = useState<any[]>([]);
+  const [previewLanguage, setPreviewLanguage] = useState<"python" | "c" | "cpp">("python");
   const { runCode, loading: pyLoading } = usePyodide(activeTab === 'r3' || activeTab === 'r4');
 
   const handleRunPreview = async () => {
@@ -689,6 +690,16 @@ function PyHuntConfig({
                 currentRound={previewChallenge.round}
                 labelConfig={labelConfig}
                 testResults={previewTestResults}
+                selectedLanguage={previewLanguage}
+                onLanguageChange={(lang) => {
+                  setPreviewLanguage(lang);
+                  const starter = lang === 'python'
+                    ? (previewChallenge.starter_code || '')
+                    : lang === 'c'
+                    ? (previewChallenge.starter_code_c || '')
+                    : (previewChallenge.starter_code_cpp || '');
+                  setPreviewCode(starter);
+                }}
               />
             </div>
           </div>
@@ -2024,6 +2035,9 @@ function QuestionsTab() {
   const [challengeTargetOutput, setChallengeTargetOutput] = useState("");
   const [challengeTestCases, setChallengeTestCases] = useState<string>("[]");
   const [challengeStarterCode, setChallengeStarterCode] = useState("");
+  const [challengeStarterCodeC, setChallengeStarterCodeC] = useState("");
+  const [challengeStarterCodeCpp, setChallengeStarterCodeCpp] = useState("");
+  const [adminActiveLangTab, setAdminActiveLangTab] = useState<"python" | "c" | "cpp">("python");
   const [challengeClue, setChallengeClue] = useState("");
   const [challengeClueVariants, setChallengeClueVariants] = useState("");
   const [challengeUnlockCode, setChallengeUnlockCode] = useState("");
@@ -2077,6 +2091,9 @@ function QuestionsTab() {
         setChallengeTargetOutput("");
         setChallengeTestCases("[]");
         setChallengeStarterCode("");
+        setChallengeStarterCodeC("");
+        setChallengeStarterCodeCpp("");
+        setAdminActiveLangTab("python");
         setChallengeClue("");
         setChallengeClueVariants("");
         setChallengeUnlockCode("");
@@ -2113,6 +2130,8 @@ function QuestionsTab() {
         target_output: "",
         test_cases: "[]",
         starter_code: "",
+        starter_code_c: "",
+        starter_code_cpp: "",
         clue: "",
         clue_variants: "",
         unlock_code: ""
@@ -2127,6 +2146,9 @@ function QuestionsTab() {
       setChallengeTargetOutput(parsed.target_output || "");
       setChallengeTestCases(parsed.test_cases || "[]");
       setChallengeStarterCode(parsed.starter_code || "");
+      setChallengeStarterCodeC(parsed.starter_code_c || "");
+      setChallengeStarterCodeCpp(parsed.starter_code_cpp || "");
+      setAdminActiveLangTab("python");
       setChallengeClue(parsed.clue || "");
       setChallengeClueVariants(parsed.clue_variants || "");
       setChallengeUnlockCode(parsed.unlock_code || "");
@@ -2154,6 +2176,8 @@ function QuestionsTab() {
           target_output: challengeTargetOutput,
           test_cases: challengeTestCases,
           starter_code: challengeStarterCode,
+          starter_code_c: challengeStarterCodeC,
+          starter_code_cpp: challengeStarterCodeCpp,
           clue: challengeClue,
           clue_variants: challengeClueVariants,
           unlock_code: challengeUnlockCode
@@ -2180,6 +2204,8 @@ function QuestionsTab() {
       setChallengeTargetOutput("");
       setChallengeTestCases("[]");
       setChallengeStarterCode("");
+      setChallengeStarterCodeC("");
+      setChallengeStarterCodeCpp("");
       setChallengeClue("");
       setChallengeClueVariants("");
       setChallengeUnlockCode("");
@@ -2940,17 +2966,63 @@ function QuestionsTab() {
                   <div className={adminStyles.codeBadge}>Compiler Enabled</div>
                 </div>
 
-                {/* Starter Code */}
+                {/* Starter Code Tabs */}
                 <div className={adminStyles.formGroup} style={{ margin: 0 }}>
-                  <label>Starter Code Template (Python)</label>
-                  <textarea
-                    className={adminStyles.input}
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 13, minHeight: 120, background: "rgba(0,0,0,0.3) !important", border: "1.5px solid var(--border)" }}
-                    value={challengeStarterCode}
-                    onChange={(e) => setChallengeStarterCode(e.target.value)}
-                    placeholder={`def solution(arr):\n    # Write your code here\n    return False`}
-                    rows={5}
-                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <label style={{ margin: 0 }}>Starter Code Template</label>
+                    <div style={{ display: "flex", gap: 6, background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 10, border: "1px solid var(--border)" }}>
+                      {(["python", "c", "cpp"] as const).map((lang) => (
+                        <button
+                          key={lang}
+                          type="button"
+                          onClick={() => setAdminActiveLangTab(lang)}
+                          style={{
+                            background: adminActiveLangTab === lang ? "var(--accent)" : "transparent",
+                            color: adminActiveLangTab === lang ? "#000" : "var(--text)",
+                            border: "none",
+                            padding: "4px 12px",
+                            borderRadius: 8,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            transition: "all 0.2s ease"
+                          }}
+                        >
+                          {lang === "python" ? "🐍 Python" : lang === "c" ? "🇨 C" : "➕ C++"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {adminActiveLangTab === "python" && (
+                    <textarea
+                      className={adminStyles.input}
+                      style={{ fontFamily: "var(--font-mono)", fontSize: 13, minHeight: 120, background: "rgba(0,0,0,0.3) !important", border: "1.5px solid var(--border)" }}
+                      value={challengeStarterCode}
+                      onChange={(e) => setChallengeStarterCode(e.target.value)}
+                      placeholder={`def solution(arr):\n    # Write your code here\n    return False`}
+                      rows={5}
+                    />
+                  )}
+                  {adminActiveLangTab === "c" && (
+                    <textarea
+                      className={adminStyles.input}
+                      style={{ fontFamily: "var(--font-mono)", fontSize: 13, minHeight: 120, background: "rgba(0,0,0,0.3) !important", border: "1.5px solid var(--border)" }}
+                      value={challengeStarterCodeC}
+                      onChange={(e) => setChallengeStarterCodeC(e.target.value)}
+                      placeholder={`#include <stdio.h>\n#include <stdlib.h>\n\nint main() {\n    // Write your C code here\n    return 0;\n}`}
+                      rows={5}
+                    />
+                  )}
+                  {adminActiveLangTab === "cpp" && (
+                    <textarea
+                      className={adminStyles.input}
+                      style={{ fontFamily: "var(--font-mono)", fontSize: 13, minHeight: 120, background: "rgba(0,0,0,0.3) !important", border: "1.5px solid var(--border)" }}
+                      value={challengeStarterCodeCpp}
+                      onChange={(e) => setChallengeStarterCodeCpp(e.target.value)}
+                      placeholder={`#include <iostream>\nusing namespace std;\n\nint main() {\n    // Write your C++ code here\n    return 0;\n}`}
+                      rows={5}
+                    />
+                  )}
                 </div>
 
                 {/* Expected target output match */}

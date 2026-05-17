@@ -13,6 +13,8 @@ interface CodingInterfaceProps {
     test_cases?: string;
     target_output?: string;
     starter_code?: string;
+    starter_code_c?: string;
+    starter_code_cpp?: string;
   };
   code: string;
   setCode: (code: string) => void;
@@ -36,6 +38,8 @@ interface CodingInterfaceProps {
   onRevealHint?: () => void;
   isCompiling?: boolean;
   showSuccessRipple?: boolean;
+  selectedLanguage: "python" | "c" | "cpp";
+  onLanguageChange: (lang: "python" | "c" | "cpp") => void;
 }
 
 
@@ -55,7 +59,9 @@ export default function CodingInterface({
   isHintRevealed = false,
   onRevealHint,
   isCompiling = false,
-  showSuccessRipple = false
+  showSuccessRipple = false,
+  selectedLanguage,
+  onLanguageChange
 }: CodingInterfaceProps) {
 
   const [activeTerminalTab, setActiveTerminalTab] = useState<'console' | 'testcases'>('console');
@@ -90,7 +96,11 @@ export default function CodingInterface({
   const totalTime = hasRun ? testResults.reduce((acc, r) => acc + (r.executionTimeMs || 0), 0) : 0;
 
   // --- Starter Code (Nomenclature-Locked Lines) ---
-  const starterCode = problem.starter_code || '';
+  const starterCode = selectedLanguage === 'python'
+    ? (problem.starter_code || '')
+    : selectedLanguage === 'c'
+    ? (problem.starter_code_c || '')
+    : (problem.starter_code_cpp || '');
   const lockedLineCount = starterCode ? starterCode.split('\n').length : 0;
 
   // Protect immutable starter code prefix
@@ -216,11 +226,35 @@ export default function CodingInterface({
               <div className={styles.protocolIcon}>⚡</div>
               <div className={styles.protocolContent}>
                 <div className={styles.protocolTitle}>PROTOCOL NOTE</div>
-                <p>Use <code>input()</code> to read the test value. Print only the final result.</p>
-                <div className={styles.protocolExample}>
-                  <code>val = input()</code><br/>
-                  <code>print(your_result)</code>
-                </div>
+                {selectedLanguage === 'python' && (
+                  <>
+                    <p>Use <code>input()</code> to read the test value. Print only the final result.</p>
+                    <div className={styles.protocolExample}>
+                      <code>val = input()</code><br/>
+                      <code>print(your_result)</code>
+                    </div>
+                  </>
+                )}
+                {selectedLanguage === 'c' && (
+                  <>
+                    <p>Use standard input functions like <code>scanf</code> or <code>fgets</code>. Print only the final result.</p>
+                    <div className={styles.protocolExample}>
+                      <code>char str[100];</code><br/>
+                      <code>scanf("%s", str);</code><br/>
+                      <code>printf("%s\n", your_result);</code>
+                    </div>
+                  </>
+                )}
+                {selectedLanguage === 'cpp' && (
+                  <>
+                    <p>Use standard input stream <code>cin</code>. Print only the final result.</p>
+                    <div className={styles.protocolExample}>
+                      <code>string str;</code><br/>
+                      <code>cin &gt;&gt; str;</code><br/>
+                      <code>cout &lt;&lt; your_result &lt;&lt; endl;</code>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -239,8 +273,28 @@ export default function CodingInterface({
         <div className={styles.rightPane}>
           <div className={styles.editorSection}>
             <div className={styles.paneHeader}>
-              <div className={styles.tabGroup}>
-                <div className={`${styles.tab} ${styles.activeTab}`}>🐍 Python 3</div>
+              <div className={styles.tabGroup} style={{ display: 'flex', gap: 4 }}>
+                {(['python', 'c', 'cpp'] as const).map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => onLanguageChange(lang)}
+                    className={`${styles.tab} ${selectedLanguage === lang ? styles.activeTab : ''}`}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      fontWeight: selectedLanguage === lang ? 700 : 500,
+                      transition: 'all 0.2s ease',
+                      padding: '8px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    {lang === 'python' ? '🐍 Python 3' : lang === 'c' ? '🇨 C (GCC)' : '➕ C++ (G++)'}
+                  </button>
+                ))}
               </div>
             </div>
             <div className={styles.editorWrapper}>
@@ -402,7 +456,7 @@ export default function CodingInterface({
                   } : {}}
                   transition={isCompiling ? { repeat: Infinity, duration: 1.5 } : {}}
                 >
-                  {isCompiling ? "⚛️ Syncing..." : "▶ Run Local WASM"}
+                  {isCompiling ? "⚛️ Syncing..." : selectedLanguage === 'python' ? "▶ Run Python (Pyodide)" : "▶ Run WASM Compiler"}
                 </motion.button>
                 <button 
                   className={styles.submitBtn}
