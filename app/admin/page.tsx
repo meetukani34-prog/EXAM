@@ -3057,7 +3057,7 @@ function QuestionsTab() {
                   )}
                 </div>
 
-                {/* PyHunt Security Gates */}
+                {/* PyHunt Security Gates
                 <div style={{ borderTop: "1px solid var(--border)", paddingTop: 20 }}>
                   <h5 style={{ margin: "0 0 14px 0", fontSize: 14, fontWeight: 800, color: "var(--accent)" }}>🛡️ PyHunt Security Gate (Orbit Clues)</h5>
                   <div className={adminStyles.formRow}>
@@ -3093,6 +3093,7 @@ function QuestionsTab() {
                     </div>
                   </div>
                 </div>
+                */}
               </div>
             ) : (
               <>
