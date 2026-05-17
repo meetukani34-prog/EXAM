@@ -550,7 +550,61 @@ async def force_submit_student(student_id: str, _: bool = Depends(verify_admin))
 
     return {"status": "success", "score": score}
 
-# ── Exam Config (Orbital Control) ─────────────────────────────
+# ── Exam Config (Dynamic Fallbacks) ─────────────────────────────
+
+DYNAMIC_CONFIGS = [
+    {
+        "exam_title": "hii",
+        "branch": "DS",
+        "is_active": True,
+        "duration_minutes": 60,
+        "total_questions": 20,
+        "total_marks": 80.0,
+        "marks_per_question": 4.0,
+        "negative_marks": -1.0,
+        "max_attempts": 5,
+        "shuffle_questions": False,
+        "shuffle_options": False,
+        "show_answers_after": True,
+        "exam_description": "Conceptual MCQs Assessment",
+        "scheduled_start": None,
+        "scheduled_end": None,
+    },
+    {
+        "exam_title": "meet",
+        "branch": "CS",
+        "is_active": True,
+        "duration_minutes": 60,
+        "total_questions": 1,
+        "total_marks": 10.0,
+        "marks_per_question": 10.0,
+        "negative_marks": 0.0,
+        "max_attempts": 5,
+        "shuffle_questions": False,
+        "shuffle_options": False,
+        "show_answers_after": True,
+        "exam_description": "Coding Challenges Assessment",
+        "scheduled_start": None,
+        "scheduled_end": None,
+    },
+    {
+        "exam_title": "Meet",
+        "branch": "DS",
+        "is_active": True,
+        "duration_minutes": 60,
+        "total_questions": 1,
+        "total_marks": 10.0,
+        "marks_per_question": 10.0,
+        "negative_marks": 0.0,
+        "max_attempts": 5,
+        "shuffle_questions": False,
+        "shuffle_options": False,
+        "show_answers_after": True,
+        "exam_description": "Aptitude Assessment",
+        "scheduled_start": None,
+        "scheduled_end": None,
+    }
+]
 
 @router.get("/exam/config", response_model=ExamConfig)
 async def get_exam_config(title: Optional[str] = None, _: bool = Depends(verify_admin)):
@@ -563,8 +617,16 @@ async def get_exam_config(title: Optional[str] = None, _: bool = Depends(verify_
         else:
             result = query.limit(1).execute()
 
+        row = None
         if result.data:
             row = result.data[0]
+        else:
+            if title:
+                row = next((c for c in DYNAMIC_CONFIGS if c["exam_title"] == title), None)
+            elif DYNAMIC_CONFIGS:
+                row = DYNAMIC_CONFIGS[0]
+
+        if row:
             return ExamConfig(
                 is_active=row.get("is_active", True),
                 scheduled_start=row.get("scheduled_start"),
@@ -580,6 +642,7 @@ async def get_exam_config(title: Optional[str] = None, _: bool = Depends(verify_
                 total_questions=row.get("total_questions", 30),
                 total_marks=row.get("total_marks", 120),
                 exam_description=row.get("exam_description"),
+                branch=row.get("branch", "ALL"),
                 category=row.get("category", "other")
             )
     except Exception as e:
@@ -594,6 +657,13 @@ async def get_all_exam_configs(_: bool = Depends(verify_admin)):
     db = get_supabase()
     try:
         res = db.table("exam_config").select("*").execute()
+        res_data = res.data or []
+        
+        # Merge dynamic configurations
+        for dyn in DYNAMIC_CONFIGS:
+            if not any(row.get("exam_title") == dyn["exam_title"] for row in res_data):
+                res_data.append(dyn)
+                
         return [
             ExamConfig(
                 is_active=row.get("is_active", True),
@@ -610,8 +680,9 @@ async def get_all_exam_configs(_: bool = Depends(verify_admin)):
                 total_questions=row.get("total_questions", 30),
                 total_marks=row.get("total_marks", 120),
                 exam_description=row.get("exam_description"),
+                branch=row.get("branch", "ALL"),
                 category=row.get("category", "other")
-            ) for row in res.data
+            ) for row in res_data
         ]
     except Exception as e:
         print(f"Error fetching all configs: {e}")
@@ -656,6 +727,8 @@ async def update_exam_config(request: ExamConfigUpdate, _: bool = Depends(verify
         update_data["total_marks"] = request.total_marks
     if request.exam_description is not None:
         update_data["exam_description"] = request.exam_description
+    if request.branch is not None:
+        update_data["branch"] = request.branch
 
     try:
         # Use upsert based on UNIQUE exam_title
@@ -678,6 +751,8 @@ async def update_exam_config(request: ExamConfigUpdate, _: bool = Depends(verify
                 total_questions=row.get("total_questions", 30),
                 total_marks=row.get("total_marks", 120),
                 exam_description=row.get("exam_description"),
+                branch=row.get("branch", "ALL"),
+                category=row.get("category", "other")
             )
     except Exception as e:
         err_str = str(e)

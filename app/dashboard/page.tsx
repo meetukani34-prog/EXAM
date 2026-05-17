@@ -88,9 +88,13 @@ export default function DashboardPage() {
       const nodes: ExamNode[] = [];
 
       function inferCategory(examName: string): string {
+        if (examName === "Meet") return "aptitude";
         const n = (examName || "").toLowerCase();
-        if (n.includes("aptitude") || n.includes("quant") || n.includes("reasoning")) return "aptitude";
-        if (n.includes("program") || n.includes("code") || n.includes("coding") || n.includes("pyhunt")) return "programming";
+        if (n.includes("aptitude") || n.includes("quant") || n.includes("reasoning") || n.includes("logical")) return "aptitude";
+        if (n.includes("program") || n.includes("code") || n.includes("coding") || n.includes("pyhunt") ||
+            n.includes("dsa") || n.includes("algorithm") || n.includes("data structure") ||
+            n.includes("python") || n.includes("java") || n.includes("c++") || n.includes("javascript") ||
+            n.includes("cs") || n.includes("ds") || n === "hii" || n === "meet") return "programming";
         return "other";
       }
 

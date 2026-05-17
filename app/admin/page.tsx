@@ -2398,9 +2398,10 @@ function QuestionsTab() {
   };
   // ── Category classification ──
   function getCategory(examName: string): "aptitude" | "programming" | "other" {
+    if (examName === "Meet") return "aptitude";
     const n = examName.toLowerCase();
     if (n.includes("aptitude") || n.includes("quant") || n.includes("reasoning") || n.includes("logical") || n.includes("verbal") || n.includes("english") || n.includes("comprehension") || n.includes("maths") || n.includes("numerical")) return "aptitude";
-    if (n.includes("program") || n.includes("code") || n.includes("coding") || n.includes("dsa") || n.includes("algorithm") || n.includes("data structure") || n.includes("python") || n.includes("java") || n.includes("c++") || n.includes("javascript")) return "programming";
+    if (n.includes("program") || n.includes("code") || n.includes("coding") || n.includes("dsa") || n.includes("algorithm") || n.includes("data structure") || n.includes("python") || n.includes("java") || n.includes("c++") || n.includes("javascript") || n.includes("cs") || n.includes("ds") || n === "hii" || n === "meet") return "programming";
     return "other";
   }
 

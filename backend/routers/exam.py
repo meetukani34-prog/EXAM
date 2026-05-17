@@ -47,6 +47,60 @@ async def heartbeat(current: dict = Depends(get_current_student)):
     """Simple authenticated ping to check if student is blocked/authorized."""
     return {"status": "ok"}
 
+DYNAMIC_CONFIGS = [
+    {
+        "exam_title": "hii",
+        "branch": "DS",
+        "is_active": True,
+        "duration_minutes": 60,
+        "total_questions": 20,
+        "total_marks": 80.0,
+        "marks_per_question": 4.0,
+        "negative_marks": -1.0,
+        "max_attempts": 5,
+        "shuffle_questions": False,
+        "shuffle_options": False,
+        "show_answers_after": True,
+        "exam_description": "Conceptual MCQs Assessment",
+        "scheduled_start": None,
+        "scheduled_end": None,
+    },
+    {
+        "exam_title": "meet",
+        "branch": "CS",
+        "is_active": True,
+        "duration_minutes": 60,
+        "total_questions": 1,
+        "total_marks": 10.0,
+        "marks_per_question": 10.0,
+        "negative_marks": 0.0,
+        "max_attempts": 5,
+        "shuffle_questions": False,
+        "shuffle_options": False,
+        "show_answers_after": True,
+        "exam_description": "Coding Challenges Assessment",
+        "scheduled_start": None,
+        "scheduled_end": None,
+    },
+    {
+        "exam_title": "Meet",
+        "branch": "DS",
+        "is_active": True,
+        "duration_minutes": 60,
+        "total_questions": 1,
+        "total_marks": 10.0,
+        "marks_per_question": 10.0,
+        "negative_marks": 0.0,
+        "max_attempts": 5,
+        "shuffle_questions": False,
+        "shuffle_options": False,
+        "show_answers_after": True,
+        "exam_description": "Aptitude Assessment",
+        "scheduled_start": None,
+        "scheduled_end": None,
+    }
+]
+
 @router.get("/config/public")
 async def get_exam_config_public(branch: Optional[str] = Query(None)):
     """Public exam config endpoint (no auth) — filtered by branch and active status."""
@@ -61,10 +115,34 @@ async def get_exam_config_public(branch: Optional[str] = Query(None)):
             query = query.or_(f"branch.eq.{branch.upper()},branch.eq.ALL,branch.is.null")
         
         result = query.execute()
-        return result.data or []
+        res_data = result.data or []
+        
+        # 3. Dynamic Configuration Merging
+        for dyn in DYNAMIC_CONFIGS:
+            if any(row.get("exam_title") == dyn["exam_title"] for row in res_data):
+                continue
+            
+            if branch:
+                b_upper = branch.upper()
+                dyn_b = dyn["branch"].upper()
+                if dyn_b != "ALL" and dyn_b != b_upper:
+                    continue
+                    
+            res_data.append(dyn)
+            
+        return res_data
     except Exception as e:
         print(f"[EXAM] Public config SQL fetch failed: {e}")
-        return []
+        # Fallback to filtered dynamic configs in case database fails completely
+        res_data = []
+        for dyn in DYNAMIC_CONFIGS:
+            if branch:
+                b_upper = branch.upper()
+                dyn_b = dyn["branch"].upper()
+                if dyn_b != "ALL" and dyn_b != b_upper:
+                    continue
+            res_data.append(dyn)
+        return res_data
 
 
 
