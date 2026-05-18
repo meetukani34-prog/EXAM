@@ -3,19 +3,19 @@
    ══════════════════════════════════════════════════════════════ */
 
 .card {
-  background: rgba(255, 255, 255, 0.80);
+  background: var(--bg-card);
   backdrop-filter: blur(40px) saturate(1.4);
   -webkit-backdrop-filter: blur(40px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 32px;
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-card);
   animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .card:hover {
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-floating);
 }
 
 @keyframes fadeUp {
@@ -33,7 +33,7 @@
 .questionNumber {
   font-size: 14px;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .marksBadge {
@@ -46,7 +46,7 @@
   padding: 4px 10px;
   border-radius: 8px;
   background: rgba(34, 197, 94, 0.1);
-  color: #16a34a;
+  color: #22c55e;
   border: 1px solid rgba(34, 197, 94, 0.2);
 }
 .negMarks {
@@ -55,18 +55,18 @@
   padding: 4px 10px;
   border-radius: 8px;
   background: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
+  color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .questionText {
   font-size: 17px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.5;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .optionsList {
@@ -86,18 +86,18 @@
   border-radius: 14px;
   cursor: pointer;
   transition: all 0.25s ease;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1.5px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1.5px solid var(--border-light);
 }
 
 .option:hover {
-  background: rgba(13, 148, 136, 0.04);
-  border-color: rgba(13, 148, 136, 0.2);
+  background: rgba(20, 184, 166, 0.08);
+  border-color: rgba(20, 184, 166, 0.3);
 }
 
 .optionSelected {
-  background: rgba(13, 148, 136, 0.06) !important;
-  border-color: #0d9488 !important;
+  background: rgba(20, 184, 166, 0.12) !important;
+  border-color: var(--accent) !important;
 }
 
 /* Custom Radio Circle */
@@ -105,7 +105,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 2px solid #cbd5e1;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -114,8 +114,8 @@
 }
 
 .optionSelected .radio {
-  border-color: #0d9488;
-  background: #0d9488;
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .radioInner {
@@ -134,12 +134,12 @@
 .optionLabel {
   font-size: 15px;
   font-weight: 500;
-  color: #334155;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
 .optionSelected .optionLabel {
-  color: #0f172a;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -159,13 +159,13 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: rgba(13, 148, 136, 0.08);
-  border: 1.5px solid rgba(13, 148, 136, 0.3);
-  color: #0d9488;
+  background: rgba(20, 184, 166, 0.1);
+  border: 1.5px solid rgba(20, 184, 166, 0.3);
+  color: var(--accent-light);
 }
 
 .btnPrevious:hover {
-  background: rgba(13, 148, 136, 0.15);
+  background: rgba(20, 184, 166, 0.2);
 }
 
 .btnReview {
@@ -176,19 +176,19 @@
   cursor: pointer;
   transition: all 0.3s ease;
   background: transparent;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
-  color: #475569;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
 }
 
 .btnReview:hover {
-  border-color: #eab308;
-  color: #ca8a04;
+  border-color: #f59e0b;
+  color: #fbbf24;
 }
 
 .btnReviewActive {
-  border-color: #eab308 !important;
-  color: #ca8a04 !important;
-  background: rgba(234, 179, 8, 0.08) !important;
+  border-color: #f59e0b !important;
+  color: #fbbf24 !important;
+  background: rgba(245, 158, 11, 0.12) !important;
 }
 
 .btnNext {
@@ -198,16 +198,16 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: #0d9488;
+  background: var(--accent);
   border: none;
   color: #fff;
-  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3);
+  box-shadow: 0 4px 14px rgba(20, 184, 166, 0.3);
 }
 
 .btnNext:hover {
-  background: #0f766e;
+  background: var(--accent-light);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
+  box-shadow: 0 6px 20px rgba(20, 184, 166, 0.5);
 }
 
 .btnSubmit {

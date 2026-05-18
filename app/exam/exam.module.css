@@ -6,12 +6,11 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  /* Warm pastel background matching mockup exactly */
-  /* Optimized background animation for performance */
+  /* Cybernetic high-tech dark space background */
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(186, 230, 253, 0.4) 0%, transparent 70%),
-    radial-gradient(ellipse at 80% 30%, rgba(196, 181, 253, 0.2) 0%, transparent 70%),
-    linear-gradient(135deg, #dbeafe 0%, #e0f2fe 50%, #ede9fe 100%);
+    radial-gradient(ellipse at 20% 50%, rgba(20, 184, 166, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 30%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
+    linear-gradient(135deg, #090d16 0%, #0f172a 50%, #070a0f 100%);
   background-size: 200% 200%;
   animation: bgShift 80s ease infinite alternate;
   position: relative;
@@ -26,54 +25,54 @@
 
 /* ── CSS Variables ── */
 .wrapper {
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --accent: #0d9488;
-  --accent-light: #5eead4;
-  --bg-card: rgba(255, 255, 255, 0.72);
-  --bg-card-strong: rgba(255, 255, 255, 0.82);
-  --border: rgba(255, 255, 255, 0.85);
-  --border-light: rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.05);
-  --shadow-floating: 0 20px 60px rgba(0, 0, 0, 0.08);
+  --text-primary: #f8fafc; /* white slate */
+  --text-secondary: #94a3b8; /* cool grey */
+  --accent: #14b8a6; /* bright cyan */
+  --accent-light: #2dd4bf; /* neon teal */
+  --bg-card: rgba(15, 23, 42, 0.65); /* translucent slate glass */
+  --bg-card-strong: rgba(15, 23, 42, 0.85); /* robust slate glass */
+  --border: rgba(255, 255, 255, 0.08); /* fine glowing border */
+  --border-light: rgba(255, 255, 255, 0.04);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-floating: 0 20px 60px rgba(0, 0, 0, 0.5);
   --radius: 12px;
   --radius-lg: 20px;
   --radius-xl: 28px;
   --radius-sm: 8px;
 }
 
-/* Theme phases - all warm light pastels */
+/* Theme phases - dark cybernetic glowing gradients */
 .wrapper[data-theme="phase-1"] {
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(186, 230, 253, 0.6) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 30%, rgba(196, 181, 253, 0.3) 0%, transparent 60%),
-    linear-gradient(135deg, #dbeafe 0%, #e0f2fe 30%, #ccfbf1 60%, #e0f2fe 100%);
+    radial-gradient(ellipse at 20% 50%, rgba(20, 184, 166, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+    linear-gradient(135deg, #060913 0%, #0d1527 40%, #0f172a 70%, #070b14 100%);
 }
 .wrapper[data-theme="ocean"] {
   background:
-    radial-gradient(ellipse at 30% 40%, rgba(153, 246, 228, 0.5) 0%, transparent 60%),
-    radial-gradient(ellipse at 70% 20%, rgba(186, 230, 253, 0.5) 0%, transparent 60%),
-    linear-gradient(135deg, #ecfeff 0%, #cffafe 30%, #e0f2fe 60%, #f0fdfa 100%);
+    radial-gradient(ellipse at 30% 40%, rgba(13, 148, 136, 0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 20%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+    linear-gradient(135deg, #020f12 0%, #061e24 40%, #0f172a 70%, #03141a 100%);
 }
 .wrapper[data-theme="galaxy"] {
   background:
-    radial-gradient(ellipse at 20% 30%, rgba(196, 181, 253, 0.5) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 70%, rgba(221, 214, 254, 0.4) 0%, transparent 60%),
-    linear-gradient(135deg, #ede9fe 0%, #e0e7ff 30%, #dbeafe 60%, #f5f3ff 100%);
+    radial-gradient(ellipse at 20% 30%, rgba(139, 92, 246, 0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(236, 72, 153, 0.12) 0%, transparent 50%),
+    linear-gradient(135deg, #0b081c 0%, #160f38 40%, #0f172a 70%, #0a061b 100%);
 }
 .wrapper[data-theme="nebula"] {
   background:
-    radial-gradient(ellipse at 30% 30%, rgba(251, 207, 232, 0.4) 0%, transparent 60%),
-    radial-gradient(ellipse at 70% 70%, rgba(221, 214, 254, 0.4) 0%, transparent 60%),
-    linear-gradient(135deg, #fdf2f8 0%, #fae8ff 30%, #ede9fe 60%, #f5f3ff 100%);
+    radial-gradient(ellipse at 30% 30%, rgba(219, 39, 119, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 70%, rgba(124, 58, 237, 0.18) 0%, transparent 50%),
+    linear-gradient(135deg, #140510 0%, #290b21 40%, #0f172a 70%, #170613 100%);
 }
 .wrapper[data-theme="glass-aura"],
 .wrapper[data-theme="glass-galaxy"],
 .wrapper[data-theme="glass-ocean"] {
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(186, 230, 253, 0.5) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 30%, rgba(153, 246, 228, 0.4) 0%, transparent 60%),
-    linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 30%, #ccfbf1 60%, #ecfeff 100%);
+    radial-gradient(ellipse at 20% 50%, rgba(20, 184, 166, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 30%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+    linear-gradient(135deg, #03080c 0%, #0a1824 40%, #0f172a 70%, #040c14 100%);
 }
 
 /* ── Header ── */
@@ -246,7 +245,7 @@
 .confirmOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(3, 7, 18, 0.8);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -254,7 +253,7 @@
   z-index: 9999;
 }
 .confirmModal {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);

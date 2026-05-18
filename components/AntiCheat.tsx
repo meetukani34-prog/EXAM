@@ -144,18 +144,21 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit, onWarni
 
   // ── Tab visibility & blur (consolidated) ─────────────────
   useEffect(() => {
-    if (!isStabilized.current || isSubmitted) return;
+    if (isSubmitted) return;
 
     const handleVisibility = () => {
+      if (!isStabilized.current) return;
       if (document.visibilityState === "hidden") {
         triggerViolationRef.current("tab_switch");
       }
     };
     const handleBlur = () => {
+      if (!isStabilized.current) return;
       // Trigger violation on ANY window blur to catch screenshot tools and overlays
       triggerViolationRef.current("window_blur");
     };
     const handleFsChange = () => {
+      if (!isStabilized.current) return;
       const isFs =
         !!document.fullscreenElement ||
         !!(document as any).webkitFullscreenElement ||
@@ -196,6 +199,8 @@ export default function AntiCheat({ isSubmitted, examName, onAutoSubmit, onWarni
     if (isSubmitted) return;
 
     const handleKey = (e: KeyboardEvent) => {
+      if (!isStabilized.current) return;
+      
       // Specific check for Escape to catch fullscreen exits immediately
       if (e.key === "Escape") {
         const isFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).mozFullScreenElement || (document as any).msFullscreenElement);

@@ -16,6 +16,7 @@ import styles from "./exam.module.css";
 interface StudentInfo {
   id: string;
   name: string;
+  usn: string;
   examStartTime: string | null;
   examDurationMinutes: number;
 }
@@ -79,6 +80,7 @@ export default function ExamPage() {
     const info = raw ? JSON.parse(raw) : { 
       id: "PREVIEW", 
       name: "Admin Preview", 
+      usn: "PREVIEW_USN",
       examStartTime: null, 
       examDurationMinutes: selectedDuration ? parseInt(selectedDuration) : 20,
       examTitle: "Online Assessment"
@@ -253,6 +255,28 @@ export default function ExamPage() {
   };
 
   // ── Derived State (must be before early returns) ──────────
+  // Repeating Name/USN Watermark Style
+  const watermarkStyle = useMemo(() => {
+    if (!student) return {};
+    const studentUsn = (student.usn || "PREVIEW_USN").toUpperCase();
+    const studentName = student.name || "Admin Preview";
+    const watermarkText = `${studentUsn} • ${studentName}`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
+      <text x="150" y="100" fill="rgba(255,255,255,0.035)" font-family="'Inter', sans-serif" font-size="11" font-weight="600" text-anchor="middle" transform="rotate(-22 150 100)">${watermarkText}</text>
+    </svg>`;
+    return {
+      backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`,
+      position: "fixed" as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      pointerEvents: "none" as const,
+      userSelect: "none" as const,
+      zIndex: 1,
+    };
+  }, [student]);
+
   const answeredCount = getAnsweredCount(questions.length);
   const progressPercentage = questions.length > 0 ? (activeQuestionIndex + 1) / questions.length : 0;
 
@@ -522,6 +546,9 @@ export default function ExamPage() {
 
   return (
     <div className={`${styles.wrapper} no-select`} data-theme={activeTheme}>
+      {/* Dynamic diagonal Name/USN security watermark */}
+      <div style={watermarkStyle} />
+
       {/* ── Weightless Exam Overlay (inactive / scheduled) ── */}
       {(examInactive || examScheduled) && (
         <div style={{
@@ -569,30 +596,30 @@ export default function ExamPage() {
       {/* ── Welcome Banner (always visible, matching mockup) ── */}
       <div style={{ padding: "16px 28px 0", zIndex: 2, position: "relative" }}>
         <div style={{
-          background: "rgba(255, 255, 255, 0.65)",
+          background: "var(--bg-card)",
           backdropFilter: "blur(40px)",
           WebkitBackdropFilter: "blur(40px)",
           padding: "16px 28px",
           borderRadius: "20px",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.06)",
+          boxShadow: "var(--shadow-card)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          border: "1px solid rgba(255,255,255,0.7)",
+          border: "1px solid var(--border)",
         }}>
-          <h2 style={{ fontSize: "16px", margin: 0, fontWeight: 700, color: "#1e293b" }}>
+          <h2 style={{ fontSize: "16px", margin: 0, fontWeight: 700, color: "var(--text-primary)" }}>
             Welcome, {student?.name || "Student"}!{" "}
-            <span style={{ fontWeight: 400, opacity: 0.7, color: "#475569" }}>
+            <span style={{ fontWeight: 400, opacity: 0.7, color: "var(--text-secondary)" }}>
               Deep breaths and stay focused. You&apos;ve got this.
             </span>
           </h2>
           {/* Avatar circle */}
           <div style={{
             width: 42, height: 42, borderRadius: "50%",
-            background: "linear-gradient(135deg, #0d9488, #5eead4)",
+            background: "linear-gradient(135deg, #14b8a6, #2dd4bf)",
             display: "flex", alignItems: "center", justifyContent: "center",
             color: "#fff", fontWeight: 700, fontSize: "16px",
-            boxShadow: "0 4px 12px rgba(13,148,136,0.3)",
+            boxShadow: "0 4px 12px rgba(20,184,166,0.3)",
             flexShrink: 0
           }}>
             {(student?.name || "S").charAt(0).toUpperCase()}
@@ -608,15 +635,15 @@ export default function ExamPage() {
              display: "flex",
              alignItems: "center",
              justifyContent: "space-between",
-             background: "rgba(255, 255, 255, 0.65)",
+             background: "var(--bg-card)",
              backdropFilter: "blur(40px)",
              WebkitBackdropFilter: "blur(40px)",
              padding: "16px 28px",
              borderRadius: "20px",
-             boxShadow: "0 8px 32px rgba(0,0,0,0.06)",
-             border: "1px solid rgba(255,255,255,0.7)",
+             boxShadow: "var(--shadow-card)",
+             border: "1px solid var(--border)",
           }}>
-             <h1 style={{ margin: 0, fontSize: "20px", color: "#1e293b", fontWeight: 700 }}>
+             <h1 style={{ margin: 0, fontSize: "20px", color: "var(--text-primary)", fontWeight: 700 }}>
                {examTitle}
              </h1>
              {student && stableStartTime.current && (
@@ -801,7 +828,7 @@ export default function ExamPage() {
                 <span>Flagged</span>
               </div>
               <div className={styles.legendItem}>
-                <span className={styles.legendDot} style={{ background: "rgba(0,0,0,0.08)" }} />
+                <span className={styles.legendDot} style={{ background: "rgba(255,255,255,0.08)" }} />
                 <span>Not Visited</span>
               </div>
             </div>
@@ -809,15 +836,15 @@ export default function ExamPage() {
 
           {/* Moon / Cloud Decorative Card (matching mockup) */}
           <div style={{
-            background: "rgba(255, 255, 255, 0.55)",
+            background: "var(--bg-card-strong)",
             backdropFilter: "blur(40px)",
             WebkitBackdropFilter: "blur(40px)",
             borderRadius: "20px",
-            border: "1px solid rgba(255,255,255,0.7)",
+            border: "1px solid var(--border)",
             padding: "24px",
             display: "grid",
             placeItems: "center",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.06)",
+            boxShadow: "var(--shadow-card)",
             position: "relative",
             overflow: "hidden",
             flexShrink: 0,
@@ -825,16 +852,16 @@ export default function ExamPage() {
              {/* Moon */}
              <div style={{
                width: 60, height: 60, borderRadius: "50%",
-               background: "radial-gradient(circle at 30% 30%, #f0fdfa, #ccfbf1)",
-               boxShadow: "0 0 30px rgba(13,148,136,0.2)",
+               background: "radial-gradient(circle at 30% 30%, #2dd4bf, #0d9488)",
+               boxShadow: "0 0 35px rgba(20, 184, 166, 0.5)",
                marginBottom: 12,
              }} />
              {/* Clouds */}
-             <div style={{ position: "absolute", bottom: -5, left: "-5%", opacity: 0.15, filter: "blur(8px)", fontSize: "36px" }}>☁️</div>
-             <div style={{ position: "absolute", bottom: 15, right: "8%", opacity: 0.2, filter: "blur(4px)", fontSize: "18px" }}>☁️</div>
+             <div style={{ position: "absolute", bottom: -5, left: "-5%", opacity: 0.08, filter: "blur(8px)", fontSize: "36px" }}>☁️</div>
+             <div style={{ position: "absolute", bottom: 15, right: "8%", opacity: 0.12, filter: "blur(4px)", fontSize: "18px" }}>☁️</div>
              {/* Sparkle stars */}
-             <div style={{ position: "absolute", top: 14, right: 20, fontSize: "14px", opacity: 0.5 }}>✦</div>
-             <div style={{ position: "absolute", top: 30, right: 35, fontSize: "10px", opacity: 0.3 }}>✦</div>
+             <div style={{ position: "absolute", top: 14, right: 20, fontSize: "14px", opacity: 0.4, color: "var(--text-secondary)" }}>✦</div>
+             <div style={{ position: "absolute", top: 30, right: 35, fontSize: "10px", opacity: 0.2, color: "var(--text-secondary)" }}>✦</div>
           </div>
         </aside>
       </main>
