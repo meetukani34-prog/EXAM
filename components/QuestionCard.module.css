@@ -88,16 +88,41 @@
   transition: all 0.25s ease;
   background: rgba(255, 255, 255, 0.02);
   border: 1.5px solid var(--border-light);
+  color: var(--text-secondary);
+  text-align: left;
+  font-family: inherit;
 }
 
 .option:hover {
   background: rgba(20, 184, 166, 0.08);
   border-color: rgba(20, 184, 166, 0.3);
+  color: var(--text-primary);
 }
 
 .optionSelected {
   background: rgba(20, 184, 166, 0.12) !important;
   border-color: var(--accent) !important;
+  color: var(--text-primary) !important;
+}
+
+.radioWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.radioSelected {
+  color: var(--accent);
+}
+
+.radioUnselected {
+  color: rgba(255, 255, 255, 0.3);
+  transition: color 0.2s ease;
+}
+
+.option:hover .radioUnselected {
+  color: rgba(20, 184, 166, 0.6);
 }
 
 /* Custom Radio Circle */

@@ -550,7 +550,10 @@ def submit_exam(
         
         curr_count = 1
         if curr_res.data:
-            curr_count = curr_res.data[0].get("attempts_count", 0) or 1
+            curr_count = curr_res.data[0].get("attempts_count", 0)
+            if not curr_count or curr_count < 1:
+                curr_count = 1
+            print(f"[SUBMIT] Preserved active attempt count: {curr_count}")
         
         status_payload = {
             "student_id": student_id,

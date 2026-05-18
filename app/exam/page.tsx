@@ -261,8 +261,8 @@ export default function ExamPage() {
     const studentUsn = (student.usn || "PREVIEW_USN").toUpperCase();
     const studentName = student.name || "Admin Preview";
     const watermarkText = `${studentUsn} • ${studentName}`;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
-      <text x="150" y="100" fill="rgba(255,255,255,0.035)" font-family="'Inter', sans-serif" font-size="11" font-weight="600" text-anchor="middle" transform="rotate(-22 150 100)">${watermarkText}</text>
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="350" viewBox="0 0 500 350">
+      <text x="250" y="175" fill="rgba(255,255,255,0.065)" font-family="'Inter', sans-serif" font-size="22" font-weight="800" text-anchor="middle" transform="rotate(-25 250 175)">${watermarkText}</text>
     </svg>`;
     return {
       backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`,

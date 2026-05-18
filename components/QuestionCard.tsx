@@ -82,7 +82,7 @@ export default function QuestionCard({
               type="button"
               disabled={isSubmitted}
               onClick={() => !isSubmitted && onSelect(question.id, key)}
-              className={`${styles.option} ${isSelected ? styles.selected : ""}`}
+              className={`${styles.option} ${isSelected ? styles.optionSelected : ""}`}
               aria-pressed={isSelected}
             >
               {/* Custom SVG radio */}
@@ -98,7 +98,7 @@ export default function QuestionCard({
                   </svg>
                 )}
               </div>
-              <span className={styles.optionText}>
+              <span className={styles.optionLabel}>
                 {key}. {option.replace(/^[A-D]\)\s*/, "")}
               </span>
             </button>
