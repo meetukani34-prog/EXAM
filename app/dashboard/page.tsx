@@ -90,10 +90,12 @@ export default function DashboardPage() {
         .select("exam_name, programming_type, category")
         .eq("category", "programming");
 
+      const programmingExams = new Set<string>();
       const examTypeMap: Record<string, "compiler" | "mcq"> = {};
       if (progQuestions && !pqError) {
         progQuestions.forEach((q: any) => {
           if (q.exam_name) {
+            programmingExams.add(q.exam_name);
             const type = q.programming_type || "compiler";
             if (type === "compiler" || !examTypeMap[q.exam_name]) {
               examTypeMap[q.exam_name] = type as "compiler" | "mcq";
@@ -108,12 +110,13 @@ export default function DashboardPage() {
 
       function inferCategory(examName: string): string {
         if (examName === "Meet") return "aptitude";
+        if (programmingExams.has(examName)) return "programming";
         const n = (examName || "").toLowerCase();
         if (n.includes("aptitude") || n.includes("quant") || n.includes("reasoning") || n.includes("logical")) return "aptitude";
         if (n.includes("program") || n.includes("code") || n.includes("coding") || n.includes("pyhunt") ||
             n.includes("dsa") || n.includes("algorithm") || n.includes("data structure") ||
             n.includes("python") || n.includes("java") || n.includes("c++") || n.includes("javascript") ||
-            n.includes("cs") || n.includes("ds") || n === "hii" || n === "meet") return "programming";
+            n === "hii" || n === "meet") return "programming";
         return "other";
       }
 
