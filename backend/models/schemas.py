@@ -334,3 +334,52 @@ class StudentFidelity(BaseModel):
     odyssey_progress: Optional[Dict[str, Any]]
     category_scores: Dict[str, Dict[str, float]] 
     results_by_category: Dict[str, List[Dict[str, Any]]] # { "aptitude": [...], ... }
+
+# ── Faculty ───────────────────────────────────────────────────
+class FacultyLoginRequest(BaseModel):
+    email: str
+    password: str
+
+class FacultyLoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    faculty_id: str
+    name: str
+    email: str
+    branches: List[str] = []
+
+class FacultyCreate(BaseModel):
+    name: str
+    email: str
+    password: str
+    branches: List[str] = []
+
+class FacultyUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+    is_active: Optional[bool] = None
+    branches: Optional[List[str]] = None
+
+class FacultyOut(BaseModel):
+    id: str
+    name: str
+    email: str
+    is_active: bool
+    branches: List[str] = []
+    created_at: Optional[str] = None
+
+class FacultySubjectAssign(BaseModel):
+    branches: List[str]
+
+class LiveAlertOut(BaseModel):
+    id: str
+    student_id: str
+    student_usn: Optional[str] = None
+    student_name: Optional[str] = None
+    exam_name: Optional[str] = None
+    branch: Optional[str] = None
+    alert_type: str
+    message: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: Optional[str] = None

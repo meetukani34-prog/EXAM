@@ -1168,3 +1168,139 @@ async def update_support_status(request_id: str, request: dict, _: bool = Depend
         
     db.table("support_requests").update({"status": status_val}).eq("id", request_id).execute()
     return {"updated": True, "id": request_id, "new_status": status_val}
+
+
+# ── Faculty Management ────────────────────────────────────────
+
+@router.get("/faculty")
+async def get_all_faculty(_: bool = Depends(verify_admin)):
+    """List all faculty with their assigned branches."""
+    db = get_supabase()
+    faculty_res = db.table("faculty").select("*").order("created_at", desc=True).execute()
+
+    faculty_list = []
+    for f in (faculty_res.data or []):
+        # Fetch branches for each faculty
+        branches_res = db.table("faculty_subjects").select("branch").eq("faculty_id", f["id"]).execute()
+        branches = [r["branch"] for r in (branches_res.data or [])]
+        faculty_list.append({
+            "id": f["id"],
+            "name": f["name"],
+            "email": f["email"],
+            "is_active": f.get("is_active", True),
+            "branches": branches,
+            "created_at": f.get("created_at")
+        })
+
+    return {"faculty": faculty_list, "total": len(faculty_list)}
+
+
+@router.post("/faculty")
+async def create_faculty(request: dict, _: bool = Depends(verify_admin)):
+    """Create a new faculty account with branch assignments."""
+    db = get_supabase()
+
+    name = request.get("name", "").strip()
+    email = request.get("email", "").strip().lower()
+    password = request.get("password", "")
+    branches = request.get("branches", [])
+
+    if not name or not email or not password:
+        raise HTTPException(status_code=400, detail="Name, email, and password are required.")
+
+    # Check for duplicate email
+    existing = db.table("faculty").select("id").eq("email", email).execute()
+    if existing.data:
+        raise HTTPException(status_code=409, detail=f"Faculty with email '{email}' already exists.")
+
+    # Create faculty record
+    faculty_data = {
+        "name": name,
+        "email": email,
+        "password_hash": hash_password(password),
+        "is_active": True
+    }
+    result = db.table("faculty").insert(faculty_data).execute()
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to create faculty")
+
+    faculty_id = result.data[0]["id"]
+
+    # Assign branches
+    for branch in branches:
+        try:
+            db.table("faculty_subjects").insert({
+                "faculty_id": faculty_id,
+                "branch": branch
+            }).execute()
+        except Exception as e:
+            print(f"[ADMIN] Branch assignment failed for {branch}: {e}")
+
+    return {"success": True, "faculty": {**result.data[0], "branches": branches}}
+
+
+@router.put("/faculty/{faculty_id}")
+async def update_faculty(faculty_id: str, request: dict, _: bool = Depends(verify_admin)):
+    """Update faculty account details and/or branch assignments."""
+    db = get_supabase()
+
+    update_data = {}
+    if request.get("name"):
+        update_data["name"] = request["name"].strip()
+    if request.get("email"):
+        update_data["email"] = request["email"].strip().lower()
+    if request.get("password"):
+        update_data["password_hash"] = hash_password(request["password"])
+    if "is_active" in request:
+        update_data["is_active"] = request["is_active"]
+
+    if update_data:
+        db.table("faculty").update(update_data).eq("id", faculty_id).execute()
+
+    # Update branches if provided
+    if "branches" in request:
+        # Clear existing assignments
+        db.table("faculty_subjects").delete().eq("faculty_id", faculty_id).execute()
+        # Re-assign
+        for branch in request["branches"]:
+            try:
+                db.table("faculty_subjects").insert({
+                    "faculty_id": faculty_id,
+                    "branch": branch
+                }).execute()
+            except Exception:
+                pass
+
+    return {"success": True, "updated": faculty_id}
+
+
+@router.delete("/faculty/{faculty_id}")
+async def delete_faculty(faculty_id: str, _: bool = Depends(verify_admin)):
+    """Delete a faculty account (cascade deletes branch assignments)."""
+    db = get_supabase()
+    db.table("faculty").delete().eq("id", faculty_id).execute()
+    return {"success": True, "deleted": faculty_id}
+
+
+@router.put("/faculty/{faculty_id}/branches")
+async def assign_faculty_branches(faculty_id: str, request: dict, _: bool = Depends(verify_admin)):
+    """Assign or revoke branch access for a faculty member."""
+    db = get_supabase()
+    branches = request.get("branches", [])
+
+    # Clear existing
+    db.table("faculty_subjects").delete().eq("faculty_id", faculty_id).execute()
+
+    # Re-assign
+    assigned = []
+    for branch in branches:
+        try:
+            db.table("faculty_subjects").insert({
+                "faculty_id": faculty_id,
+                "branch": branch
+            }).execute()
+            assigned.append(branch)
+        except Exception:
+            pass
+
+    return {"success": True, "faculty_id": faculty_id, "branches": assigned}

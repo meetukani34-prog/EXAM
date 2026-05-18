@@ -20,7 +20,7 @@ try:
 
     from db.supabase_client import get_supabase
     from core.config import get_settings
-    from routers import auth, exam, violations, admin, ingest, leaderboard
+    from routers import auth, exam, violations, admin, ingest, leaderboard, faculty
 
     # ── Logging ───────────────────────────────────────────────────
     logging.basicConfig(
@@ -75,6 +75,7 @@ try:
     app.include_router(admin.router,       prefix="/api")
     app.include_router(ingest.router,      prefix="/api")
     app.include_router(leaderboard.router, prefix="/api")
+    app.include_router(faculty.router,     prefix="/api")
 
     # 2. Legacy / compatibility routes (no /api prefix)
     app.include_router(auth.router)
@@ -83,6 +84,7 @@ try:
     app.include_router(admin.router)
     app.include_router(ingest.router)
     app.include_router(leaderboard.router)
+    app.include_router(faculty.router)
 
     # ── Cron Endpoint ──────────────────────────────────────────────
     @app.get("/api/cron/evict", tags=["cron"])

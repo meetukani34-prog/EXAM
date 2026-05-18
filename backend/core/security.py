@@ -116,3 +116,75 @@ async def get_current_student(
         "branch": branch,
         "token": token
     }
+
+
+async def get_current_faculty(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+) -> dict:
+    """FastAPI dependency — extracts and validates faculty JWT."""
+    
+    # Check for Admin Secret bypass (admin has full access)
+    admin_secret = request.headers.get("X-Admin-Secret")
+    if admin_secret == settings.admin_secret:
+        return {
+            "faculty_id": "ADMIN_OVERRIDE",
+            "name": "Admin",
+            "email": "admin@system",
+            "branches": ["ALL"],
+            "is_admin": True,
+            "token": "ADMIN_SECRET_BYPASS"
+        }
+
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Faculty session expired or credentials missing. Please login again.",
+        )
+
+    token = credentials.credentials
+    try:
+        payload = decode_token(token)
+    except HTTPException as e:
+        raise e
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid faculty session token. Please login again.",
+        )
+
+    role = payload.get("role")
+    if role != "faculty":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Faculty credentials required.",
+        )
+
+    faculty_id = payload.get("sub")
+    name = payload.get("name", "Faculty")
+    email = payload.get("email", "")
+
+    if not faculty_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Faculty session payload corrupted. Please logout and login again.",
+        )
+
+    # Fetch assigned branches
+    branches = []
+    try:
+        from db.supabase_client import get_supabase
+        db = get_supabase()
+        res = db.table("faculty_subjects").select("branch").eq("faculty_id", faculty_id).execute()
+        branches = [r["branch"] for r in (res.data or [])]
+    except Exception as e:
+        print(f"[SECURITY] Error fetching faculty branches for {faculty_id}: {e}")
+
+    return {
+        "faculty_id": faculty_id,
+        "name": name,
+        "email": email,
+        "branches": branches,
+        "is_admin": False,
+        "token": token
+    }

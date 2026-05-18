@@ -628,3 +628,33 @@ export async function fetchPublicPyHuntConfig(): Promise<GlobalConfigEntry[]> {
   return res.json();
 }
 
+// ── Faculty Admin Management ─────────────────────────────────
+
+export interface FacultyMember {
+  id: string;
+  name: string;
+  email: string;
+  is_active: boolean;
+  branches: string[];
+  created_at?: string;
+}
+
+export async function fetchAdminFaculty(): Promise<{ faculty: FacultyMember[]; total: number }> {
+  return adminFetch("/admin/faculty");
+}
+
+export async function createAdminFaculty(data: { name: string; email: string; password: string; branches: string[] }): Promise<{ success: boolean; faculty: FacultyMember }> {
+  return adminFetch("/admin/faculty", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateAdminFaculty(id: string, data: Record<string, unknown>): Promise<{ success: boolean }> {
+  return adminFetch(`/admin/faculty/${id}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function deleteAdminFaculty(id: string): Promise<{ success: boolean }> {
+  return adminFetch(`/admin/faculty/${id}`, { method: "DELETE" });
+}
+
+export async function assignFacultyBranches(id: string, branches: string[]): Promise<{ success: boolean }> {
+  return adminFetch(`/admin/faculty/${id}/branches`, { method: "PUT", body: JSON.stringify({ branches }) });
+}

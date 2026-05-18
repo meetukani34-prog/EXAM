@@ -129,6 +129,26 @@ async def report_violation(request: ReportViolationRequest, current: dict = Depe
                 db.table("violations").insert(log_payload).execute()
         except Exception: pass
 
+        # ── Live Alert Injection (Faculty Real-Time Telemetry) ──
+        try:
+            student_info = db.table("students").select("name, usn, branch").eq("id", student_id).limit(1).execute()
+            s_data = student_info.data[0] if student_info.data else {}
+            alert_msg = f"{s_data.get('usn', 'Unknown')} — {request.type.replace('_', ' ').title()}"
+            if auto_submitted:
+                alert_msg += " [AUTO-SUBMITTED]"
+            db.table("live_alerts").insert({
+                "student_id": student_id,
+                "student_usn": s_data.get("usn"),
+                "student_name": s_data.get("name"),
+                "exam_name": exam_title,
+                "branch": s_data.get("branch"),
+                "alert_type": _safe_db_type(request.type),
+                "message": alert_msg,
+                "metadata": request.metadata or {}
+            }).execute()
+        except Exception as alert_e:
+            print(f"[ALERT] Live alert injection failed (non-fatal): {alert_e}")
+
         # Prepare messages
         if auto_submitted:
             msg = WARNING_3_PYHUNT if is_pyhunt else WARNING_3
