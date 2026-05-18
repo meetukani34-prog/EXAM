@@ -24,6 +24,7 @@ export default function FacultyTab() {
     email: "",
     password: "",
     branches: [] as string[],
+    categories: [] as string[],
   });
 
   const load = useCallback(async () => {
@@ -55,6 +56,7 @@ export default function FacultyTab() {
         if (formData.email) updateData.email = formData.email;
         if (formData.password) updateData.password = formData.password;
         if (formData.branches.length > 0) updateData.branches = formData.branches;
+        updateData.categories = formData.categories;
         
         await updateAdminFaculty(editing.id, updateData);
       } else {
@@ -62,7 +64,7 @@ export default function FacultyTab() {
       }
       setShowModal(false);
       setEditing(null);
-      setFormData({ name: "", email: "", password: "", branches: [] });
+      setFormData({ name: "", email: "", password: "", branches: [], categories: [] });
       load();
     } catch (e: any) {
       alert(e.message || "Failed to save faculty");
@@ -90,6 +92,17 @@ export default function FacultyTab() {
     });
   };
 
+  const handleCategoryToggle = (cat: string) => {
+    setFormData(prev => {
+      const isSelected = prev.categories.includes(cat);
+      if (isSelected) {
+        return { ...prev, categories: prev.categories.filter(c => c !== cat) };
+      } else {
+        return { ...prev, categories: [...prev.categories, cat] };
+      }
+    });
+  };
+
   return (
     <div style={{ padding: "24px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
@@ -103,7 +116,7 @@ export default function FacultyTab() {
           className="btn btn-primary"
           onClick={() => {
             setEditing(null);
-            setFormData({ name: "", email: "", password: "", branches: [] });
+            setFormData({ name: "", email: "", password: "", branches: [], categories: [] });
             setShowModal(true);
           }}
           style={{ padding: "10px 16px", borderRadius: 12, fontWeight: 600 }}
@@ -126,6 +139,7 @@ export default function FacultyTab() {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Assigned Branches</th>
+                <th>Categories</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -152,6 +166,15 @@ export default function FacultyTab() {
                       </div>
                     </td>
                     <td>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {(f.categories || []).map(c => (
+                          <span key={c} className="badge badge-neutral" style={{ fontSize: 11, padding: "2px 6px" }}>
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
                       <span className={`badge ${f.is_active ? 'badge-success' : 'badge-neutral'}`}>
                         {f.is_active ? 'Active' : 'Inactive'}
                       </span>
@@ -168,6 +191,7 @@ export default function FacultyTab() {
                               email: f.email,
                               password: "",
                               branches: f.branches,
+                              categories: f.categories || [],
                             });
                             setShowModal(true);
                           }}
@@ -250,6 +274,31 @@ export default function FacultyTab() {
                       style={{ width: 16, height: 16, accentColor: "var(--accent)" }}
                     />
                     {branch.name} ({branch.id})
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className={adminStyles.formGroup}>
+              <label>Question Categories</label>
+              <div style={{ 
+                display: "grid", 
+                gridTemplateColumns: "1fr 1fr", 
+                gap: 10,
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid var(--border)",
+                padding: 16,
+                borderRadius: 12,
+              }}>
+                {["aptitude", "programming", "other"].map(cat => (
+                  <label key={cat} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, textTransform: "capitalize" }}>
+                    <input 
+                      type="checkbox" 
+                      checked={formData.categories.includes(cat)}
+                      onChange={() => handleCategoryToggle(cat)}
+                      style={{ width: 16, height: 16, accentColor: "var(--accent)" }}
+                    />
+                    {cat}
                   </label>
                 ))}
               </div>

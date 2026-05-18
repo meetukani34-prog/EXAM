@@ -1189,6 +1189,7 @@ async def get_all_faculty(_: bool = Depends(verify_admin)):
             "email": f["email"],
             "is_active": f.get("is_active", True),
             "branches": branches,
+            "categories": f.get("categories", []),
             "created_at": f.get("created_at")
         })
 
@@ -1204,6 +1205,7 @@ async def create_faculty(request: dict, _: bool = Depends(verify_admin)):
     email = request.get("email", "").strip().lower()
     password = request.get("password", "")
     branches = request.get("branches", [])
+    categories = request.get("categories", [])
 
     if not name or not email or not password:
         raise HTTPException(status_code=400, detail="Name, email, and password are required.")
@@ -1218,7 +1220,8 @@ async def create_faculty(request: dict, _: bool = Depends(verify_admin)):
         "name": name,
         "email": email,
         "password_hash": hash_password(password),
-        "is_active": True
+        "is_active": True,
+        "categories": categories
     }
     result = db.table("faculty").insert(faculty_data).execute()
     if not result.data:
@@ -1236,7 +1239,7 @@ async def create_faculty(request: dict, _: bool = Depends(verify_admin)):
         except Exception as e:
             print(f"[ADMIN] Branch assignment failed for {branch}: {e}")
 
-    return {"success": True, "faculty": {**result.data[0], "branches": branches}}
+    return {"success": True, "faculty": {**result.data[0], "branches": branches, "categories": categories}}
 
 
 @router.put("/faculty/{faculty_id}")
@@ -1253,6 +1256,8 @@ async def update_faculty(faculty_id: str, request: dict, _: bool = Depends(verif
         update_data["password_hash"] = hash_password(request["password"])
     if "is_active" in request:
         update_data["is_active"] = request["is_active"]
+    if "categories" in request:
+        update_data["categories"] = request["categories"]
 
     if update_data:
         db.table("faculty").update(update_data).eq("id", faculty_id).execute()

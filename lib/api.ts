@@ -636,6 +636,7 @@ export interface FacultyMember {
   email: string;
   is_active: boolean;
   branches: string[];
+  categories?: string[];
   created_at?: string;
 }
 
@@ -643,7 +644,7 @@ export async function fetchAdminFaculty(): Promise<{ faculty: FacultyMember[]; t
   return adminFetch("/admin/faculty");
 }
 
-export async function createAdminFaculty(data: { name: string; email: string; password: string; branches: string[] }): Promise<{ success: boolean; faculty: FacultyMember }> {
+export async function createAdminFaculty(data: { name: string; email: string; password: string; branches: string[]; categories?: string[] }): Promise<{ success: boolean; faculty: FacultyMember }> {
   return adminFetch("/admin/faculty", { method: "POST", body: JSON.stringify(data) });
 }
 

@@ -347,12 +347,14 @@ class FacultyLoginResponse(BaseModel):
     name: str
     email: str
     branches: List[str] = []
+    categories: List[str] = []
 
 class FacultyCreate(BaseModel):
     name: str
     email: str
     password: str
     branches: List[str] = []
+    categories: List[str] = []
 
 class FacultyUpdate(BaseModel):
     name: Optional[str] = None
@@ -360,6 +362,7 @@ class FacultyUpdate(BaseModel):
     password: Optional[str] = None
     is_active: Optional[bool] = None
     branches: Optional[List[str]] = None
+    categories: Optional[List[str]] = None
 
 class FacultyOut(BaseModel):
     id: str
@@ -367,6 +370,7 @@ class FacultyOut(BaseModel):
     email: str
     is_active: bool
     branches: List[str] = []
+    categories: List[str] = []
     created_at: Optional[str] = None
 
 class FacultySubjectAssign(BaseModel):
