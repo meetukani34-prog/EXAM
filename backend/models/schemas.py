@@ -43,6 +43,13 @@ class QuestionOut(BaseModel):
     exam_name: str = "Initial Assessment"
     image_url: Optional[str] = None
     audio_url: Optional[str] = None
+    category: Optional[str] = None
+    programming_type: Optional[str] = None
+    starter_code: Optional[str] = None
+    starter_code_c: Optional[str] = None
+    starter_code_cpp: Optional[str] = None
+    test_cases: Optional[str] = None
+    target_output: Optional[str] = None
 
 class QuestionsResponse(BaseModel):
     questions: List[QuestionOut]
@@ -102,6 +109,11 @@ class AdminQuestionOut(BaseModel):
     audio_url: Optional[str] = None
     category: Optional[str] = None
     programming_type: Optional[str] = None
+    starter_code: Optional[str] = None
+    starter_code_c: Optional[str] = None
+    starter_code_cpp: Optional[str] = None
+    test_cases: Optional[str] = None
+    target_output: Optional[str] = None
 
 class AdminQuestionsResponse(BaseModel):
     questions: List[AdminQuestionOut]
@@ -119,6 +131,11 @@ class QuestionCreate(BaseModel):
     audio_url: Optional[str] = None
     category: Optional[str] = "other"
     programming_type: Optional[str] = None
+    starter_code: Optional[str] = None
+    starter_code_c: Optional[str] = None
+    starter_code_cpp: Optional[str] = None
+    test_cases: Optional[str] = None
+    target_output: Optional[str] = None
 
 class QuestionUpdate(BaseModel):
     text: Optional[str] = None
@@ -132,6 +149,11 @@ class QuestionUpdate(BaseModel):
     audio_url: Optional[str] = None
     category: Optional[str] = None
     programming_type: Optional[str] = None
+    starter_code: Optional[str] = None
+    starter_code_c: Optional[str] = None
+    starter_code_cpp: Optional[str] = None
+    test_cases: Optional[str] = None
+    target_output: Optional[str] = None
 
 class StudentCreate(BaseModel):
     usn: str
@@ -240,6 +262,11 @@ class ParsedQuestion(BaseModel):
     audio_url: Optional[str] = None
     category: Optional[str] = "other"
     programming_type: Optional[str] = None
+    starter_code: Optional[str] = None
+    starter_code_c: Optional[str] = None
+    starter_code_cpp: Optional[str] = None
+    test_cases: Optional[str] = None
+    target_output: Optional[str] = None
     confidence: float = 1.0
     needs_review: bool = False
     review_reason: Optional[str] = None

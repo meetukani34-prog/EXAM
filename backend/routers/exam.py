@@ -200,7 +200,7 @@ def get_questions(
         branch = current.get("branch", "CS")
         
         # ── Strategy 1: Strict Branch + Strict Title Match ──
-        query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url")
+        query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type, starter_code, starter_code_c, starter_code_cpp, test_cases, target_output")
         if branch != "ALL":
             query = query.eq("branch", branch)
         
@@ -208,7 +208,7 @@ def get_questions(
 
         # ── Strategy 2: Strict Branch + Fuzzy Title Match ──
         if not result.data:
-            query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url")
+            query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type, starter_code, starter_code_c, starter_code_cpp, test_cases, target_output")
             if branch != "ALL":
                 query = query.eq("branch", branch)
             result = query.ilike("exam_name", f"%{title}%").order("order_index").limit(100).execute()
@@ -217,7 +217,7 @@ def get_questions(
         if not result.data:
             result = (
                 db.table("questions")
-                .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url")
+                .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type, starter_code, starter_code_c, starter_code_cpp, test_cases, target_output")
                 .eq("exam_name", title)
                 .order("order_index")
                 .limit(100)
@@ -228,7 +228,7 @@ def get_questions(
         if not result.data:
             result = (
                 db.table("questions")
-                .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url")
+                .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type, starter_code, starter_code_c, starter_code_cpp, test_cases, target_output")
                 .ilike("exam_name", f"%{title}%")
                 .order("order_index")
                 .limit(100)
@@ -550,10 +550,8 @@ def submit_exam(
         
         curr_count = 1
         if curr_res.data:
-            curr_count = curr_res.data[0].get("attempts_count", 0)
-            if not curr_count or curr_count < 1:
-                curr_count = 1
-            print(f"[SUBMIT] Preserved active attempt count: {curr_count}")
+            curr_count = (curr_res.data[0].get("attempts_count", 0) or 0) + 1
+            print(f"[SUBMIT] Incremented active attempt count: {curr_count}")
         
         status_payload = {
             "student_id": student_id,

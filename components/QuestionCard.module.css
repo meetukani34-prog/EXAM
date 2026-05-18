@@ -33,7 +33,7 @@
 .questionNumber {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.6) !important;
+  color: #ffffff !important;
 }
 
 .marksBadge {
@@ -62,11 +62,11 @@
 .questionText {
   font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #ffffff;
   line-height: 1.5;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.4);
 }
 
 .optionsList {
@@ -86,23 +86,23 @@
   border-radius: 14px;
   cursor: pointer;
   transition: all 0.25s ease;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1.5px solid var(--border-light);
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.85);
   text-align: left;
   font-family: inherit;
 }
 
 .option:hover {
-  background: rgba(20, 184, 166, 0.08);
-  border-color: rgba(20, 184, 166, 0.3);
-  color: var(--text-primary);
+  background: rgba(20, 184, 166, 0.15);
+  border-color: rgba(20, 184, 166, 0.5);
+  color: #ffffff;
 }
 
 .optionSelected {
-  background: rgba(20, 184, 166, 0.12) !important;
+  background: rgba(20, 184, 166, 0.2) !important;
   border-color: var(--accent) !important;
-  color: var(--text-primary) !important;
+  color: #ffffff !important;
 }
 
 .radioWrapper {
@@ -159,12 +159,12 @@
 .optionLabel {
   font-size: 15px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.85);
   line-height: 1.4;
 }
 
 .optionSelected .optionLabel {
-  color: var(--text-primary);
+  color: #ffffff;
   font-weight: 600;
 }
 

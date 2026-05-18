@@ -127,6 +127,13 @@ export interface Question {
   neg_marks: number;
   image_url: string | null;
   audio_url: string | null;
+  category?: string;
+  programming_type?: string;
+  starter_code?: string;
+  starter_code_c?: string;
+  starter_code_cpp?: string;
+  test_cases?: string;
+  target_output?: string;
 }
 
 export interface QuestionsResponse {

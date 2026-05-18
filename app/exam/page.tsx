@@ -9,8 +9,11 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import ExamTimer from "@/components/ExamTimer";
 import QuestionCard from "@/components/QuestionCard";
+import CodingInterface from "@/components/CodingInterface";
 import AntiCheat from "@/components/AntiCheat";
 import Skeleton from "@/components/Skeleton";
+import { usePyodide } from "@/hooks/usePyodide";
+import { useWasmCompiler } from "@/hooks/useWasmCompiler";
 import styles from "./exam.module.css";
 
 interface StudentInfo {
@@ -48,6 +51,36 @@ export default function ExamPage() {
 
   // Result Timer (3:00 minutes)
   const [resultTimerSeconds, setResultTimerSeconds] = useState(180);
+
+  // Compiler state & hooks
+  const { runTestSuite: runPythonTestSuite, loading: pyLoading } = usePyodide();
+  const { runTestSuite: runWasmTestSuite, isCompiling } = useWasmCompiler();
+  const [selectedLanguage, setSelectedLanguage] = useState<"python" | "c" | "cpp">("python");
+  const [compilerOutputs, setCompilerOutputs] = useState<Record<string, string>>({});
+  const [compilerTestResults, setCompilerTestResults] = useState<Record<string, any>>({});
+
+  const handleRunCode = async (q: Question) => {
+    const codeToRun = answers[q.id] || (selectedLanguage === "python" ? q.starter_code : selectedLanguage === "c" ? q.starter_code_c : q.starter_code_cpp) || "";
+    if (!codeToRun) return;
+
+    let testCases = [];
+    try {
+      if (q.test_cases) testCases = JSON.parse(q.test_cases);
+    } catch (e) {
+      console.warn("Failed to parse test cases", e);
+    }
+
+    // Default validation: exact match on trimmed output
+    const validateFn = (stdout: string, expected: string) => stdout.trim() === expected.trim();
+
+    if (selectedLanguage === "python") {
+      const results = await runPythonTestSuite(codeToRun, testCases, validateFn);
+      setCompilerTestResults(prev => ({ ...prev, [q.id]: results }));
+    } else {
+      const results = await runWasmTestSuite(codeToRun, testCases, validateFn);
+      setCompilerTestResults(prev => ({ ...prev, [q.id]: results }));
+    }
+  };
 
   // Randomized final theme for this student's session
   const [finalTheme, setFinalTheme] = useState("glass-aura");
@@ -262,7 +295,7 @@ export default function ExamPage() {
     const studentName = student.name || "Admin Preview";
     const watermarkText = `${studentUsn} • ${studentName}`;
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="350" viewBox="0 0 500 350">
-      <text x="250" y="175" fill="rgba(255,255,255,0.065)" font-family="'Inter', sans-serif" font-size="22" font-weight="800" text-anchor="middle" transform="rotate(-25 250 175)">${watermarkText}</text>
+      <text x="250" y="175" fill="rgba(255,255,255,0.12)" font-family="'Inter', sans-serif" font-size="32" font-weight="900" text-anchor="middle" transform="rotate(-25 250 175)">${watermarkText}</text>
     </svg>`;
     return {
       backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`,
@@ -657,100 +690,208 @@ export default function ExamPage() {
 
           <div className={styles.questionList}>
             {activeQuestion && (
-              <QuestionCard
-                key={activeQuestion.id}
-                question={activeQuestion}
-                questionNumber={activeQuestionIndex + 1}
-                totalQuestions={questions.length}
-                selectedAnswer={answers[activeQuestion.id]}
-                onSelect={handleSelect}
-                isSubmitted={isSubmitted}
-              >
-                {/* Previous */}
-                <button
-                  type="button"
-                  style={{
-                    background: "rgba(13, 148, 136, 0.08)",
-                    border: "1.5px solid rgba(13, 148, 136, 0.3)",
-                    color: "#0d9488",
-                    padding: "12px 24px",
-                    borderRadius: "12px",
-                    fontWeight: 600,
-                    fontSize: "14px",
-                    cursor: "pointer",
-                    opacity: activeQuestionIndex === 0 ? 0.3 : 1,
-                    pointerEvents: activeQuestionIndex === 0 ? "none" : "auto",
-                    transition: "all 0.2s ease",
-                  }}
-                  onClick={() => setActiveQuestionIndex((prev) => Math.max(0, prev - 1))}
+              activeQuestion.programming_type === "compiler" ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <CodingInterface
+                    problem={{
+                      prompt: activeQuestion.text,
+                      imageUrl: activeQuestion.image_url || undefined,
+                      test_cases: activeQuestion.test_cases,
+                      target_output: activeQuestion.target_output,
+                      starter_code: activeQuestion.starter_code,
+                      starter_code_c: activeQuestion.starter_code_c,
+                      starter_code_cpp: activeQuestion.starter_code_cpp,
+                    }}
+                    code={answers[activeQuestion.id] || ""}
+                    setCode={(code) => handleSelect(activeQuestion.id, code)}
+                    output={compilerOutputs[activeQuestion.id] || ""}
+                    onRun={() => handleRunCode(activeQuestion)}
+                    onSubmit={() => setConfirmSubmit(true)}
+                    pyLoading={pyLoading}
+                    currentRound={1}
+                    labelConfig={{ phase: "Exam", orbit: "Compiler" }}
+                    selectedLanguage={selectedLanguage}
+                    onLanguageChange={setSelectedLanguage}
+                    testResults={compilerTestResults[activeQuestion.id]}
+                    isCompiling={isCompiling}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+                    <button
+                      type="button"
+                      style={{
+                        background: "rgba(13, 148, 136, 0.08)",
+                        border: "1.5px solid rgba(13, 148, 136, 0.3)",
+                        color: "#0d9488",
+                        padding: "12px 24px",
+                        borderRadius: "12px",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        opacity: activeQuestionIndex === 0 ? 0.3 : 1,
+                        pointerEvents: activeQuestionIndex === 0 ? "none" : "auto",
+                        transition: "all 0.2s ease",
+                      }}
+                      onClick={() => setActiveQuestionIndex((prev) => Math.max(0, prev - 1))}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      style={{
+                        background: flagged.has(activeQuestionIndex) ? "rgba(234,179,8,0.08)" : "transparent",
+                        border: flagged.has(activeQuestionIndex) ? "1.5px solid #eab308" : "1.5px solid rgba(0,0,0,0.1)",
+                        color: flagged.has(activeQuestionIndex) ? "#ca8a04" : "#475569",
+                        padding: "12px 24px",
+                        borderRadius: "12px",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                      onClick={toggleFlag}
+                    >
+                      {flagged.has(activeQuestionIndex) ? "🚩 Marked" : "Mark for Review"}
+                    </button>
+                    {activeQuestionIndex < questions.length - 1 ? (
+                      <button
+                        type="button"
+                        style={{
+                          background: "#0d9488",
+                          color: "#fff",
+                          border: "none",
+                          padding: "12px 28px",
+                          borderRadius: "12px",
+                          fontWeight: 700,
+                          fontSize: "14px",
+                          cursor: "pointer",
+                          boxShadow: "0 4px 14px rgba(13,148,136,0.3)",
+                          transition: "all 0.3s ease",
+                        }}
+                        onClick={async () => {
+                          await flush();
+                          setActiveQuestionIndex((prev) => Math.min(questions.length - 1, prev + 1));
+                        }}
+                      >
+                        Save &amp; Next
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        style={{
+                          background: "#ef4444",
+                          color: "#fff",
+                          border: "none",
+                          padding: "12px 28px",
+                          borderRadius: "12px",
+                          fontWeight: 700,
+                          fontSize: "14px",
+                          cursor: "pointer",
+                          boxShadow: "0 4px 14px rgba(239,68,68,0.3)",
+                        }}
+                        onClick={() => setConfirmSubmit(true)}
+                        disabled={submitting}
+                      >
+                        {submitting ? "Submitting..." : "Submit Exam"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <QuestionCard
+                  key={activeQuestion.id}
+                  question={activeQuestion}
+                  questionNumber={activeQuestionIndex + 1}
+                  totalQuestions={questions.length}
+                  selectedAnswer={answers[activeQuestion.id]}
+                  onSelect={handleSelect}
+                  isSubmitted={isSubmitted}
                 >
-                  Previous
-                </button>
-
-                {/* Mark for Review */}
-                <button
-                  type="button"
-                  style={{
-                    background: flagged.has(activeQuestionIndex) ? "rgba(234,179,8,0.08)" : "transparent",
-                    border: flagged.has(activeQuestionIndex) ? "1.5px solid #eab308" : "1.5px solid rgba(0,0,0,0.1)",
-                    color: flagged.has(activeQuestionIndex) ? "#ca8a04" : "#475569",
-                    padding: "12px 24px",
-                    borderRadius: "12px",
-                    fontWeight: 600,
-                    fontSize: "14px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                  onClick={toggleFlag}
-                >
-                  {flagged.has(activeQuestionIndex) ? "🚩 Marked" : "Mark for Review"}
-                </button>
-
-                {/* Save & Next / Submit */}
-                {activeQuestionIndex < questions.length - 1 ? (
+                  {/* Previous */}
                   <button
                     type="button"
                     style={{
-                      background: "#0d9488",
-                      color: "#fff",
-                      border: "none",
-                      padding: "12px 28px",
+                      background: "rgba(13, 148, 136, 0.08)",
+                      border: "1.5px solid rgba(13, 148, 136, 0.3)",
+                      color: "#0d9488",
+                      padding: "12px 24px",
                       borderRadius: "12px",
-                      fontWeight: 700,
+                      fontWeight: 600,
                       fontSize: "14px",
                       cursor: "pointer",
-                      boxShadow: "0 4px 14px rgba(13,148,136,0.3)",
-                      transition: "all 0.3s ease",
+                      opacity: activeQuestionIndex === 0 ? 0.3 : 1,
+                      pointerEvents: activeQuestionIndex === 0 ? "none" : "auto",
+                      transition: "all 0.2s ease",
                     }}
-                    onClick={async () => {
-                      await flush(); // Instant save when moving forward
-                      setActiveQuestionIndex((prev) => Math.min(questions.length - 1, prev + 1));
-                    }}
+                    onClick={() => setActiveQuestionIndex((prev) => Math.max(0, prev - 1))}
                   >
-                    Save &amp; Next
+                    Previous
                   </button>
-                ) : (
+
+                  {/* Mark for Review */}
                   <button
-                    id="submit-exam-btn"
                     type="button"
                     style={{
-                      background: "#ef4444",
-                      color: "#fff",
-                      border: "none",
-                      padding: "12px 28px",
+                      background: flagged.has(activeQuestionIndex) ? "rgba(234,179,8,0.08)" : "transparent",
+                      border: flagged.has(activeQuestionIndex) ? "1.5px solid #eab308" : "1.5px solid rgba(0,0,0,0.1)",
+                      color: flagged.has(activeQuestionIndex) ? "#ca8a04" : "#475569",
+                      padding: "12px 24px",
                       borderRadius: "12px",
-                      fontWeight: 700,
+                      fontWeight: 600,
                       fontSize: "14px",
                       cursor: "pointer",
-                      boxShadow: "0 4px 14px rgba(239,68,68,0.3)",
+                      transition: "all 0.2s ease",
                     }}
-                    onClick={() => setConfirmSubmit(true)}
-                    disabled={submitting}
+                    onClick={toggleFlag}
                   >
-                    {submitting ? "Submitting..." : "Submit Exam"}
+                    {flagged.has(activeQuestionIndex) ? "🚩 Marked" : "Mark for Review"}
                   </button>
-                )}
-              </QuestionCard>
+
+                  {/* Save & Next / Submit */}
+                  {activeQuestionIndex < questions.length - 1 ? (
+                    <button
+                      type="button"
+                      style={{
+                        background: "#0d9488",
+                        color: "#fff",
+                        border: "none",
+                        padding: "12px 28px",
+                        borderRadius: "12px",
+                        fontWeight: 700,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        boxShadow: "0 4px 14px rgba(13,148,136,0.3)",
+                        transition: "all 0.3s ease",
+                      }}
+                      onClick={async () => {
+                        await flush(); // Instant save when moving forward
+                        setActiveQuestionIndex((prev) => Math.min(questions.length - 1, prev + 1));
+                      }}
+                    >
+                      Save &amp; Next
+                    </button>
+                  ) : (
+                    <button
+                      id="submit-exam-btn"
+                      type="button"
+                      style={{
+                        background: "#ef4444",
+                        color: "#fff",
+                        border: "none",
+                        padding: "12px 28px",
+                        borderRadius: "12px",
+                        fontWeight: 700,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        boxShadow: "0 4px 14px rgba(239,68,68,0.3)",
+                      }}
+                      onClick={() => setConfirmSubmit(true)}
+                      disabled={submitting}
+                    >
+                      {submitting ? "Submitting..." : "Submit Exam"}
+                    </button>
+                  )}
+                </QuestionCard>
+              )
             )}
           </div>
 
