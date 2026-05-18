@@ -18,8 +18,7 @@ async def get_exam_status(current: dict = Depends(get_current_student)):
     db = get_supabase()
     student_id = current["student_id"]
     try:
-        # 1. Fetch all status rows (Explicit columns to avoid stale schema issues)
-        status_res = db.table("exam_status").select("id, student_id, exam_name, status, warnings, last_active, submitted_at, started_at").eq("student_id", student_id).execute()
+        status_res = db.table("exam_status").select("id, student_id, exam_name, status, warnings, last_active, submitted_at, started_at, attempts_count").eq("student_id", student_id).execute()
         status_data = status_res.data or []
         
         # 2. Fetch all result rows for this student
@@ -475,16 +474,47 @@ def submit_exam(
     submitted_at = datetime.now(timezone.utc).isoformat()
 
     # 4. Upsert exam_results — unique per (student_id, exam_name)
+    # Fetch existing score, total_marks, correct_count, and wrong_count if any
+    existing_score = None
+    existing_total = None
+    existing_correct = None
+    existing_wrong = None
+    try:
+        existing_res = db.table("exam_results").select("score, total_marks, correct_count, wrong_count").eq("student_id", student_id).eq("exam_name", exam_title).limit(1).execute()
+        if existing_res.data:
+            r = existing_res.data[0]
+            existing_score = r.get("score")
+            existing_total = r.get("total_marks")
+            existing_correct = r.get("correct_count")
+            existing_wrong = r.get("wrong_count")
+    except Exception as ee:
+        print(f"[SUBMIT] Existing score check failed: {ee}")
+
+    final_score = float(score)
+    final_total = float(total_marks)
+    final_correct = int(correct_count)
+    final_wrong = int(wrong_count)
+
+    if existing_score is not None and float(existing_score) > float(score):
+        print(f"[SUBMIT] Storing highest previous score {existing_score} instead of new score {score}")
+        final_score = float(existing_score)
+        if existing_total is not None:
+            final_total = float(existing_total)
+        if existing_correct is not None:
+            final_correct = int(existing_correct)
+        if existing_wrong is not None:
+            final_wrong = int(existing_wrong)
+
     try:
         # Construct payload with all reporting columns
         results_payload = {
             "student_id": student_id,
             "exam_name": exam_title,
             "answers": answers,
-            "score": float(score),
-            "total_marks": float(total_marks),
-            "correct_count": int(correct_count),
-            "wrong_count": int(wrong_count),
+            "score": float(final_score),
+            "total_marks": float(final_total),
+            "correct_count": int(final_correct),
+            "wrong_count": int(final_wrong),
             "submitted_at": submitted_at
         }
         
@@ -500,8 +530,8 @@ def submit_exam(
                 "student_id": student_id,
                 "exam_name": exam_title,
                 "answers": answers,
-                "score": float(score),
-                "total_marks": float(total_marks),
+                "score": float(final_score),
+                "total_marks": float(final_total),
                 "submitted_at": submitted_at
             }, on_conflict="student_id,exam_name").execute()
             print(f"[SUBMIT] Fallback upsert successful.")
@@ -544,11 +574,11 @@ def submit_exam(
 
     return SubmitExamResponse(
         submitted=True,
-        score=score,
-        total_marks=total_marks,
-        correct_count=correct_count,
-        wrong_count=wrong_count,
-        percentage=round(score / total_marks * 100, 1) if total_marks else 0,
+        score=final_score,
+        total_marks=final_total,
+        correct_count=final_correct,
+        wrong_count=final_wrong,
+        percentage=round(final_score / final_total * 100, 1) if final_total else 0,
         submitted_at=submitted_at,
     )
 
