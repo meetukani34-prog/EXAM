@@ -21,6 +21,7 @@ interface ExamNode {
   scheduled_end: string | null;
   question_count?: number;
   category?: string;
+  programming_type?: "compiler" | "mcq";
   marks_per_question?: number;
   negative_marks?: number;
   max_attempts?: number;
@@ -83,6 +84,24 @@ export default function DashboardPage() {
     try {
       const configs = await withRetry(() => fetchPublicExamConfig(student?.branch));
       
+      // Fetch dynamic programming types based on question configuration
+      const { data: progQuestions, error: pqError } = await supabase
+        .from("questions")
+        .select("exam_name, programming_type, category")
+        .eq("category", "programming");
+
+      const examTypeMap: Record<string, "compiler" | "mcq"> = {};
+      if (progQuestions && !pqError) {
+        progQuestions.forEach((q: any) => {
+          if (q.exam_name) {
+            const type = q.programming_type || "compiler";
+            if (type === "compiler" || !examTypeMap[q.exam_name]) {
+              examTypeMap[q.exam_name] = type as "compiler" | "mcq";
+            }
+          }
+        });
+      }
+
       // OPTIMIZATION: Instead of fetching ALL questions (which causes lag), 
       // we'll just use the configs as the base and filter/display accordingly.
       const nodes: ExamNode[] = [];
@@ -111,6 +130,21 @@ export default function DashboardPage() {
       // Build nodes from configs
       configs.forEach(config => {
         const sData = statusList.find(s => s.exam_name === config.exam_title);
+        const inferredCat = config.category || inferCategory(config.exam_title);
+        
+        let progType: "compiler" | "mcq" | undefined = undefined;
+        if (inferredCat === "programming") {
+          progType = examTypeMap[config.exam_title];
+          if (!progType) {
+            // Fallback to name inference if no questions in DB yet
+            const titleLower = config.exam_title.toLowerCase();
+            if (titleLower === "hii" || titleLower.includes("mcq") || titleLower.includes("conceptual")) {
+              progType = "mcq";
+            } else {
+              progType = "compiler";
+            }
+          }
+        }
         
         nodes.push({
           id: config.exam_title,
@@ -121,7 +155,8 @@ export default function DashboardPage() {
           scheduled_start: config.scheduled_start,
           scheduled_end: config.scheduled_end,
           question_count: config.total_questions || 0,
-          category: config.category || inferCategory(config.exam_title),
+          category: inferredCat,
+          programming_type: progType,
           marks_per_question: config.marks_per_question ?? 4,
           negative_marks: config.negative_marks ?? -1,
           max_attempts: config.max_attempts || 1,
@@ -439,6 +474,7 @@ export default function DashboardPage() {
 
           {activeTab !== "home" && activeTab !== "profile" && activeTab !== "insights" && activeTab !== "pyhunt" && (
             <CategoryTab
+              activeTab={activeTab}
               title={activeTab === "other" ? "General Assessments" : tabs.find(t => t.id === activeTab)?.label || ""}
               subtitle={activeTab === "other" ? "Diverse quizzes and surveys" : "System ready for authorization"}
               exams={studentExams.filter(e => e.category === activeTab)}
@@ -499,17 +535,72 @@ function PyHuntIcon() {
 }
 
 // ── Components ──────────────────────────────────────────────────
-function CategoryTab({ title, subtitle, exams, onLaunch }: { title: string; subtitle: string; exams: ExamNode[]; onLaunch: (e: ExamNode) => void }) {
+function CategoryTab({ activeTab, title, subtitle, exams, onLaunch }: { activeTab: string; title: string; subtitle: string; exams: ExamNode[]; onLaunch: (e: ExamNode) => void }) {
+  const [subTab, setSubTab] = useState<"compiler" | "mcq">("compiler");
+
+  const filteredExams = useMemo(() => {
+    if (activeTab !== "programming") return exams;
+    return exams.filter(exam => (exam.programming_type || "compiler") === subTab);
+  }, [exams, activeTab, subTab]);
+
   return (
     <div className={styles.sectionWrapper}>
       <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#fff' }}>{title}</h1>
       <p style={{ opacity: 0.6, fontSize: 14, marginBottom: 24, color: 'rgba(255,255,255,0.7)' }}>{subtitle}</p>
-      {exams.length > 0 ? (
+
+      {activeTab === "programming" && (
+        <div style={{ display: 'flex', gap: 12, marginBottom: 32, borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: 16 }}>
+          <button
+            onClick={() => setSubTab("compiler")}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '10px',
+              fontSize: '14px',
+              fontWeight: 700,
+              background: subTab === "compiler" ? 'rgba(0, 242, 255, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+              border: subTab === "compiler" ? '1.5px solid var(--nexus-cyan)' : '1.5px solid rgba(255, 255, 255, 0.08)',
+              color: subTab === "compiler" ? '#fff' : 'rgba(255, 255, 255, 0.6)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: subTab === "compiler" ? '0 0 15px rgba(0, 242, 255, 0.25)' : 'none',
+              letterSpacing: '0.3px'
+            }}
+          >
+            📁 Coding Challenges
+          </button>
+          <button
+            onClick={() => setSubTab("mcq")}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '10px',
+              fontSize: '14px',
+              fontWeight: 700,
+              background: subTab === "mcq" ? 'rgba(0, 242, 255, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+              border: subTab === "mcq" ? '1.5px solid var(--nexus-cyan)' : '1.5px solid rgba(255, 255, 255, 0.08)',
+              color: subTab === "mcq" ? '#fff' : 'rgba(255, 255, 255, 0.6)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: subTab === "mcq" ? '0 0 15px rgba(0, 242, 255, 0.25)' : 'none',
+              letterSpacing: '0.3px'
+            }}
+          >
+            📝 Conceptual MCQs
+          </button>
+        </div>
+      )}
+
+      {filteredExams.length > 0 ? (
         <div className={styles.examsSection}>
-          {exams.map(exam => <ExamCard key={exam.id} exam={exam} onLaunch={onLaunch} />)}
+          {filteredExams.map(exam => <ExamCard key={exam.id} exam={exam} onLaunch={onLaunch} />)}
         </div>
       ) : (
-        <div style={{ padding: 60, textAlign: 'center', opacity: 0.5 }}>Comming Soon!!.</div>
+        <div style={{ padding: 60, textAlign: 'center', opacity: 0.5 }}>Coming Soon!!.</div>
       )}
     </div>
   );
