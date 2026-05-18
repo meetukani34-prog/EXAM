@@ -475,7 +475,7 @@ export default function DashboardPage() {
             </>
           )}
 
-          {activeTab !== "home" && activeTab !== "profile" && activeTab !== "insights" && activeTab !== "pyhunt" && (
+          {activeTab !== "home" && activeTab !== "profile" && activeTab !== "insights" && activeTab !== "pyhunt" && activeTab !== "history" && (
             <CategoryTab
               activeTab={activeTab}
               title={activeTab === "other" ? "General Assessments" : tabs.find(t => t.id === activeTab)?.label || ""}
