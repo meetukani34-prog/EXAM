@@ -46,7 +46,7 @@ export default function QuestionCard({
       </div>
 
       {/* Question text */}
-      <p className={styles.text}>{question.text}</p>
+      <p className={styles.questionText}>{question.text}</p>
 
       {/* Media asset (optional) */}
       {question.image_url && (
