@@ -37,7 +37,7 @@ export default function QuestionCard({
     <div className={styles.card} id={`question-${questionNumber}`}>
       {/* Question header */}
       <div className={styles.header}>
-        <span className={styles.numberText}>Question {questionNumber} of {totalQuestions}</span>
+        <span className={styles.questionNumber}>Question {questionNumber} of {totalQuestions}</span>
         {/* Dynamic marks display (+1 / -0.25) */}
         <div className={styles.marksBadge}>
           <span className={styles.posMarks}>+{question.marks} Correct</span>
