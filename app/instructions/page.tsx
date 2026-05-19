@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getSyncTime, syncClock } from "@/lib/clock";
 import { useRouter } from "next/navigation";
 import styles from "./instructions.module.css";
 import { startExam } from "@/lib/api";
@@ -24,6 +25,7 @@ export default function InstructionsPage() {
   const [scheduledStart, setScheduledStart] = useState<string | null>(null);
 
   useEffect(() => {
+    syncClock();
     // Check authentication
     const token = localStorage.getItem("exam_token");
     if (!token) {
@@ -65,7 +67,7 @@ export default function InstructionsPage() {
     if (selectedStart) {
       const targetTime = new Date(selectedStart).getTime();
       const updateTimer = () => {
-        const now = Date.now();
+        const now = getSyncTime();
         const diff = targetTime - now;
         setTimeUntilStart(diff > 0 ? diff : 0);
       };

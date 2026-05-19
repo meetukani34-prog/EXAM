@@ -8,6 +8,7 @@ import { useExamState, clearExamStorage } from "@/hooks/useExamState";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import ExamTimer from "@/components/ExamTimer";
+import { getSyncTime, syncClock } from "@/lib/clock";
 import QuestionCard from "@/components/QuestionCard";
 import CodingInterface from "@/components/CodingInterface";
 import AntiCheat from "@/components/AntiCheat";
@@ -100,6 +101,7 @@ export default function ExamPage() {
 
   // ── Load student + questions ──────────────────────────────
   useEffect(() => {
+    syncClock();
     const isPreview = localStorage.getItem("exam_preview") === "true";
     const raw = localStorage.getItem("exam_student");
     const token = localStorage.getItem("exam_token");
@@ -134,7 +136,7 @@ export default function ExamPage() {
 
     // ── Lock stableStartTime ──
     if (!stableStartTime.current) {
-      stableStartTime.current = info.examStartTime || new Date().toISOString();
+      stableStartTime.current = info.examStartTime || new Date(getSyncTime()).toISOString();
     }
 
     const ensureStarted = async () => {
@@ -192,7 +194,7 @@ export default function ExamPage() {
           setExamScheduled(null);
         } else if (cfg && cfg.scheduled_start) {
           const start = new Date(cfg.scheduled_start);
-          if (start > new Date()) {
+          if (start > new Date(getSyncTime())) {
             setExamScheduled(cfg.scheduled_start);
             setExamInactive(false);
           } else {

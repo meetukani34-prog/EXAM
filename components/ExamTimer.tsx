@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import styles from "./ExamTimer.module.css";
+import { getSyncTime } from "@/lib/clock";
 
 interface ExamTimerProps {
   startTime: string;
@@ -33,7 +34,7 @@ export default function ExamTimer({ startTime, durationMinutes, onExpire }: Exam
     
     function calcRemaining() {
       const endMs = new Date(startTime).getTime() + totalMs;
-      const timeLeft = Math.max(0, endMs - Date.now());
+      const timeLeft = Math.max(0, endMs - getSyncTime());
       return Math.floor(timeLeft / 1000);
     }
 

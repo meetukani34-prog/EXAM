@@ -1,6 +1,20 @@
 from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks, Query
 from typing import Optional, List
 from datetime import datetime, timezone
+import time
+import random
+
+def db_execute_with_retry(fn, max_retries=3):
+    last_err = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            return fn()
+        except Exception as e:
+            last_err = e
+            print(f"[DB_RETRY] Attempt {attempt} failed: {str(e)}")
+            if attempt < max_retries:
+                time.sleep(random.uniform(0.1, 0.4) * attempt)
+    raise last_err
 
 from models.schemas import (
     QuestionsResponse, QuestionOut,
@@ -371,8 +385,8 @@ def submit_exam(
     answers = request.answers
     exam_title = answers.get("__exam_title", "General Assessment")
     
-    status_row = (
-        db.table("exam_status")
+    status_row = db_execute_with_retry(
+        lambda: db.table("exam_status")
         .select("status")
         .eq("student_id", student_id)
         .eq("exam_name", exam_title)
@@ -383,8 +397,8 @@ def submit_exam(
         # Return existing result scoped to THIS exam
         # We use a try-except here in case the migration columns (correct_count) aren't ready yet
         try:
-            result_row = (
-                db.table("exam_results")
+            result_row = db_execute_with_retry(
+                lambda: db.table("exam_results")
                 .select("score, total_marks, submitted_at, correct_count, wrong_count")
                 .eq("student_id", student_id)
                 .eq("exam_name", exam_title)
@@ -393,8 +407,8 @@ def submit_exam(
             )
         except Exception:
             # Fallback for old schema
-            result_row = (
-                db.table("exam_results")
+            result_row = db_execute_with_retry(
+                lambda: db.table("exam_results")
                 .select("score, total_marks, submitted_at")
                 .eq("student_id", student_id)
                 .eq("exam_name", exam_title)
@@ -418,15 +432,17 @@ def submit_exam(
 
     # ── 4-Strategy Question Fetching (Sync with get_questions) ──
     # Strategy 1: Strict Branch + Strict Title
-    query = db.table("questions").select("id, correct_answer, marks")
-    if branch != "ALL":
-        query = query.eq("branch", branch)
-    questions_result = query.eq("exam_name", exam_title).execute()
+    def get_q1():
+        query = db.table("questions").select("id, correct_answer, marks")
+        if branch != "ALL":
+            query = query.eq("branch", branch)
+        return query.eq("exam_name", exam_title).execute()
+    questions_result = db_execute_with_retry(get_q1)
 
     # Strategy 2 (Swapped): Global Title Match
     if not questions_result.data:
-        questions_result = (
-            db.table("questions")
+        questions_result = db_execute_with_retry(
+            lambda: db.table("questions")
             .select("id, correct_answer, marks")
             .eq("exam_name", exam_title)
             .execute()
@@ -434,15 +450,17 @@ def submit_exam(
 
     # Strategy 3 (Swapped): Strict Branch + Fuzzy Title
     if not questions_result.data:
-        query = db.table("questions").select("id, correct_answer, marks")
-        if branch != "ALL":
-            query = query.eq("branch", branch)
-        questions_result = query.ilike("exam_name", f"%{exam_title}%").execute()
+        def get_q3():
+            query = db.table("questions").select("id, correct_answer, marks")
+            if branch != "ALL":
+                query = query.eq("branch", branch)
+            return query.ilike("exam_name", f"%{exam_title}%").execute()
+        questions_result = db_execute_with_retry(get_q3)
     
     # Strategy 4: Global Fuzzy Title Match
     if not questions_result.data:
-        questions_result = (
-            db.table("questions")
+        questions_result = db_execute_with_retry(
+            lambda: db.table("questions")
             .select("id, correct_answer, marks")
             .ilike("exam_name", f"%{exam_title}%")
             .execute()
@@ -456,7 +474,9 @@ def submit_exam(
     marks_override = None
     neg_marks = 0.0
     try:
-        config_res = db.table("exam_config").select("marks_per_question, negative_marks").eq("exam_title", exam_title).execute()
+        config_res = db_execute_with_retry(
+            lambda: db.table("exam_config").select("marks_per_question, negative_marks").eq("exam_title", exam_title).execute()
+        )
         if config_res.data:
             cfg = config_res.data[0]
             marks_override = cfg.get("marks_per_question")
@@ -496,7 +516,9 @@ def submit_exam(
     existing_correct = None
     existing_wrong = None
     try:
-        existing_res = db.table("exam_results").select("score, total_marks, correct_count, wrong_count").eq("student_id", student_id).eq("exam_name", exam_title).limit(1).execute()
+        existing_res = db_execute_with_retry(
+            lambda: db.table("exam_results").select("score, total_marks, correct_count, wrong_count").eq("student_id", student_id).eq("exam_name", exam_title).limit(1).execute()
+        )
         if existing_res.data:
             r = existing_res.data[0]
             existing_score = r.get("score")
@@ -535,21 +557,25 @@ def submit_exam(
         }
         
         print(f"[SUBMIT] Attempting upsert for {student_id} on {exam_title}...")
-        upsert_res = db.table("exam_results").upsert(results_payload, on_conflict="student_id,exam_name").execute()
+        upsert_res = db_execute_with_retry(
+            lambda: db.table("exam_results").upsert(results_payload, on_conflict="student_id,exam_name").execute()
+        )
         print(f"[SUBMIT] Results upserted successfully.")
         
     except Exception as e:
         print(f"[EXAM] Full upsert failed: {e}")
         # Secondary fallback for older schema
         try:
-            db.table("exam_results").upsert({
-                "student_id": student_id,
-                "exam_name": exam_title,
-                "answers": answers,
-                "score": float(final_score),
-                "total_marks": float(final_total),
-                "submitted_at": submitted_at
-            }, on_conflict="student_id,exam_name").execute()
+            db_execute_with_retry(
+                lambda: db.table("exam_results").upsert({
+                    "student_id": student_id,
+                    "exam_name": exam_title,
+                    "answers": answers,
+                    "score": float(final_score),
+                    "total_marks": float(final_total),
+                    "submitted_at": submitted_at
+                }, on_conflict="student_id,exam_name").execute()
+            )
             print(f"[SUBMIT] Fallback upsert successful.")
         except Exception as e2:
             print(f"[EXAM] CRITICAL: Fallback upsert also failed: {e2}")
@@ -562,7 +588,9 @@ def submit_exam(
     # 5. Mark submitted and ensure attempt is counted for THIS exam
     try:
         # Fetch existing status to preserve attempts_count
-        curr_res = db.table("exam_status").select("attempts_count, id").eq("student_id", student_id).eq("exam_name", exam_title).execute()
+        curr_res = db_execute_with_retry(
+            lambda: db.table("exam_status").select("attempts_count, id").eq("student_id", student_id).eq("exam_name", exam_title).execute()
+        )
         
         curr_count = 1
         if curr_res.data:
@@ -578,16 +606,23 @@ def submit_exam(
             "warnings": 0  # Clear warnings on submission
         }
         
-        db.table("exam_status").upsert(status_payload, on_conflict="student_id,exam_name").execute()
+        db_execute_with_retry(
+            lambda: db.table("exam_status").upsert(status_payload, on_conflict="student_id,exam_name").execute()
+        )
         print(f"[SUBMIT] Status marked as submitted for {student_id}.")
     except Exception as e:
         print(f"[EXAM] Status update failed: {e}")
         # Don't fail the whole submission if just status update fails, but log it
 
     # 6. Clear active session
-    db.table("students").update(
-        {"is_active_session": False, "current_token": None}
-    ).eq("id", student_id).execute()
+    try:
+        db_execute_with_retry(
+            lambda: db.table("students").update(
+                {"is_active_session": False, "current_token": None}
+            ).eq("id", student_id).execute()
+        )
+    except Exception as e:
+        print(f"[EXAM] Student session clear failed: {e}")
 
     return SubmitExamResponse(
         submitted=True,

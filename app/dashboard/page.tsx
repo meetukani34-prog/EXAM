@@ -9,6 +9,7 @@ import { withRetry } from "@/lib/apiUtils";
 import { CldUploadWidget } from 'next-cloudinary';
 import styles from "./dashboard.module.css";
 import PyHuntView from "@/components/PyHuntView";
+import { getSyncTime, syncClock } from "@/lib/clock";
 
 // ── Types ──────────────────────────────────────────────────────
 interface ExamNode {
@@ -56,6 +57,7 @@ export default function DashboardPage() {
 
   // Load student from session
   useEffect(() => {
+    syncClock();
     const isPreview = typeof window !== 'undefined' && window.location.search.includes("preview=true");
     if (isPreview) {
       const mock: StudentInfo = {
@@ -321,7 +323,7 @@ export default function DashboardPage() {
           {activeTab === "home" && (
             <>
               {(() => {
-                const now = Date.now();
+                const now = getSyncTime();
                 const topExams = studentExams.filter(e => {
                   if (!e.is_active) {
                     console.log(`[Dashboard] Filtering out ${e.exam_name}: Inactive`);
@@ -615,14 +617,14 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
   const [countdown, setCountdown] = useState("");
   const [isLocked, setIsLocked] = useState(() => {
     if (!exam.scheduled_start) return false;
-    return new Date(exam.scheduled_start).getTime() > Date.now();
+    return new Date(exam.scheduled_start).getTime() > getSyncTime();
   });
 
   useEffect(() => {
     if (!exam.scheduled_start) return;
     const target = new Date(exam.scheduled_start).getTime();
     const timer = setInterval(() => {
-      const now = Date.now();
+      const now = getSyncTime();
       const diff = target - now;
       if (diff <= 0) {
         setCountdown("Exam Live Now");
@@ -645,10 +647,10 @@ function ExamCard({ exam, onLaunch }: { exam: ExamNode; onLaunch: (e: ExamNode) 
   const hasReachedLimit = (exam.attempts_count || 0) >= (exam.max_attempts || 1) && exam.student_status !== 'active';
 
   const canEnterWaitingRoom = exam.scheduled_start 
-    ? (new Date(exam.scheduled_start).getTime() - 5 * 60 * 1000) <= Date.now() 
+    ? (new Date(exam.scheduled_start).getTime() - 5 * 60 * 1000) <= getSyncTime() 
     : true;
 
-  const isExpired = exam.scheduled_end ? new Date(exam.scheduled_end).getTime() < Date.now() : false;
+  const isExpired = exam.scheduled_end ? new Date(exam.scheduled_end).getTime() < getSyncTime() : false;
   const isInactive = !exam.is_active;
   
   // Allow entry if within 5 mins, even if technically "locked"

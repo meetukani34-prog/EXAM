@@ -1,5 +1,6 @@
 /* react-doctor-disable label-has-associated-control, no-inline-exhaustive-style, rendering-hydration-mismatch-time, no-tiny-text, design-no-bold-heading, rerender-state-only-in-handlers, no-array-index-as-key, react-compiler-destructure-method, click-events-have-key-events, no-static-element-interactions, prefer-useReducer, no-large-animated-blur, no-giant-component, nextjs-no-img-element, no-transition-all, use-lazy-motion, rerender-functional-setstate, no-cascading-set-state, design-no-three-period-ellipsis, js-combine-iterations, client-localstorage-no-version, no-z-index-9999, js-cache-storage, nextjs-no-client-side-redirect, no-wide-letter-spacing, react-doctor/label-has-associated-control, react-doctor/no-inline-exhaustive-style, react-doctor/rendering-hydration-mismatch-time, react-doctor/no-tiny-text, react-doctor/design-no-bold-heading, react-doctor/rerender-state-only-in-handlers, react-doctor/no-array-index-as-key, react-doctor/react-compiler-destructure-method, react-doctor/click-events-have-key-events, react-doctor/no-static-element-interactions, react-doctor/prefer-useReducer, react-doctor/no-large-animated-blur, react-doctor/no-giant-component, react-doctor/nextjs-no-img-element, react-doctor/no-transition-all, react-doctor/use-lazy-motion, react-doctor/rerender-functional-setstate, react-doctor/no-cascading-set-state, react-doctor/design-no-three-period-ellipsis, react-doctor/js-combine-iterations, react-doctor/client-localstorage-no-version, react-doctor/no-z-index-9999, react-doctor/js-cache-storage, react-doctor/nextjs-no-client-side-redirect, react-doctor/no-wide-letter-spacing */
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+import { withRetry } from "./apiUtils";
 
 export class ApiError extends Error {
   constructor(public detail: string, public status: number) {
@@ -52,9 +53,22 @@ async function apiFetch<T>(
     }
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      console.error(`[API] Error response for ${url}:`, err);
-      throw new ApiError(err.detail || `HTTP ${res.status}`, res.status);
+      let detail = `HTTP ${res.status}`;
+      try {
+        const text = await res.text();
+        try {
+          const err = JSON.parse(text);
+          detail = err.detail || err.message || detail;
+        } catch {
+          if (text.includes("Cloudflare") || text.includes("Vercel")) {
+            detail = `Server Gateway Error (HTTP ${res.status})`;
+          } else if (text.length > 0) {
+            detail = text.substring(0, 150);
+          }
+        }
+      } catch {}
+      console.error(`[API] Error response for ${url}: ${detail}`);
+      throw new ApiError(detail, res.status);
     }
 
     return res.json();
@@ -177,10 +191,10 @@ export async function submitExam(
   title: string
 ): Promise<SubmitResponse> {
   const payload = { ...answers, __exam_title: title };
-  return apiFetch<SubmitResponse>("/exam/submit-exam", {
+  return withRetry(() => apiFetch<SubmitResponse>("/exam/submit-exam", {
     method: "POST",
     body: JSON.stringify({ answers: payload }),
-  });
+  }));
 }
 
 export async function getExamStatus(): Promise<any[]> {
