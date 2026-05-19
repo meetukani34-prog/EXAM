@@ -2061,7 +2061,8 @@ function QuestionsTab() {
   const [previewOutput, setPreviewOutput] = useState("");
   const [previewTestResults, setPreviewTestResults] = useState<any[]>([]);
   const [previewLanguage, setPreviewLanguage] = useState<"python" | "c" | "cpp">("python");
-  const { runCode: runPreviewCode, loading: previewLoading } = usePyodide();
+  const { runCode: runPreviewPythonSingle, runTestSuite: runPreviewPythonTestSuite, loading: previewPyLoading } = usePyodide();
+  const { runC_Cpp: runPreviewC_Cpp, runTestSuite: runWasmPreviewTestSuite, isCompiling: previewWasmCompiling } = useWasmCompiler();
   const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "upcoming" | "inactive">("all");
   const [formData, setFormData] = useState<Omit<AdminQuestion, "id">>({
     text: "",
@@ -2116,29 +2117,37 @@ function QuestionsTab() {
       return;
     }
 
+    const validateFn = (stdout: string, expected: string) => stdout.trim() === expected.trim();
+
     if (Array.isArray(testCases) && testCases.length > 0) {
       let finalResults = "";
-      const results = [];
-      for (let i = 0; i < testCases.length; i++) {
-        const tc = testCases[i];
-        const res: any = await runPreviewCode(previewCode, tc.input || "");
-        const expected = (tc.expected || tc.output || tc.expected_output || "").toString().trim();
-        const actual = (res.stdout || "").toString().trim();
-        const passed = validateOutput(res.stdout, expected);
+      let results: any[] = [];
+      if (previewLanguage === "python") {
+        const suiteRes = await runPreviewPythonTestSuite(previewCode, testCases, validateFn);
+        results = suiteRes.results;
+      } else {
+        const suiteRes = await runWasmPreviewTestSuite(previewCode, testCases, validateFn);
+        results = suiteRes.results;
+      }
 
-        results.push({
-          input: tc.input, expected: expected, actual: actual,
-          passed: passed, error: res.error
-        });
-
-        if (res.error) finalResults += `❌ CASE ${i + 1}: ERROR\n   ${res.error}\n`;
-        else finalResults += `${passed ? '✅' : '❌'} CASE ${i + 1} ${passed ? 'PASSED' : 'FAILED'}\n   Output: ${actual}\n`;
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        if (r.error) {
+          finalResults += `❌ CASE ${i + 1}: ERROR\n   ${r.error}\n`;
+        } else {
+          finalResults += `${r.passed ? '✅' : '❌'} CASE ${i + 1} ${r.passed ? 'PASSED' : 'FAILED'}\n   Output: ${r.actual}\n`;
+        }
       }
       setPreviewTestResults(results);
       setPreviewOutput(finalResults);
     } else {
-      const res: any = await runPreviewCode(previewCode);
-      setPreviewOutput(res.error ? `ERROR: ${res.error}` : res.stdout || "Success (No Output)");
+      if (previewLanguage === "python") {
+        const res = await runPreviewPythonSingle(previewCode);
+        setPreviewOutput(res.error ? `ERROR: ${res.error}` : res.stdout || "Success (No Output)");
+      } else {
+        const res = await runPreviewC_Cpp(previewCode);
+        setPreviewOutput(res.error ? `ERROR: ${res.error}` : res.stdout || "Success (No Output)");
+      }
     }
   };
   const [scheduleData, setScheduleData] = useState({
@@ -3570,7 +3579,8 @@ function QuestionsTab() {
                 output={previewOutput}
                 onRun={handleRunPreview}
                 onSubmit={handleRunPreview}
-                pyLoading={previewLoading}
+                pyLoading={previewPyLoading}
+                isCompiling={previewWasmCompiling}
                 currentRound={previewChallenge.round}
                 labelConfig={{ phase: "Preview", orbit: "Test" }}
                 testResults={previewTestResults}
