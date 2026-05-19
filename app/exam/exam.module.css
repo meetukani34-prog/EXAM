@@ -114,7 +114,7 @@
   display: grid;
   grid-template-columns: 1fr 260px;
   gap: 20px;
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 16px 28px;
   width: 100%;

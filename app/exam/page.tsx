@@ -77,9 +77,45 @@ export default function ExamPage() {
     if (selectedLanguage === "python") {
       const results = await runPythonTestSuite(codeToRun, testCases, validateFn);
       setCompilerTestResults(prev => ({ ...prev, [q.id]: results }));
+
+      let outputText = "";
+      if (results?.results && results.results.length > 0) {
+        const failedCase = results.results.find((r: any) => !r.passed);
+        if (failedCase) {
+          if (failedCase.error) {
+            outputText = `❌ Execution Error on Test Case:\n${failedCase.error}`;
+          } else {
+            outputText = `❌ Mismatch on Test Case:\nExpected:\n${failedCase.expected}\n\nActual:\n${failedCase.actual}`;
+          }
+        } else {
+          const firstResult = results.results[0];
+          outputText = `✓ All Test Cases Passed!\n\nOutput of Test Case 1:\n${firstResult.actual || "(No output)"}`;
+        }
+      } else {
+        outputText = "No test cases configured.";
+      }
+      setCompilerOutputs(prev => ({ ...prev, [q.id]: outputText }));
     } else {
       const results = await runWasmTestSuite(codeToRun, testCases, validateFn);
       setCompilerTestResults(prev => ({ ...prev, [q.id]: results }));
+
+      let outputText = "";
+      if (results?.results && results.results.length > 0) {
+        const failedCase = results.results.find((r: any) => !r.passed);
+        if (failedCase) {
+          if (failedCase.error) {
+            outputText = `❌ Execution Error on Test Case:\n${failedCase.error}`;
+          } else {
+            outputText = `❌ Mismatch on Test Case:\nExpected:\n${failedCase.expected}\n\nActual:\n${failedCase.actual}`;
+          }
+        } else {
+          const firstResult = results.results[0];
+          outputText = `✓ All Test Cases Passed!\n\nOutput of Test Case 1:\n${firstResult.actual || "(No output)"}`;
+        }
+      } else {
+        outputText = "No test cases configured.";
+      }
+      setCompilerOutputs(prev => ({ ...prev, [q.id]: outputText }));
     }
   };
 
@@ -714,7 +750,7 @@ export default function ExamPage() {
                     labelConfig={{ phase: "Exam", orbit: "Compiler" }}
                     selectedLanguage={selectedLanguage}
                     onLanguageChange={setSelectedLanguage}
-                    testResults={compilerTestResults[activeQuestion.id]}
+                    testResults={compilerTestResults[activeQuestion.id]?.results}
                     isCompiling={isCompiling}
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
