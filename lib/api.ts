@@ -225,7 +225,12 @@ export interface AdminQuestion {
   image_url: string | null;
   audio_url?: string | null;
   category?: "aptitude" | "programming" | "other";
-  programming_type?: "compiler" | "mcq";
+  programming_type?: "jumble" | "compiler" | "mcq";
+  starter_code?: string | null;
+  starter_code_c?: string | null;
+  starter_code_cpp?: string | null;
+  test_cases?: string | null;
+  target_output?: string | null;
 }
 
 export interface AdminStudent {

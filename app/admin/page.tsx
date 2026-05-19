@@ -2048,7 +2048,13 @@ function QuestionsTab() {
   const [editing, setEditing] = useState<AdminQuestion | null>(null);
   const [selectedBranch, setSelectedBranch] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState<"all" | "aptitude" | "programming" | "other">("all");
-  const [subCategory, setSubCategory] = useState<"compiler" | "mcq">("compiler");
+  const [subCategory, setSubCategory] = useState<"jumble" | "compiler" | "mcq">("compiler");
+  const [previewChallenge, setPreviewChallenge] = useState<any>(null);
+  const [previewCode, setPreviewCode] = useState("");
+  const [previewOutput, setPreviewOutput] = useState("");
+  const [previewTestResults, setPreviewTestResults] = useState<any[]>([]);
+  const [previewLanguage, setPreviewLanguage] = useState<"python" | "c" | "cpp">("python");
+  const { runCode: runPreviewCode, loading: previewLoading } = usePyodide();
   const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "upcoming" | "inactive">("all");
   const [formData, setFormData] = useState<Omit<AdminQuestion, "id">>({
     text: "",
@@ -2075,9 +2081,59 @@ function QuestionsTab() {
   const [challengeUnlockCode, setChallengeUnlockCode] = useState("");
   const [rawJsonMode, setRawJsonMode] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const isCompiler = formCategory === "programming" && formData.programming_type === "compiler";
-  const isSaveDisabled = isCompiler ? !formData.text : (!formData.text || !formData.correct_answer || formData.options.some((o) => !o));
+  const isCodingChallenge = formCategory === "programming" && (formData.programming_type === "compiler" || formData.programming_type === "jumble");
+  const isSaveDisabled = isCodingChallenge ? !formData.text : (!formData.text || !formData.correct_answer || formData.options.some((o) => !o));
   const [schedulingExam, setSchedulingExam] = useState<string | null>(null);
+
+  const handleRunPreview = async () => {
+    if (!previewChallenge) return;
+    setPreviewOutput("Initializing Logic...");
+
+    let testCases: any[] = [];
+    try {
+      if (previewChallenge.test_cases) {
+        let parsed = previewChallenge.test_cases;
+        if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+        if (Array.isArray(parsed)) {
+          if (parsed.length > 0 && parsed[0].test_cases && Array.isArray(parsed[0].test_cases)) {
+            testCases = parsed[0].test_cases;
+          } else {
+            testCases = parsed;
+          }
+        } else if (parsed && typeof parsed === 'object' && (parsed as any).test_cases) {
+          testCases = (parsed as any).test_cases;
+        }
+      }
+    } catch (e) {
+      setPreviewOutput("ERROR: Invalid Test Cases JSON");
+      return;
+    }
+
+    if (Array.isArray(testCases) && testCases.length > 0) {
+      let finalResults = "";
+      const results = [];
+      for (let i = 0; i < testCases.length; i++) {
+        const tc = testCases[i];
+        const res: any = await runPreviewCode(previewCode, tc.input || "");
+        const expected = (tc.expected || tc.output || tc.expected_output || "").toString().trim();
+        const actual = (res.stdout || "").toString().trim();
+        const passed = validateOutput(res.stdout, expected);
+
+        results.push({
+          input: tc.input, expected: expected, actual: actual,
+          passed: passed, error: res.error
+        });
+
+        if (res.error) finalResults += `❌ CASE ${i + 1}: ERROR\n   ${res.error}\n`;
+        else finalResults += `${passed ? '✅' : '❌'} CASE ${i + 1} ${passed ? 'PASSED' : 'FAILED'}\n   Output: ${actual}\n`;
+      }
+      setPreviewTestResults(results);
+      setPreviewOutput(finalResults);
+    } else {
+      const res: any = await runPreviewCode(previewCode);
+      setPreviewOutput(res.error ? `ERROR: ${res.error}` : res.stdout || "Success (No Output)");
+    }
+  };
   const [scheduleData, setScheduleData] = useState({
     startDate: "",
     startTime: "",
@@ -2192,9 +2248,9 @@ function QuestionsTab() {
     if (!formData.text) return alert("Please enter question text");
     if (!formData.branch) return alert("Please select a branch");
 
-    const isCompiler = formCategory === "programming" && formData.programming_type === "compiler";
+    const isCodingChallenge = formCategory === "programming" && (formData.programming_type === "compiler" || formData.programming_type === "jumble");
 
-    if (!isCompiler) {
+    if (!isCodingChallenge) {
       if (formData.options.some((o) => !o)) return alert("All options must be filled");
       if (!formData.correct_answer) return alert("Please select a correct answer");
     }
@@ -2203,7 +2259,7 @@ function QuestionsTab() {
       let finalOptions = formData.options;
       let finalCorrectAnswer = formData.correct_answer;
 
-      if (isCompiler) {
+      if (isCodingChallenge) {
         const challengeData = {
           target_output: challengeTargetOutput,
           test_cases: challengeTestCases,
@@ -2558,6 +2614,24 @@ function QuestionsTab() {
       {selectedCategory === 'programming' && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, marginTop: -10 }}>
            <button
+            onClick={() => setSubCategory('jumble')}
+            style={{
+              padding: '6px 16px',
+              borderRadius: '99px',
+              border: '1px solid var(--border)',
+              background: subCategory === 'jumble' ? 'var(--accent)' : 'var(--bg-secondary)',
+              color: subCategory === 'jumble' ? '#fff' : 'var(--text-secondary)',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            🧩 Code Jumble
+          </button>
+           <button
             onClick={() => setSubCategory('compiler')}
             style={{
               padding: '6px 16px',
@@ -2901,9 +2975,10 @@ function QuestionsTab() {
                       cursor: "pointer"
                     }}
                     value={formData.programming_type || 'compiler'}
-                    onChange={(e) => setFormData(prev => ({ ...prev, programming_type: e.target.value as "compiler" | "mcq" }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, programming_type: e.target.value as "jumble" | "compiler" | "mcq" }))}
                   >
-                    <option value="compiler">📁 Coding Challenges</option>
+                    <option value="jumble">🧩 Code Jumble</option>
+                    <option value="compiler">📁 Logic Building</option>
                     <option value="mcq">📝 Conceptual MCQs</option>
                   </select>
                 </div>
@@ -2963,12 +3038,12 @@ function QuestionsTab() {
 
             {/* Primary Question Content */}
             <div className={adminStyles.formGroup}>
-              <label>{isCompiler ? "Coding Challenge Prompt / Instructions" : "Question Text / Prompt"}</label>
+              <label>{isCodingChallenge ? "Coding Challenge Prompt / Instructions" : "Question Text / Prompt"}</label>
               <textarea className={adminStyles.input} value={formData.text} onChange={(e) => setFormData(prev => ({ ...prev, text: e.target.value }))} rows={3} placeholder="Provide instructions or background problem definition here..." />
             </div>
 
             {/* Type-Specific Editor */}
-            {isCompiler ? (
+            {isCodingChallenge ? (
               <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border)", borderRadius: "18px", padding: 24, margin: "20px 0", display: "flex", flexDirection: "column", gap: 20 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "var(--accent)" }}>💻 PyHunt Coding Challenge Configurations</h4>
