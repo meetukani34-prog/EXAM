@@ -105,19 +105,53 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       const lines = normalizedCode.split("\n");
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (line && 
-            !line.startsWith("#") && 
-            !line.startsWith("//") && 
-            !line.startsWith("/*") && 
-            !line.endsWith("{") && 
-            !line.endsWith("}") && 
-            !line.endsWith(";") && 
-            !line.includes("main") && 
-            !line.includes("void") && 
-            !line.includes("int") &&
-            !line.startsWith("using") &&
-            !line.startsWith("class") &&
-            !line.startsWith("struct")) {
+        
+        // Skip empty lines, preprocessors, and comments
+        if (!line || line.startsWith("#") || line.startsWith("//") || line.startsWith("/*") || line.startsWith("*")) {
+          continue;
+        }
+
+        // If it already ends with standard block delimiters, semicolons, commas, or line continuation
+        if (line.endsWith("{") || line.endsWith("}") || line.endsWith(";") || line.endsWith(",") || line.endsWith("\\")) {
+          continue;
+        }
+
+        // Check if it is a function definition (e.g. void main(), int main(), float func())
+        // A function definition might have the opening brace on the same line (handled above) 
+        // or on the next non-empty line.
+        let isFuncDefinition = false;
+        const functionDeclRegex = /\b(void|int|char|float|double|bool|auto|string)\s+\w+\s*\([^)]*\)/;
+        if (functionDeclRegex.test(line)) {
+          // Look ahead to see if the next non-empty line starts with '{'
+          let nextLine = "";
+          for (let j = i + 1; j < lines.length; j++) {
+            const next = lines[j].trim();
+            if (next) {
+              nextLine = next;
+              break;
+            }
+          }
+          if (nextLine.startsWith("{")) {
+            isFuncDefinition = true;
+          }
+        }
+
+        if (isFuncDefinition) {
+          continue;
+        }
+
+        // Check if the line is a statement that requires a semicolon
+        const isStatement = 
+          line.includes("=") || 
+          line.includes("printf") || 
+          line.includes("scanf") || 
+          line.includes("cout") || 
+          line.includes("cin") || 
+          line.includes("print") ||
+          /\breturn\b/.test(line) ||
+          /\b(int|float|double|char|bool|long|short|auto|string|std::string)\b/.test(line);
+
+        if (isStatement) {
           throw new Error(`Compilation Error: expected ';' at end of line ${i + 1}`);
         }
       }
