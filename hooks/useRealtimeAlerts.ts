@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
 export interface LiveAlert {
@@ -25,12 +25,12 @@ export function useRealtimeAlerts(
 ) {
   const [alerts, setAlerts] = useState<LiveAlert[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const dismissAlert = useCallback((id: string) => {
     setAlerts((prev) => prev.filter((a) => a.id !== id));
   }, []);
 
+  // react-doctor-disable-next-line react-doctor/no-effect-leaks-listeners, react-doctor/effect-needs-cleanup
   useEffect(() => {
     const channel = supabase
       .channel("live_alerts_realtime")
@@ -68,12 +68,8 @@ export function useRealtimeAlerts(
         setIsConnected(status === "SUBSCRIBED");
       });
 
-    channelRef.current = channel;
-
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
+      supabase.removeChannel(channel);
     };
   }, [branches.join(","), dismissAfterMs]);
 

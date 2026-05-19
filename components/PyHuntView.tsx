@@ -549,6 +549,7 @@ export default function PyHuntView() {
       });
       // ──────────────────────────
 
+      // react-doctor-disable-next-line react-doctor/js-length-check-first
       const allCorrect = Object.keys(mcqSelectionMap).length === mcqSet.length && mcqSet.every((q, idx) => mcqSelectionMap[idx] === q.correct);
       const answeredCount = Object.keys(mcqSelectionMap).length;
       if (answeredCount < mcqSet.length) {

@@ -239,6 +239,7 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       const printRegex = /print\s*\(\s*"([^"]*)"/g;
       while ((match = printRegex.exec(normalizedCode)) !== null) {
         const lit = match[1];
+        // react-doctor-disable-next-line react-doctor/js-set-map-lookups
         if (!normalizedCode.includes(`printf("${lit}`)) {
           printedLiterals.push(lit.replace(/\\n/g, "\n"));
         }

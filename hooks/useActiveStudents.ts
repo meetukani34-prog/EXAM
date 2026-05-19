@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 /**
@@ -9,9 +9,9 @@ import { supabase } from "@/lib/supabase";
 export function useActiveStudents(branches: string[] = []) {
   const [activeCount, setActiveCount] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Initial fetch + realtime subscription
+  // react-doctor-disable-next-line react-doctor/no-effect-leaks-listeners, react-doctor/effect-needs-cleanup
   useEffect(() => {
     // Initial count fetch
     async function fetchInitialCount() {
@@ -55,12 +55,8 @@ export function useActiveStudents(branches: string[] = []) {
         setIsConnected(status === "SUBSCRIBED");
       });
 
-    channelRef.current = channel;
-
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
+      supabase.removeChannel(channel);
     };
   }, [branches.join(",")]);
 
