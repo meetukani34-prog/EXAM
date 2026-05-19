@@ -57,6 +57,7 @@ import FacultyTab from "@/components/admin/FacultyTab";
 import CodingInterface from "@/components/CodingInterface";
 import { validateOutput } from "@/lib/logicUtils";
 import { usePyodide } from "@/hooks/usePyodide";
+import { useWasmCompiler } from "@/hooks/useWasmCompiler";
 
 // ── Types ─────────────────────────────────────────────────────
 // Use AdminStudent from lib/api
@@ -639,7 +640,8 @@ function PyHuntConfig({
   const [previewOutput, setPreviewOutput] = useState("");
   const [previewTestResults, setPreviewTestResults] = useState<any[]>([]);
   const [previewLanguage, setPreviewLanguage] = useState<"python" | "c" | "cpp">("python");
-  const { runCode, loading: pyLoading } = usePyodide(activeTab === 'r3' || activeTab === 'r4');
+  const { runCode: runPythonSingleCode, runTestSuite: runPythonTestSuite, loading: pyLoading } = usePyodide(activeTab === 'r3' || activeTab === 'r4');
+  const { runC_Cpp, runTestSuite: runWasmTestSuite, isCompiling } = useWasmCompiler();
 
   const handleRunPreview = async () => {
     if (!previewChallenge) return;
@@ -668,36 +670,38 @@ function PyHuntConfig({
       return;
     }
 
+    // Default validation: exact match on trimmed output
+    const validateFn = (stdout: string, expected: string) => stdout.trim() === expected.trim();
+
     if (Array.isArray(testCases) && testCases.length > 0) {
       let finalResults = "";
-      const results = [];
-      for (let i = 0; i < testCases.length; i++) {
-        const tc = testCases[i];
-        const res: any = await runCode(previewCode, tc.input || "");
+      let results: any[] = [];
+      if (previewLanguage === "python") {
+        const suiteRes = await runPythonTestSuite(previewCode, testCases, validateFn);
+        results = suiteRes.results;
+      } else {
+        const suiteRes = await runWasmTestSuite(previewCode, testCases, validateFn);
+        results = suiteRes.results;
+      }
 
-        const expected = (tc.expected || tc.output || tc.expected_output || "").toString().trim();
-        const actual = (res.stdout || "").toString().trim();
-        const passed = validateOutput(res.stdout, expected);
-
-        results.push({
-          input: tc.input,
-          expected: expected,
-          actual: actual,
-          passed: passed,
-          error: res.error
-        });
-
-        if (res.error) {
-          finalResults += `❌ CASE ${i + 1}: ERROR\n   ${res.error}\n`;
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        if (r.error) {
+          finalResults += `❌ CASE ${i + 1}: ERROR\n   ${r.error}\n`;
         } else {
-          finalResults += `${passed ? '✅' : '❌'} CASE ${i + 1} ${passed ? 'PASSED' : 'FAILED'}\n   Output: ${actual}\n`;
+          finalResults += `${r.passed ? '✅' : '❌'} CASE ${i + 1} ${r.passed ? 'PASSED' : 'FAILED'}\n   Output: ${r.actual}\n`;
         }
       }
       setPreviewTestResults(results);
       setPreviewOutput(finalResults);
     } else {
-      const res: any = await runCode(previewCode);
-      setPreviewOutput(res.error ? `ERROR: ${res.error}` : res.stdout || "Success (No Output)");
+      if (previewLanguage === "python") {
+        const res = await runPythonSingleCode(previewCode);
+        setPreviewOutput(res.error ? `ERROR: ${res.error}` : res.stdout || "Success (No Output)");
+      } else {
+        const res = await runC_Cpp(previewCode);
+        setPreviewOutput(res.error ? `ERROR: ${res.error}` : res.stdout || "Success (No Output)");
+      }
     }
   };
 
@@ -719,6 +723,7 @@ function PyHuntConfig({
                 onRun={handleRunPreview}
                 onSubmit={handleRunPreview}
                 pyLoading={pyLoading}
+                isCompiling={isCompiling}
                 currentRound={previewChallenge.round}
                 labelConfig={labelConfig}
                 testResults={previewTestResults}
@@ -958,7 +963,8 @@ function PyHuntConfig({
                     style={{ background: 'rgba(0, 242, 255, 0.1)', color: '#00f2ff', borderColor: 'rgba(0, 242, 255, 0.2)' }}
                     onClick={() => {
                       setPreviewChallenge({ ...c, round: 3 });
-                      setPreviewCode("# Write test code here...");
+                      setPreviewLanguage("python");
+                      setPreviewCode(c.starter_code || "# Write test code here...");
                       setPreviewOutput("");
                     }}
                   >
@@ -1054,7 +1060,8 @@ function PyHuntConfig({
                     style={{ background: 'rgba(0, 242, 255, 0.1)', color: '#00f2ff', borderColor: 'rgba(0, 242, 255, 0.2)' }}
                     onClick={() => {
                       setPreviewChallenge({ ...c, round: 4 });
-                      setPreviewCode("# Write test code here...");
+                      setPreviewLanguage("python");
+                      setPreviewCode(c.starter_code || "# Write test code here...");
                       setPreviewOutput("");
                     }}
                   >
