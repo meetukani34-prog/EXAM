@@ -200,7 +200,7 @@ def get_questions(
         branch = current.get("branch", "CS")
         
         # ── Strategy 1: Strict Branch + Strict Title Match ──
-        query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type, starter_code, starter_code_c, starter_code_cpp, test_cases, target_output")
+        query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type")
         if branch != "ALL":
             query = query.eq("branch", branch)
         
@@ -208,7 +208,7 @@ def get_questions(
 
         # ── Strategy 2: Strict Branch + Fuzzy Title Match ──
         if not result.data:
-            query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type, starter_code, starter_code_c, starter_code_cpp, test_cases, target_output")
+            query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type")
             if branch != "ALL":
                 query = query.eq("branch", branch)
             result = query.ilike("exam_name", f"%{title}%").order("order_index").limit(100).execute()
@@ -217,7 +217,7 @@ def get_questions(
         if not result.data:
             result = (
                 db.table("questions")
-                .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type, starter_code, starter_code_c, starter_code_cpp, test_cases, target_output")
+                .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type")
                 .eq("exam_name", title)
                 .order("order_index")
                 .limit(100)
@@ -228,7 +228,7 @@ def get_questions(
         if not result.data:
             result = (
                 db.table("questions")
-                .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type, starter_code, starter_code_c, starter_code_cpp, test_cases, target_output")
+                .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type")
                 .ilike("exam_name", f"%{title}%")
                 .order("order_index")
                 .limit(100)
@@ -251,20 +251,36 @@ def get_questions(
             neg_marks = float(cfg.get("negative_marks") if cfg.get("negative_marks") is not None else 0.0)
     except Exception: pass
 
-    questions = [
-        QuestionOut(
-            id=q["id"],
-            text=(q["text"] or "").replace(f"⟦EXAM:{title}⟧", "").strip(),
-            options=q["options"],
-            branch=q.get("branch", branch),
-            order_index=q["order_index"],
-            marks=q["marks"] if marks_override is None else marks_override,
-            neg_marks=neg_marks,
-            image_url=q.get("image_url"),
-            audio_url=q.get("audio_url")
+    import json
+    questions = []
+    for q in (result.data or []):
+        parsed = {}
+        if q.get("options") and len(q["options"]) > 0:
+            try:
+                parsed = json.loads(q["options"][0])
+            except Exception:
+                pass
+        
+        questions.append(
+            QuestionOut(
+                id=q["id"],
+                text=(q["text"] or "").replace(f"⟦EXAM:{title}⟧", "").strip(),
+                options=q["options"],
+                branch=q.get("branch", branch),
+                order_index=q["order_index"],
+                marks=q["marks"] if marks_override is None else marks_override,
+                neg_marks=neg_marks,
+                image_url=q.get("image_url"),
+                audio_url=q.get("audio_url"),
+                category=q.get("category", "other"),
+                programming_type=q.get("programming_type"),
+                starter_code=parsed.get("starter_code"),
+                starter_code_c=parsed.get("starter_code_c"),
+                starter_code_cpp=parsed.get("starter_code_cpp"),
+                test_cases=parsed.get("test_cases"),
+                target_output=parsed.get("target_output")
+            )
         )
-        for q in (result.data or [])
-    ]
 
     return QuestionsResponse(
         questions=questions, 

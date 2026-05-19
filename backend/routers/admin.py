@@ -38,6 +38,7 @@ async def get_all_questions(_: bool = Depends(verify_admin)):
     db = get_supabase()
     result = db.table("questions").select("*").order("order_index").execute()
     
+    import json
     processed_questions = []
     for q in result.data:
         text = q.get("text", "")
@@ -60,6 +61,20 @@ async def get_all_questions(_: bool = Depends(verify_admin)):
         q["text"] = text
         q["exam_name"] = exam_name
         q["category"] = q.get("category", "other")
+
+        # Parse options[0] for coding questions to populate starter_code, test_cases, target_output, clue, etc.
+        if q.get("options") and len(q["options"]) > 0:
+            try:
+                parsed = json.loads(q["options"][0])
+                if isinstance(parsed, dict):
+                    q["starter_code"] = parsed.get("starter_code")
+                    q["starter_code_c"] = parsed.get("starter_code_c")
+                    q["starter_code_cpp"] = parsed.get("starter_code_cpp")
+                    q["test_cases"] = parsed.get("test_cases")
+                    q["target_output"] = parsed.get("target_output")
+            except Exception:
+                pass
+
         processed_questions.append(q)
 
     return AdminQuestionsResponse(questions=processed_questions, total=len(processed_questions))

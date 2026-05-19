@@ -111,6 +111,7 @@ async def get_faculty_questions(
     result = query.execute()
 
     # Parse spectral tags
+    import json
     processed = []
     for q in (result.data or []):
         text = q.get("text", "")
@@ -123,6 +124,20 @@ async def get_faculty_questions(
         q["text"] = text
         q["exam_name"] = q_exam_name
         q["category"] = q.get("category", "other")
+
+        # Parse options[0] for coding questions to populate starter_code, test_cases, target_output, clue, etc.
+        if q.get("options") and len(q["options"]) > 0:
+            try:
+                parsed = json.loads(q["options"][0])
+                if isinstance(parsed, dict):
+                    q["starter_code"] = parsed.get("starter_code")
+                    q["starter_code_c"] = parsed.get("starter_code_c")
+                    q["starter_code_cpp"] = parsed.get("starter_code_cpp")
+                    q["test_cases"] = parsed.get("test_cases")
+                    q["target_output"] = parsed.get("target_output")
+            except Exception:
+                pass
+
         processed.append(q)
 
     return {"questions": processed, "total": len(processed)}
@@ -142,7 +157,24 @@ async def create_faculty_question(
     db_columns = list(probe.data[0].keys()) if (probe.data and len(probe.data) > 0) else [
         "text", "options", "branch", "correct_answer", "marks", "order_index", "exam_name"
     ]
+    
     full_data = request.model_dump()
+    if request.category == "programming":
+        import json
+        challenge_data = {
+            "target_output": request.target_output or "",
+            "test_cases": request.test_cases or "[]",
+            "starter_code": request.starter_code or "",
+            "starter_code_c": request.starter_code_c or "",
+            "starter_code_cpp": request.starter_code_cpp or "",
+            "clue": "",
+            "clue_variants": "",
+            "unlock_code": ""
+        }
+        full_data["options"] = [json.dumps(challenge_data)]
+        full_data["correct_answer"] = "COMPILER"
+        full_data["programming_type"] = request.programming_type or "compiler"
+
     data = {k: v for k, v in full_data.items() if k in db_columns}
 
     result = db.table("questions").insert(data).execute()
@@ -169,11 +201,65 @@ async def update_faculty_question(
     _check_branch_access(faculty, existing.data[0]["branch"])
 
     # If changing branch, verify access to new branch too
-    update_data = {k: v for k, v in request.model_dump().items() if v is not None}
-    if "branch" in update_data:
-        _check_branch_access(faculty, update_data["branch"])
+    full_update_data = {k: v for k, v in request.model_dump().items() if v is not None}
+    if "branch" in full_update_data:
+        _check_branch_access(faculty, full_update_data["branch"])
 
-    result = db.table("questions").update(update_data).eq("id", question_id).execute()
+    category = full_update_data.get("category")
+    if category is None:
+        # Load existing category
+        existing_q = db.table("questions").select("category").eq("id", question_id).execute()
+        if existing_q.data:
+            category = existing_q.data[0].get("category")
+
+    if category == "programming":
+        import json
+        challenge_data = {
+            "target_output": "",
+            "test_cases": "[]",
+            "starter_code": "",
+            "starter_code_c": "",
+            "starter_code_cpp": "",
+            "clue": "",
+            "clue_variants": "",
+            "unlock_code": ""
+        }
+        
+        # Load existing options to merge
+        existing_q = db.table("questions").select("options").eq("id", question_id).execute()
+        if existing_q.data and existing_q.data[0].get("options") and len(existing_q.data[0]["options"]) > 0:
+            try:
+                parsed = json.loads(existing_q.data[0]["options"][0])
+                if isinstance(parsed, dict):
+                    challenge_data.update(parsed)
+            except Exception:
+                pass
+                
+        # Merge request data
+        if "target_output" in full_update_data:
+            challenge_data["target_output"] = full_update_data["target_output"] or ""
+        if "test_cases" in full_update_data:
+            challenge_data["test_cases"] = full_update_data["test_cases"] or "[]"
+        if "starter_code" in full_update_data:
+            challenge_data["starter_code"] = full_update_data["starter_code"] or ""
+        if "starter_code_c" in full_update_data:
+            challenge_data["starter_code_c"] = full_update_data["starter_code_c"] or ""
+        if "starter_code_cpp" in full_update_data:
+            challenge_data["starter_code_cpp"] = full_update_data["starter_code_cpp"] or ""
+            
+        full_update_data["options"] = [json.dumps(challenge_data)]
+        full_update_data["correct_answer"] = "COMPILER"
+        if "programming_type" not in full_update_data:
+            full_update_data["programming_type"] = "compiler"
+
+    # Filter by db_columns
+    probe = db.table("questions").select("*").limit(1).execute()
+    db_columns = list(probe.data[0].keys()) if (probe.data and len(probe.data) > 0) else [
+        "text", "options", "branch", "correct_answer", "marks", "order_index", "exam_name"
+    ]
+    data = {k: v for k, v in full_update_data.items() if k in db_columns}
+
+    result = db.table("questions").update(data).eq("id", question_id).execute()
     return {"success": True, "question": result.data[0] if result.data else None}
 
 
