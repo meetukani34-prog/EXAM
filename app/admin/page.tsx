@@ -3548,6 +3548,41 @@ function QuestionsTab() {
         </div>
       )}
 
+    {previewChallenge && (
+        <div className={adminStyles.modalOverlay} onClick={() => setPreviewChallenge(null)} onKeyDown={e => { if (e.key === 'Enter') setPreviewChallenge(null); }}  role="button" tabIndex={0}>
+          <div className={adminStyles.modal} style={{ maxWidth: '90vw', width: '1200px', height: '85vh', padding: '20px', background: '#0f172a', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }} onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Enter') e.stopPropagation(); }}  role="button" tabIndex={0}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, color: '#fff' }}>Live IDE Preview</h3>
+              <button onClick={() => setPreviewChallenge(null)} className="btn btn-outline" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>✕ Close Preview</button>
+            </div>
+            <div style={{ height: 'calc(100% - 60px)' }}>
+              <CodingInterface
+                problem={previewChallenge}
+                code={previewCode}
+                setCode={setPreviewCode}
+                output={previewOutput}
+                onRun={handleRunPreview}
+                onSubmit={handleRunPreview}
+                pyLoading={previewLoading}
+                currentRound={previewChallenge.round}
+                labelConfig={{ phase: "Preview", orbit: "Test" }}
+                testResults={previewTestResults}
+                selectedLanguage={previewLanguage}
+                onLanguageChange={(lang) => {
+                  setPreviewLanguage(lang);
+                  const starter = lang === 'python'
+                    ? (previewChallenge.starter_code || '')
+                    : lang === 'c'
+                    ? (previewChallenge.starter_code_c || '')
+                    : (previewChallenge.starter_code_cpp || '');
+                  setPreviewCode(starter);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
