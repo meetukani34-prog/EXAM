@@ -2890,8 +2890,32 @@ function QuestionsTab() {
                               <div className={adminStyles.cardHeader}>
                                 <div className={adminStyles.cardIndex} style={{ fontSize: 12, fontWeight: 700, color: palette.accent }}>Q{q.order_index + 1}</div>
                                 <div style={{ display: "flex", gap: 8 }}>
-                                  <button className="btn-icon" onClick={() => handleEditClick(q)}>✏️</button>
-                                  <button className="btn-icon btn-danger" onClick={() => handleDelete(q.id)}>🗑️</button>
+                                  {(q.programming_type === "compiler" || q.programming_type === "jumble") && (
+                                    <button 
+                                      className="btn-icon" 
+                                      title="Preview Coding Challenge"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPreviewChallenge({
+                                          prompt: q.text,
+                                          test_cases: q.test_cases || "[]",
+                                          target_output: q.target_output || "",
+                                          starter_code: q.starter_code || "",
+                                          starter_code_c: q.starter_code_c || "",
+                                          starter_code_cpp: q.starter_code_cpp || "",
+                                          round: q.programming_type === "jumble" ? 2 : 3
+                                        });
+                                        setPreviewLanguage("python");
+                                        setPreviewCode(q.starter_code || "");
+                                        setPreviewOutput("");
+                                        setPreviewTestResults([]);
+                                      }}
+                                    >
+                                      👁️
+                                    </button>
+                                  )}
+                                  <button className="btn-icon" title="Edit Question" onClick={() => handleEditClick(q)}>✏️</button>
+                                  <button className="btn-icon btn-danger" title="Delete Question" onClick={() => handleDelete(q.id)}>🗑️</button>
                                 </div>
                               </div>
                               {q.image_url && (
