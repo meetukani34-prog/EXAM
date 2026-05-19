@@ -73,11 +73,7 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
     setOutput('');
     
     try {
-      // Auto-correct common typos to make the mock compiler robust and user-friendly
       let normalizedCode = code;
-      normalizedCode = normalizedCode.replace(/#include\s*<\s*studio\.h\s*>/g, "#include <stdio.h>");
-      normalizedCode = normalizedCode.replace(/#include\s*<\s*iostream\.h\s*>/g, "#include <iostream>");
-      normalizedCode = normalizedCode.replace(/\bprint\s*\(/g, "printf(");
 
       // Compile code to WASM locally in the browser
       const wasmBinary = await compilerRef.current.compile(normalizedCode);
@@ -87,6 +83,11 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       // 1. Check for standard library typos (e.g. <studio.h> instead of <stdio.h>)
       if (/#include\s*<\s*studio\.h\s*>/.test(normalizedCode)) {
         throw new Error("Compilation Error: studio.h: No such file or directory (did you mean <stdio.h>?)");
+      }
+
+      // 1b. Check for iostream.h typo (standard C++ is <iostream>)
+      if (/#include\s*<\s*iostream\.h\s*>/.test(normalizedCode)) {
+        throw new Error("Compilation Error: iostream.h: No such file or directory (did you mean <iostream>?)");
       }
 
       // 2. Check for undeclared print function in C/C++
@@ -106,8 +107,21 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         
-        // Skip empty lines, preprocessors, and comments
-        if (!line || line.startsWith("#") || line.startsWith("//") || line.startsWith("/*") || line.startsWith("*")) {
+        // Skip empty lines and comments
+        if (!line || line.startsWith("//") || line.startsWith("/*") || line.startsWith("*")) {
+          continue;
+        }
+
+        // Validate preprocessor directives strictly
+        if (line.startsWith("#")) {
+          const match = line.match(/^#\s*([a-zA-Z]+)/);
+          if (match) {
+            const directive = match[1];
+            const validDirectives = new Set(["include", "define", "undef", "ifdef", "ifndef", "if", "else", "elif", "endif", "error", "pragma", "line"]);
+            if (!validDirectives.has(directive)) {
+              throw new Error(`Compilation Error: invalid preprocessing directive #${directive}`);
+            }
+          }
           continue;
         }
 
