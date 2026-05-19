@@ -78,12 +78,24 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       setIsCompiling(false);
       setIsRunning(true);
       
-      // Basic syntax check to simulate real compiler errors
+      // 1. Check for standard library typos (e.g. <studio.h> instead of <stdio.h>)
+      if (/#include\s*<\s*studio\.h\s*>/.test(code)) {
+        throw new Error("Compilation Error: studio.h: No such file or directory (did you mean <stdio.h>?)");
+      }
+
+      // 2. Check for undeclared print function in C/C++
+      if (/\bprint\s*\(/.test(code)) {
+        if (!/\b(void|int|char|float|double)\s+print\s*\(/.test(code)) {
+          throw new Error("Compilation Error: use of undeclared identifier 'print'; did you mean 'printf'?");
+        }
+      }
+
+      // 3. Basic syntax check to simulate real compiler errors
       if (!code.includes("main")) {
         throw new Error("Compilation Error: 'main' function must be defined in C/C++ program.");
       }
       
-      // Basic syntax check for semicolon placement
+      // 4. Basic syntax check for semicolon placement
       const lines = code.split("\n");
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -101,6 +113,108 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
             !line.startsWith("class") &&
             !line.startsWith("struct")) {
           throw new Error(`Compilation Error: expected ';' at end of line ${i + 1}`);
+        }
+      }
+
+      // 5. Extract declared variables
+      const declaredVars = new Set<string>();
+      for (let line of lines) {
+        line = line.trim();
+        if (line.startsWith("//") || line.startsWith("/*") || line.startsWith("#")) {
+          continue;
+        }
+        const match = line.match(/\b(int|char|float|double|string|std::string|bool|long|short|auto)\s+([^;]+);/);
+        if (match) {
+          const declContent = match[2];
+          const parts = declContent.split(",");
+          for (let part of parts) {
+            part = part.trim();
+            part = part.split("=")[0].trim();
+            part = part.split("[")[0].trim();
+            while (part.startsWith("*")) {
+              part = part.slice(1).trim();
+            }
+            if (part) {
+              declaredVars.add(part);
+            }
+          }
+        }
+      }
+
+      // 6. Keywords to ignore
+      const keywords = new Set([
+        'int', 'char', 'float', 'double', 'string', 'bool', 'long', 'short', 'auto',
+        'void', 'main', 'include', 'define', 'if', 'else', 'for', 'while', 'do',
+        'return', 'break', 'continue', 'switch', 'case', 'default', 'printf', 'scanf',
+        'std', 'cout', 'cin', 'endl', 'true', 'false', 'NULL', 'nullptr', 'using', 'namespace',
+        'const', 'struct', 'class', 'public', 'private', 'protected'
+      ]);
+
+      // 7. Check for undeclared variables in scanf
+      const scanfRegex = /scanf\s*\(\s*"[^"]*"\s*,\s*([^)]+)\)/g;
+      let scanfMatch;
+      while ((scanfMatch = scanfRegex.exec(code)) !== null) {
+        const args = scanfMatch[1].split(",");
+        for (let arg of args) {
+          arg = arg.trim();
+          while (arg.startsWith("&") || arg.startsWith("*")) {
+            arg = arg.slice(1).trim();
+          }
+          const varName = arg.split("[")[0].trim();
+          if (varName && !declaredVars.has(varName) && !keywords.has(varName) && isNaN(Number(varName))) {
+            throw new Error(`Compilation Error: '${varName}' undeclared (first use in this function)`);
+          }
+        }
+      }
+
+      // 8. Check for undeclared variables in cin
+      const cinRegex = /cin\s*>>\s*([^;]+);/g;
+      let cinMatch;
+      while ((cinMatch = cinRegex.exec(code)) !== null) {
+        const parts = cinMatch[1].split(">>");
+        for (let part of parts) {
+          const varName = part.trim().split("[")[0].trim();
+          if (varName && !declaredVars.has(varName) && !keywords.has(varName) && isNaN(Number(varName))) {
+            throw new Error(`Compilation Error: '${varName}' undeclared (first use in this function)`);
+          }
+        }
+      }
+
+      // 9. Check for undeclared variables in printf/print
+      const printFuncRegex = /print(f)?\s*\(\s*"[^"]*"\s*,\s*([^)]+)\)/g;
+      let printFuncMatch;
+      while ((printFuncMatch = printFuncRegex.exec(code)) !== null) {
+        const args = printFuncMatch[2].split(",");
+        for (let arg of args) {
+          arg = arg.trim();
+          const varName = arg.split("[")[0].trim();
+          const words = varName.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g) || [];
+          for (const w of words) {
+            if (!declaredVars.has(w) && !keywords.has(w)) {
+              throw new Error(`Compilation Error: '${w}' undeclared (first use in this function)`);
+            }
+          }
+        }
+      }
+
+      // 10. Check assignments like: var = expr; or var += expr;
+      for (let line of lines) {
+        line = line.trim();
+        if (line.startsWith("//") || line.startsWith("/*") || line.startsWith("#")) {
+          continue;
+        }
+        if (line.includes("=") && !line.startsWith("if") && !line.startsWith("for") && !line.startsWith("while") && !line.startsWith("return")) {
+          const isDecl = /\b(int|char|float|double|string|std::string|bool|long|short|auto)\b/.test(line);
+          if (!isDecl) {
+            const lhs = line.split("=")[0].trim();
+            const lhsWords = lhs.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g) || [];
+            if (lhsWords.length > 0) {
+              const varName = lhsWords[0];
+              if (varName && !declaredVars.has(varName) && !keywords.has(varName)) {
+                throw new Error(`Compilation Error: '${varName}' undeclared (first use in this function)`);
+              }
+            }
+          }
         }
       }
 
