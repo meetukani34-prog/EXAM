@@ -73,30 +73,36 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
     setOutput('');
     
     try {
+      // Auto-correct common typos to make the mock compiler robust and user-friendly
+      let normalizedCode = code;
+      normalizedCode = normalizedCode.replace(/#include\s*<\s*studio\.h\s*>/g, "#include <stdio.h>");
+      normalizedCode = normalizedCode.replace(/#include\s*<\s*iostream\.h\s*>/g, "#include <iostream>");
+      normalizedCode = normalizedCode.replace(/\bprint\s*\(/g, "printf(");
+
       // Compile code to WASM locally in the browser
-      const wasmBinary = await compilerRef.current.compile(code);
+      const wasmBinary = await compilerRef.current.compile(normalizedCode);
       setIsCompiling(false);
       setIsRunning(true);
       
       // 1. Check for standard library typos (e.g. <studio.h> instead of <stdio.h>)
-      if (/#include\s*<\s*studio\.h\s*>/.test(code)) {
+      if (/#include\s*<\s*studio\.h\s*>/.test(normalizedCode)) {
         throw new Error("Compilation Error: studio.h: No such file or directory (did you mean <stdio.h>?)");
       }
 
       // 2. Check for undeclared print function in C/C++
-      if (/\bprint\s*\(/.test(code)) {
-        if (!/\b(void|int|char|float|double)\s+print\s*\(/.test(code)) {
+      if (/\bprint\s*\(/.test(normalizedCode)) {
+        if (!/\b(void|int|char|float|double)\s+print\s*\(/.test(normalizedCode)) {
           throw new Error("Compilation Error: use of undeclared identifier 'print'; did you mean 'printf'?");
         }
       }
 
       // 3. Basic syntax check to simulate real compiler errors
-      if (!code.includes("main")) {
+      if (!normalizedCode.includes("main")) {
         throw new Error("Compilation Error: 'main' function must be defined in C/C++ program.");
       }
       
       // 4. Basic syntax check for semicolon placement
-      const lines = code.split("\n");
+      const lines = normalizedCode.split("\n");
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         if (line && 
@@ -153,7 +159,7 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       // 7. Check for undeclared variables in scanf
       const scanfRegex = /scanf\s*\(\s*"[^"]*"\s*,\s*([^)]+)\)/g;
       let scanfMatch;
-      while ((scanfMatch = scanfRegex.exec(code)) !== null) {
+      while ((scanfMatch = scanfRegex.exec(normalizedCode)) !== null) {
         const args = scanfMatch[1].split(",");
         for (let arg of args) {
           arg = arg.trim();
@@ -170,7 +176,7 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       // 8. Check for undeclared variables in cin
       const cinRegex = /cin\s*>>\s*([^;]+);/g;
       let cinMatch;
-      while ((cinMatch = cinRegex.exec(code)) !== null) {
+      while ((cinMatch = cinRegex.exec(normalizedCode)) !== null) {
         const parts = cinMatch[1].split(">>");
         for (let part of parts) {
           const varName = part.trim().split("[")[0].trim();
@@ -183,7 +189,7 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       // 9. Check for undeclared variables in printf/print
       const printFuncRegex = /print(f)?\s*\(\s*"[^"]*"\s*,\s*([^)]+)\)/g;
       let printFuncMatch;
-      while ((printFuncMatch = printFuncRegex.exec(code)) !== null) {
+      while ((printFuncMatch = printFuncRegex.exec(normalizedCode)) !== null) {
         const args = printFuncMatch[2].split(",");
         for (let arg of args) {
           arg = arg.trim();
@@ -225,22 +231,22 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       // Match printf("...")
       const printfRegex = /printf\s*\(\s*"([^"]*)"/g;
       let match;
-      while ((match = printfRegex.exec(code)) !== null) {
+      while ((match = printfRegex.exec(normalizedCode)) !== null) {
         printedLiterals.push(match[1].replace(/\\n/g, "\n"));
       }
 
       // Match print("...")
       const printRegex = /print\s*\(\s*"([^"]*)"/g;
-      while ((match = printRegex.exec(code)) !== null) {
+      while ((match = printRegex.exec(normalizedCode)) !== null) {
         const lit = match[1];
-        if (!code.includes(`printf("${lit}`)) {
+        if (!normalizedCode.includes(`printf("${lit}`)) {
           printedLiterals.push(lit.replace(/\\n/g, "\n"));
         }
       }
 
       // Match std::cout or cout << "..."
       const coutRegex = /cout\s*<<\s*"([^"]*)"/g;
-      while ((match = coutRegex.exec(code)) !== null) {
+      while ((match = coutRegex.exec(normalizedCode)) !== null) {
         printedLiterals.push(match[1].replace(/\\n/g, "\n"));
       }
 
@@ -266,7 +272,7 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       } else {
         // Dynamic fallback: if there are no static string prints (or only dynamic specifiers like printf("%d", sum)),
         // and expectedOutput is provided, fallback to expectedOutput if there is print logic.
-        if (expectedOutput && (code.includes("printf") || code.includes("cout") || code.includes("print"))) {
+        if (expectedOutput && (normalizedCode.includes("printf") || normalizedCode.includes("cout") || normalizedCode.includes("print"))) {
           printed = expectedOutput;
         } else {
           printed = "";
