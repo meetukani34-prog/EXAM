@@ -206,14 +206,7 @@ def get_questions(
         
         result = query.eq("exam_name", title).order("order_index").limit(100).execute()
 
-        # ── Strategy 2: Strict Branch + Fuzzy Title Match ──
-        if not result.data:
-            query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type")
-            if branch != "ALL":
-                query = query.eq("branch", branch)
-            result = query.ilike("exam_name", f"%{title}%").order("order_index").limit(100).execute()
-            
-        # ── Strategy 3: Global Title Match (Cross-Branch Fallback) ──
+        # ── Strategy 2 (Swapped): Global Title Match (Cross-Branch Fallback) ──
         if not result.data:
             result = (
                 db.table("questions")
@@ -223,6 +216,13 @@ def get_questions(
                 .limit(100)
                 .execute()
             )
+
+        # ── Strategy 3 (Swapped): Strict Branch + Fuzzy Title Match ──
+        if not result.data:
+            query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type")
+            if branch != "ALL":
+                query = query.eq("branch", branch)
+            result = query.ilike("exam_name", f"%{title}%").order("order_index").limit(100).execute()
             
         # ── Strategy 4: Global Fuzzy Title Match ──
         if not result.data:
@@ -423,14 +423,7 @@ def submit_exam(
         query = query.eq("branch", branch)
     questions_result = query.eq("exam_name", exam_title).execute()
 
-    # Strategy 2: Strict Branch + Fuzzy Title
-    if not questions_result.data:
-        query = db.table("questions").select("id, correct_answer, marks")
-        if branch != "ALL":
-            query = query.eq("branch", branch)
-        questions_result = query.ilike("exam_name", f"%{exam_title}%").execute()
-
-    # Strategy 3: Global Title Match
+    # Strategy 2 (Swapped): Global Title Match
     if not questions_result.data:
         questions_result = (
             db.table("questions")
@@ -438,6 +431,13 @@ def submit_exam(
             .eq("exam_name", exam_title)
             .execute()
         )
+
+    # Strategy 3 (Swapped): Strict Branch + Fuzzy Title
+    if not questions_result.data:
+        query = db.table("questions").select("id, correct_answer, marks")
+        if branch != "ALL":
+            query = query.eq("branch", branch)
+        questions_result = query.ilike("exam_name", f"%{exam_title}%").execute()
     
     # Strategy 4: Global Fuzzy Title Match
     if not questions_result.data:
