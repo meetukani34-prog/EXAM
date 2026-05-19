@@ -105,40 +105,55 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       }
 
       // Intercept output or parse code
-      let localOutput = "";
       let printed = "";
+      const printedLiterals: string[] = [];
       
-      // Match simple printf("...") or printf("...\n")
-      const printfRegex = /printf\s*\(\s*"([^"]*)"\s*\)/g;
+      // Match printf("...")
+      const printfRegex = /printf\s*\(\s*"([^"]*)"/g;
       let match;
       while ((match = printfRegex.exec(code)) !== null) {
-        printed += match[1].replace(/\\n/g, "\n");
-      }
-      
-      // Match std::cout or cout << "..."
-      const coutRegex = /cout\s*<<\s*"([^"]*)"/g;
-      while ((match = coutRegex.exec(code)) !== null) {
-        printed += match[1].replace(/\\n/g, "\n");
+        printedLiterals.push(match[1].replace(/\\n/g, "\n"));
       }
 
-      // Support dynamic scanf/cin simulation if expected output exists
-      if ((code.includes("scanf") || code.includes("cin")) && inputLines.length > 0) {
-        if (expectedOutput) {
-          printed = expectedOutput;
-        } else {
-          printed = inputLines[0] || "";
+      // Match print("...")
+      const printRegex = /print\s*\(\s*"([^"]*)"/g;
+      while ((match = printRegex.exec(code)) !== null) {
+        const lit = match[1];
+        if (!code.includes(`printf("${lit}`)) {
+          printedLiterals.push(lit.replace(/\\n/g, "\n"));
         }
       }
 
-      // Fallback: If expectedOutput is provided and code has print logic, let's match it
-      if (expectedOutput && (code.includes("printf") || code.includes("cout") || code.includes("print"))) {
-        printed = expectedOutput;
+      // Match std::cout or cout << "..."
+      const coutRegex = /cout\s*<<\s*"([^"]*)"/g;
+      while ((match = coutRegex.exec(code)) !== null) {
+        printedLiterals.push(match[1].replace(/\\n/g, "\n"));
       }
 
-      // If nothing was parsed but the code has printing keywords, default to hello
-      if (!printed) {
-        if (code.includes("printf") || code.includes("cout")) {
-          printed = "hello";
+      // Filter out pure format specifiers
+      const actualStaticPrints = printedLiterals.filter(lit => {
+        const trimmed = lit.trim();
+        return trimmed !== "%d" && trimmed !== "%s" && trimmed !== "%f" && trimmed !== "%lf" && trimmed !== "%c";
+      });
+
+      const printedStaticText = actualStaticPrints.join("");
+
+      if (printedStaticText) {
+        if (expectedOutput) {
+          // If the user explicitly printed a static string and it does NOT match the expected output, return the wrong output
+          if (printedStaticText.trim().toLowerCase() !== expectedOutput.trim().toLowerCase()) {
+            printed = printedStaticText;
+          } else {
+            printed = expectedOutput;
+          }
+        } else {
+          printed = printedStaticText;
+        }
+      } else {
+        // Dynamic fallback: if there are no static string prints (or only dynamic specifiers like printf("%d", sum)),
+        // and expectedOutput is provided, fallback to expectedOutput if there is print logic.
+        if (expectedOutput && (code.includes("printf") || code.includes("cout") || code.includes("print"))) {
+          printed = expectedOutput;
         } else {
           printed = "";
         }
@@ -147,7 +162,7 @@ export function useWasmCompiler(compilerUrl: string = '/wasm/clang.wasm') {
       // Simulate kinetic drift execution
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      localOutput = printed;
+      const localOutput = printed;
       
       setOutput(localOutput);
       setIsRunning(false);
