@@ -1,0 +1,356 @@
+/* ── Geist Font Import ── */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
+
+/* ── Liquid Glass Hero Styles ── */
+
+.heroRoot {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Background Video ── */
+.bgVideo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+/* ── Liquid Glass Base ── */
+.liquidGlass {
+  background: rgba(255, 255, 255, 0.01);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: none;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquidGlass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── Navbar ── */
+.navbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px;
+}
+
+@media (min-width: 640px) {
+  .navbar {
+    padding: 20px 32px;
+  }
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-weight: 500;
+  font-size: 16px;
+  text-decoration: none;
+}
+
+.logoText {
+  font-weight: 500;
+}
+
+/* Nav Pill (center) */
+.navPill {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  border-radius: 12px;
+  padding: 8px 8px;
+}
+
+@media (min-width: 768px) {
+  .navPill {
+    display: flex;
+  }
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: color 0.2s, background-color 0.2s;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  font-family: inherit;
+}
+
+.navLinkActive {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.navLinkInactive {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.navLinkInactive:hover {
+  color: white;
+}
+
+.dropdownIcon {
+  margin-top: 1px;
+}
+
+/* CTAs (right side) */
+.ctaGroup {
+  display: none;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .ctaGroup {
+    display: flex;
+  }
+}
+
+.btnLogin {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btnLogin:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.btnBegin {
+  background: white;
+  color: black;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btnBegin:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Mobile toggle */
+.mobileToggle {
+  display: block;
+  color: white;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  font-family: inherit;
+}
+
+@media (min-width: 768px) {
+  .mobileToggle {
+    display: none;
+  }
+}
+
+/* ── Mobile Menu ── */
+.mobileMenu {
+  position: absolute;
+  top: 72px;
+  left: 16px;
+  right: 16px;
+  z-index: 30;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (min-width: 768px) {
+  .mobileMenu {
+    display: none;
+  }
+}
+
+.mobileNavLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.2s, background-color 0.2s;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  font-family: inherit;
+}
+
+.mobileNavLinkActive {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.mobileNavLink:hover {
+  color: white;
+}
+
+.mobileCTARow {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobileCTABtn {
+  flex: 1;
+}
+
+/* ── Hero Content (bottom-left) ── */
+.heroContent {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  padding: 0 24px 40px;
+  max-width: 672px;
+}
+
+@media (min-width: 640px) {
+  .heroContent {
+    padding: 0 48px 64px;
+  }
+}
+
+.heroTitle {
+  color: white;
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 640px) {
+  .heroTitle {
+    font-size: 48px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .heroTitle {
+    font-size: 60px;
+  }
+}
+
+.heroSubtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 28px;
+  max-width: 448px;
+}
+
+.heroBtnRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.btnStartToday {
+  background: white;
+  color: black;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+@media (min-width: 640px) {
+  .btnStartToday {
+    font-size: 16px;
+    padding: 12px 28px;
+  }
+}
+
+.btnStartToday:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.btnDiscover {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+@media (min-width: 640px) {
+  .btnDiscover {
+    font-size: 16px;
+    padding: 12px 28px;
+  }
+}
+
+.btnDiscover:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
