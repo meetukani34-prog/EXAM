@@ -8,6 +8,39 @@
   font-family: var(--font-body);
   position: relative;
   overflow: hidden;
+
+  /* ── Dark Theme Variable Overrides ── */
+  --bg-primary: transparent;
+  --bg-secondary: rgba(255, 255, 255, 0.04);
+  --bg-card: rgba(255, 255, 255, 0.06);
+  --bg-card-hover: rgba(255, 255, 255, 0.08);
+  --bg-input: rgba(255, 255, 255, 0.08);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+
+  --border: rgba(255, 255, 255, 0.1);
+  --border-focus: #60a5fa;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.45);
+
+  --accent: #60a5fa;
+  --accent-hover: #3b82f6;
+  --accent-glow: rgba(96, 165, 250, 0.2);
+
+  --success: #4ade80;
+  --success-bg: rgba(74, 222, 128, 0.12);
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.12);
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.12);
+  --danger-glow: rgba(248, 113, 113, 0.2);
+
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-floating: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  color: #f1f5f9;
 }
 
 /* ── Background Video ── */
