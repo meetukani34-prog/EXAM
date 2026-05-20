@@ -1,11 +1,36 @@
 .page {
   min-height: 100vh;
   padding: 32px;
-  background: var(--bg-primary);
+  background: transparent;
   display: flex;
   flex-direction: column;
   gap: 24px;
   font-family: var(--font-body);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Background Video ── */
+.bgVideo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bgOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .adminTitle {
@@ -39,11 +64,13 @@
   justify-content: space-between;
   align-items: center;
   gap: 20px;
-  background: var(--bg-card);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   padding: 12px 32px;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   min-height: 80px;
   position: sticky;
   top: 16px;
@@ -76,11 +103,12 @@
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.1;
+  color: #fff;
 }
 
 .subtitle {
   font-size: 11px;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.5);
   font-weight: 500;
 }
 
@@ -92,14 +120,16 @@
 }
 
 .statCard {
-  background: var(--bg-card);
-  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-lg);
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
 .statValue {
@@ -130,11 +160,13 @@
 
 /* Table */
 .tableWrapper {
-  background: var(--bg-card);
-  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-elevated);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
 }
 
 .table {
@@ -144,20 +176,21 @@
 }
 
 .table th {
-  background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.04);
   padding: 16px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .table td {
   padding: 16px;
   font-size: 14px;
-  border-bottom: 1px solid var(--border);
+  color: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .table tr:last-child td {
@@ -165,7 +198,7 @@
 }
 
 .table tr:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .rowWarning {
@@ -205,17 +238,20 @@
   left: 0;
   bottom: 0;
   width: 280px;
-  background: var(--bg-card);
-  border-right: 1px solid var(--border);
+  background: rgba(15, 15, 30, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 1001;
   display: flex;
   flex-direction: column;
-  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.4);
 }
 
 .sidebarHeader {
   padding: 24px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
 .sidebarNav {
@@ -234,7 +270,7 @@
   border-radius: 12px;
   border: none;
   background: transparent;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.6);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -243,8 +279,8 @@
 }
 
 .sidebarItem:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
 }
 
 .sidebarItemActive {
@@ -254,7 +290,7 @@
 
 .sidebarFooter {
   padding: 24px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .heroStatsGrid {
