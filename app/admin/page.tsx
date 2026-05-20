@@ -54,6 +54,7 @@ import IngestPage from "./ingest/page";
 import OrbitalControl from "./control/page";
 import StudentExplorer from "@/components/admin/StudentExplorer";
 import FacultyTab from "@/components/admin/FacultyTab";
+import HeroPage from "./hero/page";
 import CodingInterface from "@/components/CodingInterface";
 import { validateOutput } from "@/lib/logicUtils";
 import { usePyodide } from "@/hooks/usePyodide";
@@ -87,7 +88,7 @@ function isStale(lastActive: string | null): boolean {
 
 const BRANCHES = BRANCH_IDS;
 const ALL_BRANCH_DATA = BRANCH_LIST;
-type Tab = "monitor" | "questions" | "students" | "leaderboard" | "ingest" | "control" | "support" | "pyhunt" | "explorer" | "faculty";
+type Tab = "monitor" | "questions" | "students" | "leaderboard" | "ingest" | "control" | "support" | "pyhunt" | "explorer" | "faculty" | "hero";
 const ADMIN_AUTH_KEY = "examguard_admin_auth";
 
 function getStoredAuth(): boolean {
@@ -1507,6 +1508,7 @@ export default function AdminPage() {
     { id: "faculty", label: "Faculty", icon: "👨‍🏫" },
     { id: "ingest", label: "Harvester", icon: "🌌" },
     { id: "control", label: "Control", icon: "🛸" },
+    { id: "hero", label: "Hero", icon: "✨" },
   ];
 
   return (
@@ -1901,6 +1903,7 @@ export default function AdminPage() {
       {activeTab === "explorer" && <StudentExplorer />}
       {activeTab === "faculty" && <FacultyTab />}
       {activeTab === "support" && <SupportTab />}
+      {activeTab === "hero" && <HeroPage />}
     </div>
   );
 }
