@@ -1508,13 +1508,13 @@ export default function AdminPage() {
     { id: "faculty", label: "Faculty", icon: "👨‍🏫" },
     { id: "ingest", label: "Harvester", icon: "🌌" },
     { id: "control", label: "Control", icon: "🛸" },
-    { id: "hero", label: "Hero", icon: "✨" },
+    // { id: "hero", label: "Hero", icon: "✨" },
   ];
 
   return (
     <div className={styles.page}>
-      {/* ── Background Video ── */}
-      <video
+      {/* ── Background Video (commented out – not looking good, texts not visible) ── */}
+      {/* <video
         className={styles.bgVideo}
         autoPlay
         muted
@@ -1522,7 +1522,7 @@ export default function AdminPage() {
         playsInline
         src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260511_230229_7c9bc431-46cf-489a-948d-e8144d8eb5d4.mp4"
       />
-      <div className={styles.bgOverlay} />
+      <div className={styles.bgOverlay} /> */}
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
@@ -1913,7 +1913,7 @@ export default function AdminPage() {
       {activeTab === "explorer" && <StudentExplorer />}
       {activeTab === "faculty" && <FacultyTab />}
       {activeTab === "support" && <SupportTab />}
-      {activeTab === "hero" && <HeroPage />}
+      {/* {activeTab === "hero" && <HeroPage />} */}
     </div>
   );
 }

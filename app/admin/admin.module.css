@@ -1,7 +1,7 @@
 .page {
   min-height: 100vh;
   padding: 32px;
-  background: transparent;
+  background: #0a0a1a;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -10,7 +10,7 @@
   overflow: hidden;
 
   /* ── Dark Theme Variable Overrides ── */
-  --bg-primary: transparent;
+  --bg-primary: #0a0a1a;
   --bg-secondary: rgba(255, 255, 255, 0.04);
   --bg-card: rgba(255, 255, 255, 0.06);
   --bg-card-hover: rgba(255, 255, 255, 0.08);
