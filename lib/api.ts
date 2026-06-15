@@ -694,7 +694,7 @@ export async function getFacultyStudents(examName?: string): Promise<AdminStuden
   const token = localStorage.getItem("faculty_token");
   if (!token) throw new Error("Not logged in");
   const query = examName ? `?exam=${encodeURIComponent(examName)}` : "";
-  const res = await fetch(`${API}/faculty/students${query}`, {
+  const res = await fetch(`${API_BASE}/faculty/students${query}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("Failed to load students");
@@ -704,7 +704,7 @@ export async function getFacultyStudents(examName?: string): Promise<AdminStuden
 export async function updateFacultyStudent(id: string, data: any): Promise<void> {
   const token = localStorage.getItem("faculty_token");
   if (!token) throw new Error("Not logged in");
-  const res = await fetch(`${API}/faculty/students/${id}`, {
+  const res = await fetch(`${API_BASE}/faculty/students/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
@@ -715,7 +715,7 @@ export async function updateFacultyStudent(id: string, data: any): Promise<void>
 export async function blockFacultyStudent(id: string): Promise<void> {
   const token = localStorage.getItem("faculty_token");
   if (!token) throw new Error("Not logged in");
-  const res = await fetch(`${API}/faculty/students/${id}/block`, {
+  const res = await fetch(`${API_BASE}/faculty/students/${id}/block`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -725,7 +725,7 @@ export async function blockFacultyStudent(id: string): Promise<void> {
 export async function unblockFacultyStudent(id: string): Promise<void> {
   const token = localStorage.getItem("faculty_token");
   if (!token) throw new Error("Not logged in");
-  const res = await fetch(`${API}/faculty/students/${id}/unblock`, {
+  const res = await fetch(`${API_BASE}/faculty/students/${id}/unblock`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -735,7 +735,7 @@ export async function unblockFacultyStudent(id: string): Promise<void> {
 export async function deleteFacultyStudent(id: string): Promise<void> {
   const token = localStorage.getItem("faculty_token");
   if (!token) throw new Error("Not logged in");
-  const res = await fetch(`${API}/faculty/students/${id}`, {
+  const res = await fetch(`${API_BASE}/faculty/students/${id}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -745,7 +745,7 @@ export async function deleteFacultyStudent(id: string): Promise<void> {
 export async function resetFacultyStudentExam(id: string, examName: string): Promise<void> {
   const token = localStorage.getItem("faculty_token");
   if (!token) throw new Error("Not logged in");
-  const res = await fetch(`${API}/faculty/students/${id}/reset-exam`, {
+  const res = await fetch(`${API_BASE}/faculty/students/${id}/reset-exam`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ exam_name: examName }),
