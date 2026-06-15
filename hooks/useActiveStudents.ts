@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
  */
 export function useActiveStudents(branches: string[] = []) {
   const [activeCount, setActiveCount] = useState(0);
+  const [questionCount, setQuestionCount] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
 
   // Initial fetch + realtime subscription
@@ -28,6 +29,7 @@ export function useActiveStudents(branches: string[] = []) {
         if (res.ok) {
           const data = await res.json();
           setActiveCount(data.active_count || 0);
+          setQuestionCount(data.question_count || 0);
         }
       } catch (e) {
         console.warn("[useActiveStudents] Initial fetch failed:", e);
@@ -60,5 +62,5 @@ export function useActiveStudents(branches: string[] = []) {
     };
   }, [branches.join(",")]);
 
-  return { activeCount, isConnected };
+  return { activeCount, questionCount, isConnected };
 }

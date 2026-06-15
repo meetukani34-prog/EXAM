@@ -144,7 +144,7 @@ export default function FacultyDashboard() {
 
   // Realtime hooks
   const { alerts, dismissAlert, isConnected: alertsConnected } = useRealtimeAlerts(profile?.branches || []);
-  const { activeCount } = useActiveStudents(profile?.branches || []);
+  const { activeCount, questionCount } = useActiveStudents(profile?.branches || []);
 
   // Check stored session
   useEffect(() => {
@@ -238,7 +238,7 @@ export default function FacultyDashboard() {
                 <div className={styles.statLabel}>Active Students</div>
               </div>
               <div className={styles.statCard}>
-                <div className={styles.statValue}>—</div>
+                <div className={styles.statValue}>{questionCount}</div>
                 <div className={styles.statLabel}>Questions</div>
               </div>
               <div className={styles.statCard}>

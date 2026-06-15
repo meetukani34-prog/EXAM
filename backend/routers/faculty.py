@@ -344,10 +344,17 @@ async def get_live_monitor(faculty: dict = Depends(get_current_faculty)):
         alerts_query = alerts_query.in_("exam_name", faculty_exams)
     alerts_res = alerts_query.execute()
 
+    # Question count
+    q_count = 0
+    if faculty_exams:
+        q_count_res = db.table("questions").select("id", count="exact").in_("exam_name", faculty_exams).execute()
+        q_count = q_count_res.count if q_count_res else 0
+
     return {
         "active_count": len(active_students),
         "active_students": active_students,
-        "recent_alerts": alerts_res.data or []
+        "recent_alerts": alerts_res.data or [],
+        "question_count": q_count
     }
 
 
