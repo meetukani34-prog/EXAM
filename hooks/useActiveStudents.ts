@@ -16,6 +16,9 @@ export function useActiveStudents(branches: string[] = []) {
   useEffect(() => {
     // Initial count fetch
     async function fetchInitialCount() {
+      const token = localStorage.getItem("faculty_token");
+      if (!token) return;
+
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL || "/api"}/faculty/live-monitor`,
