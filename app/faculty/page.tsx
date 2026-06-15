@@ -57,6 +57,11 @@ async function facultyFetch<T>(path: string, opts: RequestInit = {}): Promise<T>
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...opts.headers },
   });
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("faculty_token");
+      localStorage.removeItem("faculty_profile");
+      window.location.reload();
+    }
     const err = await res.json().catch(() => ({ detail: "Request failed" }));
     throw new Error(err.detail || `HTTP ${res.status}`);
   }

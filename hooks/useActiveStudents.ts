@@ -26,6 +26,13 @@ export function useActiveStudents(branches: string[] = []) {
             },
           }
         );
+        if (res.status === 401 && typeof window !== "undefined") {
+          localStorage.removeItem("faculty_token");
+          localStorage.removeItem("faculty_profile");
+          window.location.reload();
+          return;
+        }
+
         if (res.ok) {
           const data = await res.json();
           setActiveCount(data.active_count || 0);
