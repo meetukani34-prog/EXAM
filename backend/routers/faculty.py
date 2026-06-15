@@ -35,15 +35,24 @@ def _get_branch_filter(faculty: dict):
 
 
 def _get_faculty_exams(faculty: dict, db):
-    """Return list of exam names created by this faculty. None if admin."""
+    """Return list of exam names created by this faculty, OR legacy exams in their branches. None if admin."""
     if faculty.get("is_admin"):
         return None
     faculty_id = faculty.get("faculty_id")
     if not faculty_id:
         return []
     
+    # 1. Exams created explicitly by this faculty
     q_res = db.table("questions").select("exam_name").eq("faculty_id", faculty_id).execute()
-    return list({q["exam_name"] for q in (q_res.data or []) if q.get("exam_name")})
+    exams = {q["exam_name"] for q in (q_res.data or []) if q.get("exam_name")}
+    
+    # 2. Legacy/Admin exams (faculty_id IS NULL) assigned to their allowed branches
+    allowed_branches = faculty.get("branches", [])
+    if allowed_branches:
+        q_legacy = db.table("questions").select("exam_name").is_("faculty_id", "null").in_("branch", allowed_branches).execute()
+        exams.update({q["exam_name"] for q in (q_legacy.data or []) if q.get("exam_name")})
+        
+    return list(exams)
 
 
 # ── Faculty Login ─────────────────────────────────────────────
