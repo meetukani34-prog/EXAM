@@ -34,6 +34,18 @@ def _get_branch_filter(faculty: dict):
     return faculty.get("branches", [])
 
 
+def _get_faculty_exams(faculty: dict, db):
+    """Return list of exam names created by this faculty. None if admin."""
+    if faculty.get("is_admin"):
+        return None
+    faculty_id = faculty.get("faculty_id")
+    if not faculty_id:
+        return []
+    
+    q_res = db.table("questions").select("exam_name").eq("faculty_id", faculty_id).execute()
+    return list({q["exam_name"] for q in (q_res.data or []) if q.get("exam_name")})
+
+
 # ── Faculty Login ─────────────────────────────────────────────
 @router.post("/login", response_model=FacultyLoginResponse)
 async def faculty_login(request: FacultyLoginRequest):
@@ -284,31 +296,43 @@ async def delete_faculty_question(
 # ── Live Monitor ──────────────────────────────────────────────
 @router.get("/live-monitor")
 async def get_live_monitor(faculty: dict = Depends(get_current_faculty)):
-    """Get active student count and recent alerts for faculty's branches."""
+    """Get active student count and recent alerts for faculty's branches and exams."""
     db = get_supabase()
     allowed_branches = _get_branch_filter(faculty)
+    faculty_exams = _get_faculty_exams(faculty, db)
+
+    # If non-admin faculty hasn't created any exams, they have 0 active students
+    if faculty_exams is not None and not faculty_exams:
+        return {"active_count": 0, "active_students": [], "recent_alerts": []}
 
     # Active students count
     status_query = db.table("exam_status").select("id, student_id, exam_name, status, warnings, last_active, started_at").eq("status", "active")
+    if faculty_exams:
+        status_query = status_query.in_("exam_name", faculty_exams)
+
     status_res = status_query.execute()
 
     active_students = []
     for s in (status_res.data or []):
-        # If faculty has branch filter, we need to check student's branch
-        if allowed_branches:
-            student_res = db.table("students").select("branch, name, usn").eq("id", s["student_id"]).execute()
-            if student_res.data and student_res.data[0].get("branch") in allowed_branches:
-                s["student_name"] = student_res.data[0].get("name")
-                s["student_usn"] = student_res.data[0].get("usn")
-                s["branch"] = student_res.data[0].get("branch")
-                active_students.append(s)
-        else:
+        student_res = db.table("students").select("branch, name, usn").eq("id", s["student_id"]).execute()
+        if student_res.data:
+            s_data = student_res.data[0]
+            s["student_name"] = s_data.get("name")
+            s["student_usn"] = s_data.get("usn")
+            s["branch"] = s_data.get("branch")
+            
+            # Filter out students not in branch, ONLY IF we are not already filtering by faculty's specific exams
+            if allowed_branches and not faculty_exams and s_data.get("branch") not in allowed_branches:
+                continue
+                
             active_students.append(s)
 
     # Recent alerts (last 1 hour)
     alerts_query = db.table("live_alerts").select("*").order("created_at", desc=True).limit(50)
     if allowed_branches:
         alerts_query = alerts_query.in_("branch", allowed_branches)
+    if faculty_exams:
+        alerts_query = alerts_query.in_("exam_name", faculty_exams)
     alerts_res = alerts_query.execute()
 
     return {
@@ -325,17 +349,23 @@ async def get_faculty_results(
     branch: Optional[str] = None,
     faculty: dict = Depends(get_current_faculty)
 ):
-    """Fetch exam results filtered by faculty's branches."""
+    """Fetch exam results filtered by faculty's branches and exams."""
     db = get_supabase()
     allowed_branches = _get_branch_filter(faculty)
+    faculty_exams = _get_faculty_exams(faculty, db)
 
     if branch:
         _check_branch_access(faculty, branch)
+
+    if faculty_exams is not None and not faculty_exams:
+        return {"results": [], "total": 0}
 
     # Fetch results with student info
     results_query = db.table("exam_results").select("*").order("submitted_at", desc=True)
     if exam_name:
         results_query = results_query.ilike("exam_name", f"%{exam_name}%")
+    if faculty_exams:
+        results_query = results_query.in_("exam_name", faculty_exams)
     results_res = results_query.execute()
 
     enriched = []
@@ -343,9 +373,9 @@ async def get_faculty_results(
         student_res = db.table("students").select("name, usn, branch, email").eq("id", r["student_id"]).execute()
         if student_res.data:
             s = student_res.data[0]
-            # Apply branch filter
-            target_branch = branch or s.get("branch")
-            if allowed_branches and s.get("branch") not in allowed_branches:
+            
+            # Apply branch filter only if we are not restricting by faculty_exams
+            if allowed_branches and not faculty_exams and s.get("branch") not in allowed_branches:
                 continue
             if branch and s.get("branch") != branch:
                 continue
