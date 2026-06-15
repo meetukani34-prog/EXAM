@@ -12,12 +12,14 @@ import { BRANCHES as ALL_BRANCH_DATA } from "@/lib/constants";
 import adminStyles from "../../app/admin/admin-management.module.css";
 import styles from "../../app/admin/admin.module.css";
 import Skeleton from "@/components/Skeleton";
+import FacultyQuestionsTab from "./FacultyQuestionsTab";
 
 export default function FacultyTab() {
   const [faculty, setFaculty] = useState<FacultyMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<FacultyMember | null>(null);
+  const [selectedDashboard, setSelectedDashboard] = useState<FacultyMember | null>(null);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -103,6 +105,37 @@ export default function FacultyTab() {
     });
   };
 
+  if (selectedDashboard) {
+    return (
+      <div style={{ padding: "24px" }}>
+        <button
+          className="btn btn-outline"
+          onClick={() => setSelectedDashboard(null)}
+          style={{ marginBottom: 20, padding: "8px 16px", borderRadius: 8 }}
+        >
+          ← Back to Faculty List
+        </button>
+        <div style={{ padding: 24, background: "rgba(255,255,255,0.02)", borderRadius: 16, border: "1px solid var(--border)", marginBottom: 24 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 4 }}>{selectedDashboard.name}'s Dashboard</h2>
+          <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+            Managing questions and folders assigned to {selectedDashboard.name}
+          </div>
+        </div>
+        
+        {/* Render the Faculty's Question Dashboard */}
+        <FacultyQuestionsTab
+          branches={selectedDashboard.branches}
+          profile={{
+            faculty_id: selectedDashboard.id,
+            name: selectedDashboard.name,
+            email: selectedDashboard.email,
+            branches: selectedDashboard.branches
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: "24px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
@@ -181,6 +214,13 @@ export default function FacultyTab() {
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          className="btn btn-primary"
+                          style={{ fontSize: 12, padding: "4px 8px", background: "var(--accent)", color: "#000", border: "none" }}
+                          onClick={() => setSelectedDashboard(f)}
+                        >
+                          Dashboard
+                        </button>
                         <button
                           className="btn btn-outline"
                           style={{ fontSize: 12, padding: "4px 8px" }}

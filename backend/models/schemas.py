@@ -50,6 +50,7 @@ class QuestionOut(BaseModel):
     starter_code_cpp: Optional[str] = None
     test_cases: Optional[str] = None
     target_output: Optional[str] = None
+    faculty_id: Optional[str] = None
 
 class QuestionsResponse(BaseModel):
     questions: List[QuestionOut]
@@ -114,6 +115,7 @@ class AdminQuestionOut(BaseModel):
     starter_code_cpp: Optional[str] = None
     test_cases: Optional[str] = None
     target_output: Optional[str] = None
+    faculty_id: Optional[str] = None
 
 class AdminQuestionsResponse(BaseModel):
     questions: List[AdminQuestionOut]
@@ -136,6 +138,7 @@ class QuestionCreate(BaseModel):
     starter_code_cpp: Optional[str] = None
     test_cases: Optional[str] = None
     target_output: Optional[str] = None
+    faculty_id: Optional[str] = None
 
 class QuestionUpdate(BaseModel):
     text: Optional[str] = None
@@ -154,6 +157,7 @@ class QuestionUpdate(BaseModel):
     starter_code_cpp: Optional[str] = None
     test_cases: Optional[str] = None
     target_output: Optional[str] = None
+    faculty_id: Optional[str] = None
 
 class StudentCreate(BaseModel):
     usn: str

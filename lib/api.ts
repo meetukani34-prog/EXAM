@@ -245,6 +245,7 @@ export interface AdminQuestion {
   starter_code_cpp?: string | null;
   test_cases?: string | null;
   target_output?: string | null;
+  faculty_id?: string;
 }
 
 export interface AdminStudent {
@@ -264,6 +265,14 @@ export interface AdminStudent {
   exam_name?: string | null;
   current_round?: number | null;
   round_1_state?: any;
+  is_active?: boolean;
+}
+
+export interface FacultyProfile {
+  faculty_id: string;
+  name: string;
+  email: string;
+  branches: string[];
 }
 
 export interface ViolationHistory {
