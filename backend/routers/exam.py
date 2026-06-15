@@ -119,16 +119,51 @@ async def get_exam_config_public(branch: Optional[str] = Query(None)):
     """Public exam config endpoint (no auth) — filtered by branch and active status."""
     db = get_supabase()
     try:
-        # 1. Start with basic active filter
-        query = db.table("exam_config").select("*").eq("is_active", True)
+        # 1. Fetch ALL configs to check explicit deactivations
+        config_query = db.table("exam_config").select("*")
         
-        # 2. Add Branch-Level SQL Filtering (Optimized for 200+ students)
+        # 2. Add Branch-Level SQL Filtering
         if branch:
-            # Match specific branch OR global "ALL" branch
-            query = query.or_(f"branch.eq.{branch.upper()},branch.eq.ALL,branch.is.null")
+            config_query = config_query.or_(f"branch.eq.{branch.upper()},branch.eq.ALL,branch.is.null")
+            
+        all_configs_res = config_query.execute()
+        all_configs = all_configs_res.data or []
         
-        result = query.execute()
-        res_data = result.data or []
+        # Filter to active configs
+        res_data = [c for c in all_configs if c.get("is_active") is not False]
+        configured_titles = {c.get("exam_title") for c in all_configs if c.get("exam_title")}
+        
+        # 2.5 Auto-discover implicit exams from questions table
+        questions_query = db.table("questions").select("exam_name, branch, category")
+        if branch:
+            questions_query = questions_query.or_(f"branch.eq.{branch.upper()},branch.eq.ALL,branch.is.null")
+        q_res = questions_query.execute()
+        
+        implicit_added = set()
+        for q in (q_res.data or []):
+            title = q.get("exam_name")
+            if not title or title in configured_titles or title in implicit_added:
+                continue
+                
+            res_data.append({
+                "exam_title": title,
+                "branch": q.get("branch", "ALL"),
+                "is_active": True,
+                "duration_minutes": 60,
+                "total_questions": 10,
+                "total_marks": 10.0,
+                "marks_per_question": 1.0,
+                "negative_marks": 0.0,
+                "max_attempts": 1,
+                "shuffle_questions": False,
+                "shuffle_options": False,
+                "show_answers_after": True,
+                "exam_description": f"Assessment for {title}",
+                "category": q.get("category", "other"),
+                "scheduled_start": None,
+                "scheduled_end": None,
+            })
+            implicit_added.add(title)
         
         # 3. Dynamic Configuration Merging
         for dyn in DYNAMIC_CONFIGS:
