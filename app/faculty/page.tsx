@@ -22,6 +22,7 @@ import {
 } from "@/lib/api";
 import styles from "./faculty.module.css";
 import FacultyQuestionsTab from "@/components/admin/FacultyQuestionsTab";
+import FacultyStudentsTab from "@/components/faculty/FacultyStudentsTab";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -43,7 +44,7 @@ interface ResultItem {
   submitted_at: string;
 }
 
-type Tab = "home" | "questions" | "monitor" | "results";
+type Tab = "home" | "questions" | "monitor" | "results" | "students";
 
 function getFacultyToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -225,9 +226,9 @@ export default function FacultyDashboard() {
 
       {/* Nav */}
       <div className={styles.nav}>
-        {(["home", "questions", "monitor", "results"] as Tab[]).map(t => (
+        {(["home", "questions", "monitor", "results", "students"] as Tab[]).map(t => (
           <button key={t} className={tab === t ? styles.navBtnActive : styles.navBtn} onClick={() => setTab(t)}>
-            {t === "home" ? "🏠 Home" : t === "questions" ? "📝 Question Bank" : t === "monitor" ? "📡 Live Monitor" : "📊 Results"}
+            {t === "home" ? "🏠 Home" : t === "questions" ? "📝 Question Bank" : t === "monitor" ? "📡 Live Monitor" : t === "results" ? "📊 Results" : "👥 Students"}
           </button>
         ))}
       </div>
@@ -337,6 +338,12 @@ export default function FacultyDashboard() {
                 </tbody>
               </table>
             )}
+          </div>
+        )}
+
+        {tab === "students" && (
+          <div className={styles.fadeSlideIn}>
+            <FacultyStudentsTab branches={profile.branches} />
           </div>
         )}
       </div>
