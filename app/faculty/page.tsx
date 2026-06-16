@@ -23,6 +23,7 @@ import {
 import styles from "./faculty.module.css";
 import FacultyQuestionsTab from "@/components/admin/FacultyQuestionsTab";
 import FacultyStudentsTab from "@/components/faculty/FacultyStudentsTab";
+import LiquidNavbar from "@/components/LiquidNavbar";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -148,6 +149,14 @@ export default function FacultyDashboard() {
   const [results, setResults] = useState<ResultItem[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const FACULTY_TABS = [
+    { id: "home", label: "Home", icon: "🏠" },
+    { id: "questions", label: "Question Bank", icon: "📝" },
+    { id: "monitor", label: "Live Monitor", icon: "📡" },
+    { id: "results", label: "Results", icon: "📊" },
+    { id: "students", label: "Students", icon: "👥" },
+  ];
+
   // Realtime hooks
   const { alerts, dismissAlert, isConnected: alertsConnected } = useRealtimeAlerts(profile?.branches || []);
   const { activeCount, questionCount } = useActiveStudents(profile?.branches || []);
@@ -225,12 +234,12 @@ export default function FacultyDashboard() {
       </div>
 
       {/* Nav */}
-      <div className={styles.nav}>
-        {(["home", "questions", "monitor", "results", "students"] as Tab[]).map(t => (
-          <button key={t} className={tab === t ? styles.navBtnActive : styles.navBtn} onClick={() => setTab(t)}>
-            {t === "home" ? "🏠 Home" : t === "questions" ? "📝 Question Bank" : t === "monitor" ? "📡 Live Monitor" : t === "results" ? "📊 Results" : "👥 Students"}
-          </button>
-        ))}
+      <div style={{ marginBottom: 24 }}>
+        <LiquidNavbar 
+          tabs={FACULTY_TABS} 
+          activeTab={tab} 
+          onTabChange={(id) => setTab(id as Tab)} 
+        />
       </div>
 
       {/* Content */}

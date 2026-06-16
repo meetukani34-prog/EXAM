@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import LiquidNavbar from "@/components/LiquidNavbar";
 import { supabase } from "@/lib/supabase";
 import {
   fetchPublicExamConfig,
@@ -1558,19 +1559,13 @@ export default function AdminPage() {
         </div>
 
         {/* Desktop Navigation */}
-        <nav className={`${adminStyles.tabs} ${styles.desktopNav}`}>
-          {TAB_CONFIG.map((t) => (
-            <button
-              key={t.id}
-              className={`${adminStyles.tab} ${activeTab === t.id ? adminStyles.tabActive : ""}`}
-              onClick={() => setActiveTab(t.id)}
-              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13 }}
-            >
-              <span style={{ fontSize: 14 }}>{t.icon}</span>
-              {t.label}
-            </button>
-          ))}
-        </nav>
+        <div className={styles.desktopNav}>
+          <LiquidNavbar 
+            tabs={TAB_CONFIG} 
+            activeTab={activeTab} 
+            onTabChange={(id) => setActiveTab(id as Tab)} 
+          />
+        </div>
 
         <div className={styles.headerRight}>
           {activeTab === "monitor" && <ExportButton quizzes={quizzes} />}
