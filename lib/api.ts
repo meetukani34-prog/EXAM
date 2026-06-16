@@ -514,7 +514,6 @@ export async function fetchPublicExamConfig(branch?: string): Promise<ExamConfig
       return [];
     }
     const data = await res.json();
-    console.log(`[API] Successfully fetched ${data.length} exams`);
     return data;
   } catch (err) {
     clearTimeout(timeoutId);
