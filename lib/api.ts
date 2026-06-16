@@ -403,8 +403,11 @@ export async function deleteAllAdminStudents(): Promise<void> {
   await adminFetch(`/admin/students-all`, { method: "DELETE" });
 }
 
-export async function resetAdminStudent(id: string): Promise<void> {
-  await adminFetch(`/admin/students/${id}/reset`, { method: "POST" });
+export async function resetAdminStudent(id: string, examName?: string): Promise<void> {
+  await adminFetch(`/admin/students/${id}/reset`, {
+    method: "POST",
+    body: examName ? JSON.stringify({ exam_name: examName }) : undefined,
+  });
 }
 
 export async function forceSubmitAdminStudent(id: string): Promise<{ score: number }> {

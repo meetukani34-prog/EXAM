@@ -15,6 +15,10 @@ from models.schemas import (
 from datetime import datetime, timezone
 import io
 import xlsxwriter
+from pydantic import BaseModel
+
+class AdminExamResetRequest(BaseModel):
+    exam_name: Optional[str] = None
 
 router = APIRouter(prefix="/admin", tags=["admin management"])
 settings = get_settings()
@@ -452,24 +456,35 @@ async def delete_all_students(_: bool = Depends(verify_admin)):
     return {"deleted_all": True}
 
 @router.post("/students/{student_id}/reset")
-async def reset_student_exam(student_id: str, _: bool = Depends(verify_admin)):
+async def reset_student_exam(student_id: str, payload: Optional[AdminExamResetRequest] = None, _: bool = Depends(verify_admin)):
     """Reset a student's exam so they can retake it."""
     db = get_supabase()
+    
+    exam_name = payload.exam_name if payload else None
 
+    # Reset active session
     db.table("students").update({
         "is_active_session": False,
         "current_token": None
     }).eq("id", student_id).execute()
 
-    db.table("exam_status").update({
-        "status": "not_started",
-        "warnings": 0,
-        "started_at": None,
-        "submitted_at": None,
-        "last_active": None
-    }).eq("student_id", student_id).execute()
-
-    db.table("exam_results").delete().eq("student_id", student_id).execute()
+    if exam_name:
+        # Delete only specific exam records (Hard delete to allow fresh start)
+        db.table("exam_status").delete().eq("student_id", student_id).eq("exam_name", exam_name).execute()
+        db.table("exam_results").delete().eq("student_id", student_id).eq("exam_name", exam_name).execute()
+        db.table("student_responses").delete().eq("student_id", student_id).eq("exam_name", exam_name).execute()
+        db.table("live_alerts").delete().eq("student_id", student_id).eq("exam_name", exam_name).execute()
+    else:
+        # Reset ALL exams (legacy behavior)
+        db.table("exam_status").update({
+            "status": "not_started",
+            "warnings": 0,
+            "started_at": None,
+            "submitted_at": None,
+            "last_active": None
+        }).eq("student_id", student_id).execute()
+        db.table("exam_results").delete().eq("student_id", student_id).execute()
+        db.table("student_responses").delete().eq("student_id", student_id).execute()
 
     return {"reset": True}
 

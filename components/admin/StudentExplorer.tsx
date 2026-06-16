@@ -81,10 +81,21 @@ export default function StudentExplorer() {
 
   // ── Actions ───────────────────────────────────────────────────
   const handleReset = async () => {
-    if (!selectedStudent || !confirm("Weightlessly purge this attempt?")) return;
+    if (!selectedStudent || !confirm("Weightlessly purge ALL attempts?")) return;
     setActionLoading(true);
     try {
       await resetAdminStudent(selectedStudent.student_id);
+      await loadStudentDetails(selectedStudent.student_id);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResetExam = async (examName: string) => {
+    if (!selectedStudent || !confirm(`Purge the attempt for "${examName}"?`)) return;
+    setActionLoading(true);
+    try {
+      await resetAdminStudent(selectedStudent.student_id, examName);
       await loadStudentDetails(selectedStudent.student_id);
     } finally {
       setActionLoading(false);
@@ -203,9 +214,19 @@ export default function StudentExplorer() {
                    Submitted: {new Date(res.submitted_at).toLocaleString()}
                 </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                 <div style={{ fontWeight: 900, fontSize: 20 }}>{res.score} / {res.total_marks}</div>
-                 <div style={{ fontSize: 10, opacity: 0.5 }}>DOMAIN: {cat.toUpperCase()}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ textAlign: 'right' }}>
+                   <div style={{ fontWeight: 900, fontSize: 20 }}>{res.score} / {res.total_marks}</div>
+                   <div style={{ fontSize: 10, opacity: 0.5 }}>DOMAIN: {cat.toUpperCase()}</div>
+                </div>
+                <button 
+                  className="btn btn-outline" 
+                  style={{ padding: '4px 8px', fontSize: 11, borderColor: 'var(--danger)', color: 'var(--danger)' }}
+                  onClick={() => handleResetExam(res.exam_name)}
+                  disabled={actionLoading}
+                >
+                  Reset
+                </button>
               </div>
             </div>
           ))

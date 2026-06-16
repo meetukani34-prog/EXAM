@@ -1890,7 +1890,10 @@ export default function AdminPage() {
                               Submit
                             </button>
                           )}
-                          <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 8px" }} onClick={() => resetAdminStudent(s.student_id).then(() => fetchStudents(quizFilter === "all" ? undefined : quizFilter))}>
+                          <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 8px" }} onClick={() => {
+                            if (!confirm(`Reset ${s.name}'s attempt for ${s.exam_name || 'all exams'}?`)) return;
+                            resetAdminStudent(s.student_id, s.exam_name || undefined).then(() => fetchStudents(quizFilter === "all" ? undefined : quizFilter))
+                          }}>
                             Reset
                           </button>
                         </div>
