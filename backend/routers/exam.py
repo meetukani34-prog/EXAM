@@ -432,11 +432,19 @@ def submit_exam(
     answers = request.answers
     exam_title = answers.get("__exam_title", "General Assessment")
     
+    # Resolve canonical title from config to avoid case mismatches
+    try:
+        cfg_res = db.table("exam_config").select("exam_title").ilike("exam_title", exam_title).limit(1).execute()
+        if cfg_res.data:
+            exam_title = cfg_res.data[0].get("exam_title", exam_title)
+    except Exception:
+        pass
+    
     status_row = db_execute_with_retry(
         lambda: db.table("exam_status")
         .select("status")
         .eq("student_id", student_id)
-        .eq("exam_name", exam_title)
+        .ilike("exam_name", exam_title)
         .limit(1)
         .execute()
     )
@@ -699,12 +707,16 @@ async def start_exam(
     student_id = current["student_id"]
 
     title = title.strip()
-    # 1. Fetch config safely
+    # 1. Fetch config safely and get CANONICAL exam title
     max_attempts = 1
+    canonical_title = title  # fallback to original
     try:
         config_res = db.table("exam_config").select("*").ilike("exam_title", title).limit(1).execute()
         if config_res.data:
             max_attempts = config_res.data[0].get("max_attempts") or 1
+            # Use the exact title from config as the canonical source of truth
+            canonical_title = config_res.data[0].get("exam_title", title)
+            print(f"[START] Canonical title: '{canonical_title}' (from config)")
     except Exception: pass
 
     # 2. Fetch status safely for this student AND this specific exam
@@ -718,11 +730,20 @@ async def start_exam(
         
         for r in (status_res.data or []):
             db_exam_name = (r.get("exam_name") or "").strip().lower()
-            if db_exam_name == title.lower():
+            if db_exam_name == canonical_title.lower():
                 record_id = r.get("id")
                 attempts_count = r.get("attempts_count", 0) or 0
                 status_str = r.get("status", "not_started")
                 started_at = r.get("started_at")
+                # Fix case mismatch: if the DB has wrong case, update it
+                actual_db_name = (r.get("exam_name") or "").strip()
+                if actual_db_name != canonical_title and record_id:
+                    print(f"[START] Case mismatch detected: DB='{actual_db_name}' vs Config='{canonical_title}'. Fixing...")
+                    try:
+                        db.table("exam_status").update({"exam_name": canonical_title}).eq("id", record_id).execute()
+                        print(f"[START] Fixed exam_name case in record {record_id}")
+                    except Exception as ce:
+                        print(f"[START] Case fix failed: {ce}")
                 break
     except Exception as e:
         print(f"[EXAM] Status check error: {e}")
@@ -740,7 +761,7 @@ async def start_exam(
     # 4. Block restart if already submitted OR reached max attempts
     #    EXCEPTION: PyHunt and Admin Previews always allow mission restart
     is_pyhunt = title.lower() == "pyhunt"
-    is_admin = current["student_id"] == "PREVIEW"
+    is_admin = current["student_id"] == "ADMIN_PREVIEW"
 
     if status_str == "submitted":
         if is_pyhunt or is_admin:
@@ -778,9 +799,9 @@ async def start_exam(
     new_start = datetime.now(timezone.utc).isoformat()
     new_count = (attempts_count or 0) + 1
 
-    # Normalize exam name for PyHunt to ensure case consistency in results
-    normalized_title = title
-    if title.lower() == "pyhunt":
+    # Always use the canonical title from config for case consistency
+    normalized_title = canonical_title
+    if canonical_title.lower() == "pyhunt":
         normalized_title = "PyHunt"
 
     update_payload = {
