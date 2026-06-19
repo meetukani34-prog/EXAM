@@ -740,7 +740,7 @@ async def start_exam(
     # 4. Block restart if already submitted OR reached max attempts
     #    EXCEPTION: PyHunt and Admin Previews always allow mission restart
     is_pyhunt = title.lower() == "pyhunt"
-    is_admin = current["student_id"] == "ADMIN_PREVIEW"
+    is_admin = current["student_id"] == "PREVIEW"
 
     if status_str == "submitted":
         if is_pyhunt or is_admin:
