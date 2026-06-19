@@ -314,7 +314,7 @@ function adminFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export async function fetchAdminQuestions(): Promise<AdminQuestion[]> {
-  return adminFetch<{ questions: AdminQuestion[]; total: number }>("/admin/questions").then(
+  return adminFetch<{ questions: AdminQuestion[]; total: number }>(`/admin/questions?_t=${Date.now()}`).then(
     (r) => r.questions
   );
 }
