@@ -443,6 +443,13 @@ export async function editAdminFolderBranch(folderName: string, newBranches: str
   });
 }
 
+export async function editAdminFolderMarks(folderName: string, marks: number): Promise<void> {
+  await adminFetch(`/admin/folders/${encodeURIComponent(folderName)}/marks`, {
+    method: "PATCH",
+    body: JSON.stringify({ marks: marks }),
+  });
+}
+
 export async function uploadQuestionImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);

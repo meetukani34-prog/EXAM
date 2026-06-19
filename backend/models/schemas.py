@@ -300,6 +300,9 @@ class FolderRenameRequest(BaseModel):
 class FolderEditBranchRequest(BaseModel):
     new_branches: List[str]
 
+class FolderEditMarksRequest(BaseModel):
+    marks: int
+
 # ── Support Requests ──────────────────────────────────────────
 class SupportRequestCreate(BaseModel):
     usn: str

@@ -24,6 +24,7 @@ import {
   deleteAdminFolder,
   renameAdminFolder,
   editAdminFolderBranch,
+  editAdminFolderMarks,
   uploadQuestionImage,
   fetchBranchExamSummary,
   AdminQuestion,
@@ -2380,6 +2381,28 @@ function QuestionsTab() {
     }
   };
 
+  const handleEditMarksFolder = async (folderName: string) => {
+    const marksStr = prompt(`Enter new marks for ALL questions in "${folderName}":`, "1");
+    if (!marksStr || marksStr.trim() === "") return;
+    const marks = parseInt(marksStr, 10);
+    if (isNaN(marks) || marks < 0) {
+      return alert("Please enter a valid positive integer for marks.");
+    }
+
+    try {
+      setLoading(true);
+      await editAdminFolderMarks(folderName, marks);
+      // Update local state: find and update all questions in this folder
+      setQuestions(questions.map(q =>
+        (q.exam_name === folderName) ? { ...q, marks: marks } : q
+      ));
+    } catch (error: any) {
+      alert(`Failed to update marks: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEditBranchFolder = (folderName: string) => {
     // Find unique branches currently assigned to this folder
     const currentBranches = questions
@@ -2876,6 +2899,10 @@ function QuestionsTab() {
                         onClick={(e) => { e.stopPropagation(); handleEditBranchFolder(name); }}
                       >Edit Branch</button>
                       <button
+                        style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: `1px solid var(--border)`, background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontWeight: 600 }}
+                        onClick={(e) => { e.stopPropagation(); handleEditMarksFolder(name); }}
+                      >Edit Marks</button>
+                      <button
                         style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(211,47,47,0.2)", background: "transparent", color: "var(--danger)", cursor: "pointer", fontWeight: 600, marginLeft: "auto" }}
                         onClick={(e) => { e.stopPropagation(); handleDeleteFolder(name, branch); }}
                       >Delete</button>
@@ -2910,6 +2937,8 @@ function QuestionsTab() {
                               onClick={() => handleRenameFolder(name, branch)}>Rename</button>
                             <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }}
                               onClick={() => handleEditBranchFolder(name)}>Edit Branch</button>
+                            <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }}
+                              onClick={() => handleEditMarksFolder(name)}>Edit Marks</button>
                             <button className="btn btn-outline btn-danger" style={{ fontSize: 12, padding: "4px 12px" }}
                               onClick={() => handleDeleteFolder(name, branch)}>Delete Folder</button>
                           </div>

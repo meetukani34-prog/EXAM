@@ -9,7 +9,7 @@ from models.schemas import (
     QuestionCreate, QuestionUpdate,
     StudentStatus, StudentCreate, StudentUpdate,
     ExamConfig, ExamConfigUpdate, FolderRenameRequest,
-    FolderEditBranchRequest, SupportRequestResponse,
+    FolderEditBranchRequest, FolderEditMarksRequest, SupportRequestResponse,
     ViolationHistoryOut, StudentFidelity, GlobalConfigUpdate
 )
 from datetime import datetime, timezone
@@ -908,6 +908,16 @@ async def rename_folder(folder_name: str, request: FolderRenameRequest, _: bool 
             db.table("questions").update({"text": updated_text}).eq("id", q["id"]).execute()
 
     return {"status": "success", "old_name": folder_name, "new_name": new_name}
+
+
+@router.patch("/folders/{folder_name}/marks")
+async def edit_folder_marks(folder_name: str, request: FolderEditMarksRequest, _: bool = Depends(verify_admin)):
+    """
+    Update marks for all questions in an Isolation Node (Folder).
+    """
+    db = get_supabase()
+    db.table("questions").update({"marks": request.marks}).eq("exam_name", folder_name).execute()
+    return {"status": "success", "folder_name": folder_name, "new_marks": request.marks}
 
 
 @router.patch("/folders/{folder_name}/branch")
