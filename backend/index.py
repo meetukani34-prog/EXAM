@@ -118,11 +118,23 @@ try:
     async def global_exception_handler(request: Request, exc: Exception):
         tb = traceback.format_exc()
         logger.error(f"Unhandled error on {request.url}: {exc}\n{tb}")
+        
+        # Check if this is a Supabase Cloudflare worker exception (usually wrapped in JSON parsing error)
+        error_str = str(exc)
+        if "Worker threw exception" in error_str or "Cloudflare" in error_str or "JSON could not be generated" in error_str:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "detail": "Our database service is temporarily unreachable (Worker Exception). Please try again shortly.",
+                    "error_type": "DatabaseOutage"
+                },
+            )
+            
         return JSONResponse(
             status_code=500,
             content={
-                "detail": str(exc),
-                "traceback": tb # ALWAYS SHOW FOR NOW TO SOLVE 500 ERROR
+                "detail": "An internal error occurred. Please try again or contact the administrator.",
+                "traceback": tb # Keep traceback for non-DB errors for debugging
             },
         )
 

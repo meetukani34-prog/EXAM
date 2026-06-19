@@ -459,14 +459,21 @@ export default function ExamPage() {
       );
     }
     
-    // Extract detail if JSON string
+    // Extract detail if JSON string is embedded
     let displayError = error;
     try {
-      if (error.startsWith('{')) {
-        const parsed = JSON.parse(error);
-        displayError = parsed.detail || parsed.message || error;
+      const startIdx = error.indexOf('{');
+      if (startIdx !== -1) {
+        const parsed = JSON.parse(error.substring(startIdx).replace(/'/g, '"'));
+        const prefix = startIdx > 0 ? error.substring(0, startIdx) : "";
+        displayError = prefix + (parsed.detail || parsed.message || error.substring(startIdx));
       }
     } catch (e) {}
+
+    // Fallback for raw Cloudflare HTML dumps
+    if (typeof displayError === "string" && displayError.includes("<!DOCTYPE html>")) {
+      displayError = "Our database service is temporarily unreachable (Worker Exception). Your answers are saved locally. Please try again shortly.";
+    }
 
     return (
       <div className="page-center">
