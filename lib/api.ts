@@ -36,7 +36,7 @@ async function apiFetch<T>(
 
 
   try {
-    const res = await fetch(url, { ...options, headers });
+    const res = await fetch(url, { cache: "no-store", ...options, headers });
 
     if (res.status === 401) {
       console.error(`[API] 401 Unauthorized for ${url}.`);
@@ -293,6 +293,7 @@ function adminFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${path}`;
 
   return fetch(url, {
+    cache: "no-store",
     ...options,
     headers: {
       "Content-Type": "application/json",
