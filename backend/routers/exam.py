@@ -307,6 +307,8 @@ def get_questions(
         if q.get("options") and len(q["options"]) > 0:
             try:
                 parsed = json.loads(q["options"][0])
+                if not isinstance(parsed, dict):
+                    parsed = {}
             except Exception:
                 pass
         
