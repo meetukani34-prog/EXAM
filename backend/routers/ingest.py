@@ -99,6 +99,39 @@ def _sanitize_text_for_ai(text: str) -> str:
     return text.strip()
 
 
+async def _call_minimax_fallback(prompt: str, chunk_index: int) -> dict:
+    """Fallback to Minimax-M3 if primary API fails."""
+    url = "https://integrate.api.nvidia.com/v1/chat/completions"
+    headers = {
+        "Authorization": "Bearer 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",
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "minimaxai/minimax-m3",
+        "messages": [
+            {
+                "role": "system", 
+                "content": "You are a precise data extraction specialist. Output valid JSON only. Keep internal reasoning brief. Focus on the provided snippet of text."
+            },
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 8192,
+        "temperature": 1.00,
+        "top_p": 0.95,
+        "stream": False
+    }
+
+    logger.warning(f"Triggering Minimax-M3 Fallback for chunk {chunk_index}...")
+    async with httpx.AsyncClient(timeout=240.0) as client:
+        response = await client.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        if "choices" not in data:
+            raise ValueError(f"Minimax Error: Missing 'choices'. Response: {data.get('error', data)}")
+        return data
+
+
 async def _call_inception_api(raw_text: str, chunk_index: int = 0) -> dict:
     """Call Inception AI API for AI-powered spectral parsing (OpenAI-compatible)."""
     settings = get_settings()
@@ -133,6 +166,7 @@ async def _call_inception_api(raw_text: str, chunk_index: int = 0) -> dict:
     }
 
     max_retries = 3
+    data = None
     for attempt in range(max_retries):
         try:
             async with httpx.AsyncClient(timeout=240.0) as client:
@@ -144,19 +178,30 @@ async def _call_inception_api(raw_text: str, chunk_index: int = 0) -> dict:
                     await asyncio.sleep(wait_time)
                     continue
                 
+                if response.status_code in (401, 403):
+                    raise ValueError(f"Auth Failed ({response.status_code}): {response.text}")
+
                 response.raise_for_status()
+                data = response.json()
+                if "choices" not in data:
+                    raise ValueError(f"Missing choices: {data.get('error', data)}")
+                
+                # Success
                 break
         except Exception as e:
-            if attempt == max_retries - 1:
-                raise e
+            is_fatal = getattr(e, 'response', None) and e.response.status_code in (401, 403) or "Auth Failed" in str(e) or "Missing choices" in str(e)
+            if attempt == max_retries - 1 or is_fatal:
+                logger.warning(f"Primary API failed for chunk {chunk_index}: {e}. Attempting Fallback...")
+                try:
+                    data = await _call_minimax_fallback(prompt, chunk_index)
+                    break
+                except Exception as fallback_e:
+                    raise ValueError(f"Primary API Error: {e} | Fallback Error: {fallback_e}")
             await asyncio.sleep(2)
 
-    data = response.json()
-    
-    if "choices" not in data:
-        error_msg = data.get("error", data)
-        raise ValueError(f"API Error: Missing 'choices'. Response: {error_msg}")
-        
+    if not data or "choices" not in data:
+        raise ValueError(f"Chunk {chunk_index} failed to retrieve valid data from both primary and fallback APIs.")
+
     message = data["choices"][0]["message"]
     raw_content = message.get("content") or ""
     reasoning = message.get("reasoning_content") or ""
