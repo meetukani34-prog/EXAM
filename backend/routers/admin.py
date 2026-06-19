@@ -286,7 +286,7 @@ async def get_student_fidelity(student_id: str, _: bool = Depends(verify_admin))
     db = get_supabase()
     
     # 1. Fetch Student Core
-    student_res = db.table("students").select("*").eq("id", student_id).execute()
+    student_res = db.table("students").select("*").eq("usn", student_id).execute()
     if not student_res.data:
         raise HTTPException(status_code=404, detail="Student not found")
     s = student_res.data[0]
@@ -426,26 +426,26 @@ async def update_student(student_id: str, request: StudentUpdate, _: bool = Depe
         update_data["is_blocked"] = request.is_blocked
 
     if update_data:
-        db.table("students").update(update_data).eq("id", student_id).execute()
+        db.table("students").update(update_data).eq("usn", student_id).execute()
 
     return {"updated": True}
 
 @router.post("/students/{student_id}/block")
 async def block_student(student_id: str, _: bool = Depends(verify_admin)):
     db = get_supabase()
-    db.table("students").update({"is_blocked": True}).eq("id", student_id).execute()
+    db.table("students").update({"is_blocked": True}).eq("usn", student_id).execute()
     return {"blocked": True}
 
 @router.post("/students/{student_id}/unblock")
 async def unblock_student(student_id: str, _: bool = Depends(verify_admin)):
     db = get_supabase()
-    db.table("students").update({"is_blocked": False}).eq("id", student_id).execute()
+    db.table("students").update({"is_blocked": False}).eq("usn", student_id).execute()
     return {"blocked": False}
 
 @router.delete("/students/{student_id}")
 async def delete_student(student_id: str, _: bool = Depends(verify_admin)):
     db = get_supabase()
-    db.table("students").delete().eq("id", student_id).execute()
+    db.table("students").delete().eq("usn", student_id).execute()
     return {"deleted": True}
 
 @router.delete("/students-all")
@@ -466,7 +466,7 @@ async def reset_student_exam(student_id: str, payload: Optional[AdminExamResetRe
     db.table("students").update({
         "is_active_session": False,
         "current_token": None
-    }).eq("id", student_id).execute()
+    }).eq("usn", student_id).execute()
 
     if exam_name:
         # Delete only specific exam records (Hard delete to allow fresh start)
@@ -528,7 +528,7 @@ async def force_submit_student(student_id: str, _: bool = Depends(verify_admin))
     db = get_supabase()
     
     # 1. Fetch student for context (branch)
-    student_res = db.table("students").select("branch").eq("id", student_id).execute()
+    student_res = db.table("students").select("branch").eq("usn", student_id).execute()
     if not student_res.data:
         raise HTTPException(status_code=404, detail="Student not found")
     branch = student_res.data[0]["branch"]

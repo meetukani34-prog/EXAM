@@ -587,9 +587,6 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                       </td>
                       <td>
                         <div className={adminStyles.actionGroup}>
-                          <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => handleRenameFolder(name, branch)}>Rename</button>
-                          <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => handleEditBranchFolder(name)}>Edit Branch</button>
-                          <button className="btn btn-outline btn-danger" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => handleDeleteFolder(name, branch)}>Delete Folder</button>
                           <button className={`${adminStyles.actionBtn} ${adminStyles.btnReset}`} onClick={() => handleReExam(p)}>RESET</button>
                           <button className={`${adminStyles.actionBtn} ${adminStyles.btnStop}`} onClick={() => handleToggleBlock(p)}>
                             {p.is_blocked ? "RESUME" : "STOP"}
@@ -2910,11 +2907,11 @@ function QuestionsTab() {
                           </div>
                           <div className={adminStyles.nodeActions}>
                             <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }}
-                              onClick={() => handleRenameFolder(name)}>Rename</button>
+                              onClick={() => handleRenameFolder(name, branch)}>Rename</button>
                             <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }}
                               onClick={() => handleEditBranchFolder(name)}>Edit Branch</button>
                             <button className="btn btn-outline btn-danger" style={{ fontSize: 12, padding: "4px 12px" }}
-                              onClick={() => handleDeleteFolder(name)}>Delete Folder</button>
+                              onClick={() => handleDeleteFolder(name, branch)}>Delete Folder</button>
                           </div>
                         </div>
 
