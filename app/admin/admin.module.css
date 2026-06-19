@@ -43,6 +43,18 @@
   color: #f1f5f9;
 }
 
+:global(select) {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px;
+}
+
+:global(select option) {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+}
+
 /* ── Background Video ── */
 .bgVideo {
   position: fixed;

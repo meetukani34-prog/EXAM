@@ -98,14 +98,16 @@ export default function InstructionsPage() {
       // Clear previous student's cached answers before starting new exam
       clearExamStorage();
       
-      // Store the specific title being used for the exam page
+      // Store the specific title and duration being used for the exam page
       localStorage.setItem("exam_selected_title", studentInfo?.examTitle || "Online Assessment");
+      localStorage.setItem("exam_selected_duration", String(studentInfo?.duration || 20));
 
       // Update localStorage with the real start time (exam page reads from localStorage!)
       const studentData = localStorage.getItem("exam_student");
       if (studentData) {
         const parsed = JSON.parse(studentData);
         parsed.examStartTime = res.started_at;
+        parsed.examDurationMinutes = studentInfo?.duration || 20;
         localStorage.setItem("exam_student", JSON.stringify(parsed));
       }
 

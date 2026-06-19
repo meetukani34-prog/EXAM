@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { fetchPublicExamConfig, type ExamConfig, updateProfile, getExamStatus } from "@/lib/api";
+import { fetchPublicExamConfig, type ExamConfig, updateProfile, getExamStatus, fetchBranchExamSummary } from "@/lib/api";
 import { withRetry } from "@/lib/apiUtils";
 import { CldUploadWidget } from 'next-cloudinary';
 import styles from "./dashboard.module.css";
@@ -84,6 +84,7 @@ export default function DashboardPage() {
   const loadExams = useCallback(async () => {
     try {
       const configs = await withRetry(() => fetchPublicExamConfig(student?.branch));
+      const counts = await withRetry(() => fetchBranchExamSummary());
       
       // LOAD-TEST FIX: Removed direct supabase.from("questions") query.
       // Under 200 concurrent users, each student opened a direct DB connection,
@@ -130,6 +131,8 @@ export default function DashboardPage() {
           progType = inferProgrammingType(config.exam_title);
         }
         
+        const dynamicCount = counts.find(c => c.exam_name === config.exam_title)?.question_count;
+        
         nodes.push({
           id: config.exam_title,
           exam_name: config.exam_title,
@@ -138,7 +141,7 @@ export default function DashboardPage() {
           duration_minutes: config.duration_minutes || 20,
           scheduled_start: config.scheduled_start,
           scheduled_end: config.scheduled_end,
-          question_count: config.total_questions || 0,
+          question_count: dynamicCount || config.total_questions || 0,
           category: inferredCat,
           programming_type: progType,
           marks_per_question: config.marks_per_question ?? 4,
