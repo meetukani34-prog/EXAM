@@ -18,6 +18,7 @@ class Settings(BaseSettings):
 
     # AI — Inception Spectral Parser
     inception_api_key: str = ""   # Set INCEPTION_API_KEY in .env to enable AI parsing
+    minimax_api_key: str = ""     # Set MINIMAX_API_KEY in .env for fallback parsing
     ai_model: str = "mercury-2"
     ai_base_url: str = "https://api.inceptionlabs.ai/v1"
     ai_thinking: bool = True

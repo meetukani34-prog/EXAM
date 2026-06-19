@@ -101,9 +101,13 @@ def _sanitize_text_for_ai(text: str) -> str:
 
 async def _call_minimax_fallback(prompt: str, chunk_index: int) -> dict:
     """Fallback to Minimax-M3 if primary API fails."""
+    settings = get_settings()
+    if not settings.minimax_api_key:
+        raise ValueError("MINIMAX_API_KEY not configured")
+
     url = "https://integrate.api.nvidia.com/v1/chat/completions"
     headers = {
-        "Authorization": "Bearer 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",
+        "Authorization": f"Bearer {settings.minimax_api_key}",
         "Accept": "application/json",
         "Content-Type": "application/json"
     }
