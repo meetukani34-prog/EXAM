@@ -180,6 +180,24 @@ async def get_exam_config_public(branch: Optional[str] = Query(None)):
                     
             res_data.append(dyn)
             
+        # 4. Cap total_questions by actual available questions in DB
+        actual_counts = {}
+        for q in (q_res.data or []):
+            title = q.get("exam_name")
+            if title:
+                actual_counts[title] = actual_counts.get(title, 0) + 1
+                
+        for row in res_data:
+            title = row.get("exam_title")
+            cat = row.get("category", "")
+            # Skip pyhunt since it does not use the `questions` table
+            if title and "pyhunt" not in str(title).lower() and "pyhunt" not in str(cat).lower():
+                config_limit = row.get("total_questions", 30)
+                if config_limit is None:
+                    config_limit = 30
+                actual_count = actual_counts.get(title, 0)
+                row["total_questions"] = min(int(config_limit), actual_count)
+
         return res_data
     except Exception as e:
         print(f"[EXAM] Public config SQL fetch failed: {e}")
