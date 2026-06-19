@@ -167,11 +167,13 @@ class StudentCreate(BaseModel):
     password: str
 
 class StudentUpdate(BaseModel):
+    usn: Optional[str] = None
     name: Optional[str] = None
     email: Optional[str] = None
     branch: Optional[str] = None
     password: Optional[str] = None
     is_active_session: Optional[bool] = None
+    is_blocked: Optional[bool] = None
 
 class StudentStatus(BaseModel):
     student_id: str
