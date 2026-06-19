@@ -497,8 +497,22 @@ export async function updateExamConfig(data: Partial<ExamConfig>): Promise<ExamC
   });
 }
 
+// LOAD-TEST FIX: Client-side cache to prevent 200 identical API calls
+// when all students load the dashboard simultaneously.
+let _examConfigCache: { data: ExamConfig[]; timestamp: number; branch?: string } | null = null;
+const EXAM_CONFIG_CACHE_TTL = 30_000; // 30 seconds
+
 /** Public endpoint — no admin secret needed. Returns active configurations filtered by branch. */
 export async function fetchPublicExamConfig(branch?: string): Promise<ExamConfig[]> {
+  // Return cached data if still fresh (within 30s)
+  if (
+    _examConfigCache &&
+    _examConfigCache.branch === branch &&
+    Date.now() - _examConfigCache.timestamp < EXAM_CONFIG_CACHE_TTL
+  ) {
+    return _examConfigCache.data;
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -508,7 +522,7 @@ export async function fetchPublicExamConfig(branch?: string): Promise<ExamConfig
     
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { 'Cache-Control': 'no-cache' }
+      headers: { 'Cache-Control': 'max-age=30' }
     });
     clearTimeout(timeoutId);
 
@@ -517,6 +531,8 @@ export async function fetchPublicExamConfig(branch?: string): Promise<ExamConfig
       return [];
     }
     const data = await res.json();
+    // Cache the result
+    _examConfigCache = { data, timestamp: Date.now(), branch };
     return data;
   } catch (err) {
     clearTimeout(timeoutId);

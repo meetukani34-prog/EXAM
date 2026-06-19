@@ -2,39 +2,38 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
- * Edge Middleware — Dynamic Route Shielding
+ * Edge Middleware — Dynamic Route Shielding + Security Headers
  * Intercepts routing requests and validates session state.
  * Redirects unauthorized access back to safe baseline routes.
+ * LOAD-TEST FIX: Added security headers for production hardening.
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const response = NextResponse.next();
+
+  // ── Security Headers (all responses) ──
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
 
   // ── Admin Routes (/admin/*) ──
   if (pathname.startsWith("/admin")) {
-    // Admin uses X-Admin-Secret header or localStorage password
-    // Since middleware runs on edge, we check for an admin cookie
-    const adminAuth = request.cookies.get("admin_authenticated")?.value;
-    // Allow access — admin auth is handled client-side via password prompt
-    // This is a soft guard; the real security is the X-Admin-Secret header on API calls
-    return NextResponse.next();
+    return response;
   }
 
   // ── Faculty Routes (/faculty/*) ──
   if (pathname.startsWith("/faculty")) {
-    // Faculty dashboard handles its own login screen internally
-    // No redirect needed — the page component shows login if no token
-    return NextResponse.next();
+    return response;
   }
 
   // ── Exam Routes (/exam/*) ──
   if (pathname.startsWith("/exam")) {
-    // Exam page requires student authentication
-    // Check for exam_token in cookies (if set) or let client handle
-    return NextResponse.next();
+    return response;
   }
 
   // ── All other routes — pass through ──
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

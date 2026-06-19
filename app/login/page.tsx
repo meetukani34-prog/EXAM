@@ -3,7 +3,7 @@
 
 import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion";
 import { loginStudent, submitSupportRequest } from "@/lib/api";
 import { clearExamStorage } from "@/hooks/useExamState";
 import { BRANCHES } from "@/lib/constants";
@@ -84,6 +84,7 @@ export default function LoginPage() {
   const selectedBranchName = BRANCHES.find(b => b.id === branch)?.name || "Select Branch";
 
   return (
+    <LazyMotion features={domAnimation}>
     <div className={styles.container}>
       <div className={styles.bgImage} />
       <div className={styles.overlay} />
@@ -102,7 +103,7 @@ export default function LoginPage() {
         Get Help
       </button>
 
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         className={styles.card}
@@ -152,7 +153,7 @@ export default function LoginPage() {
 
           <AnimatePresence>
             {isRegistering && (
-              <motion.div
+              <m.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -204,7 +205,7 @@ export default function LoginPage() {
 
                   <AnimatePresence>
                     {isBranchOpen && (
-                      <motion.div
+                      <m.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
@@ -222,11 +223,11 @@ export default function LoginPage() {
                             {b.name}
                           </div>
                         ))}
-                      </motion.div>
+                      </m.div>
                     )}
                   </AnimatePresence>
                 </div>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
 
@@ -289,19 +290,19 @@ export default function LoginPage() {
             {isRegistering ? "" : "Request Access"}
           </div>
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Forgot Password Modal */}
       <AnimatePresence>
         {showForgotModal && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className={styles.modalOverlay}
             onClick={() => setShowForgotModal(false)}
           >
-            <motion.div
+            <m.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -442,8 +443,8 @@ export default function LoginPage() {
                   </div>
                 </>
               )}
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
       </AnimatePresence>
 
@@ -463,5 +464,6 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+    </LazyMotion>
   );
 }

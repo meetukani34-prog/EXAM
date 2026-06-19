@@ -3,7 +3,6 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { fetchPublicExamConfig, type ExamConfig, updateProfile, getExamStatus } from "@/lib/api";
 import { withRetry } from "@/lib/apiUtils";
 import { CldUploadWidget } from 'next-cloudinary';
@@ -86,33 +85,14 @@ export default function DashboardPage() {
     try {
       const configs = await withRetry(() => fetchPublicExamConfig(student?.branch));
       
-      // Fetch dynamic programming types based on question configuration
-      const { data: progQuestions, error: pqError } = await supabase
-        .from("questions")
-        .select("exam_name, programming_type, category")
-        .eq("category", "programming");
-
-      const programmingExams = new Set<string>();
-      const examTypeMap: Record<string, "compiler" | "mcq"> = {};
-      if (progQuestions && !pqError) {
-        progQuestions.forEach((q: any) => {
-          if (q.exam_name) {
-            programmingExams.add(q.exam_name);
-            const type = q.programming_type || "compiler";
-            if (type === "compiler" || !examTypeMap[q.exam_name]) {
-              examTypeMap[q.exam_name] = type as "compiler" | "mcq";
-            }
-          }
-        });
-      }
-
-      // OPTIMIZATION: Instead of fetching ALL questions (which causes lag), 
-      // we'll just use the configs as the base and filter/display accordingly.
+      // LOAD-TEST FIX: Removed direct supabase.from("questions") query.
+      // Under 200 concurrent users, each student opened a direct DB connection,
+      // exhausting Supabase's connection pool. Now we infer programming types
+      // from exam names and config.category instead.
       const nodes: ExamNode[] = [];
 
       function inferCategory(examName: string): string {
         if (examName === "Meet") return "aptitude";
-        if (programmingExams.has(examName)) return "programming";
         const n = (examName || "").toLowerCase();
         if (n.includes("aptitude") || n.includes("quant") || n.includes("reasoning") || n.includes("logical")) return "aptitude";
         if (n.includes("program") || n.includes("code") || n.includes("coding") || n.includes("pyhunt") ||
@@ -120,6 +100,14 @@ export default function DashboardPage() {
             n.includes("python") || n.includes("java") || n.includes("c++") || n.includes("javascript") ||
             n === "hii" || n === "meet") return "programming";
         return "other";
+      }
+
+      function inferProgrammingType(examName: string): "compiler" | "mcq" {
+        const titleLower = examName.toLowerCase();
+        if (titleLower === "hii" || titleLower.includes("mcq") || titleLower.includes("conceptual")) {
+          return "mcq";
+        }
+        return "compiler";
       }
 
       // Fetch ALL exam statuses for this student
@@ -139,16 +127,7 @@ export default function DashboardPage() {
         
         let progType: "compiler" | "mcq" | undefined = undefined;
         if (inferredCat === "programming") {
-          progType = examTypeMap[config.exam_title];
-          if (!progType) {
-            // Fallback to name inference if no questions in DB yet
-            const titleLower = config.exam_title.toLowerCase();
-            if (titleLower === "hii" || titleLower.includes("mcq") || titleLower.includes("conceptual")) {
-              progType = "mcq";
-            } else {
-              progType = "compiler";
-            }
-          }
+          progType = inferProgrammingType(config.exam_title);
         }
         
         nodes.push({
@@ -183,7 +162,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // 1. Initial Stagger: Spread the DB connection spike when 200 students login at once
-    const initialStagger = Math.random() * 3000;
+    // LOAD-TEST FIX: Widened from 3s to 8s to reduce peak concurrent queries from ~67/s to ~25/s
+    const initialStagger = Math.random() * 8000;
     const initialTimer = setTimeout(() => {
       // Guard: Only fetch if student is loaded
       if (student) {
@@ -192,34 +172,24 @@ export default function DashboardPage() {
       }
     }, initialStagger);
     
-    // 2. Throttled Realtime with Jitter
-    const handleUpdate = () => {
+    // 2. LOAD-TEST FIX: Replaced 2 Supabase realtime channels (which create 400 WebSocket
+    // connections for 200 users) with lightweight polling every 60 seconds.
+    const pollInterval = setInterval(() => {
       const now = Date.now();
-      // Throttle: Don't schedule another reload if we just reloaded in the last 30s
+      // Throttle: Don't reload if we just reloaded in the last 30s
       if (now - lastReloadRef.current < 30000) return;
 
-      // Add random delay between 2 and 7 seconds to spread the load
+      // Add random jitter between 2 and 7 seconds to spread the load
       const jitter = Math.random() * 5000 + 2000;
-      console.log(`[Realtime] Update detected. Staggering reload in ${Math.round(jitter)}ms...`);
-      
       setTimeout(() => {
         loadExams();
         lastReloadRef.current = Date.now();
       }, jitter);
-    };
-
-    const channel = supabase.channel("exam_config_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "exam_config" }, handleUpdate)
-      .subscribe();
-      
-    const qChannel = supabase.channel("questions_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "questions" }, handleUpdate)
-      .subscribe();
+    }, 60000);
 
     return () => { 
       clearTimeout(initialTimer);
-      supabase.removeChannel(channel); 
-      supabase.removeChannel(qChannel); 
+      clearInterval(pollInterval);
     };
   }, [loadExams]);
 
