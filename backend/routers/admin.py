@@ -842,7 +842,7 @@ async def update_pyhunt_config(request: GlobalConfigUpdate, _: bool = Depends(ve
 # ── Orbital Node Management (Folder CRUD) ─────────────────────
 
 @router.delete("/folders/{folder_name}")
-async def delete_folder(folder_name: str, _: bool = Depends(verify_admin)):
+async def delete_folder(folder_name: str, branch: Optional[str] = None, _: bool = Depends(verify_admin)):
     """
     Delete an entire Isolation Node (Folder) and all its questions.
     """
@@ -855,13 +855,22 @@ async def delete_folder(folder_name: str, _: bool = Depends(verify_admin)):
         has_exam_column = "exam_name" in probe.data[0].keys()
 
     if has_exam_column:
-        db.table("questions").delete().eq("exam_name", folder_name).execute()
+        q = db.table("questions").delete().eq("exam_name", folder_name)
+        if branch:
+            q = q.eq("branch", branch)
+        q.execute()
     else:
         tag_prefix = f"⟦EXAM:{folder_name}⟧"
         db.table("questions").delete().like("text", f"{tag_prefix}%").execute()
 
     # Also delete associated config if it exists
-    db.table("exam_config").delete().eq("exam_title", folder_name).execute()
+    if branch:
+        # Check if other branches still use this exam
+        leftover = db.table("questions").select("id").eq("exam_name", folder_name).limit(1).execute()
+        if not leftover.data:
+            db.table("exam_config").delete().eq("exam_title", folder_name).execute()
+    else:
+        db.table("exam_config").delete().eq("exam_title", folder_name).execute()
 
     return {"status": "success", "deleted_folder": folder_name}
 
@@ -882,7 +891,10 @@ async def rename_folder(folder_name: str, request: FolderRenameRequest, _: bool 
         has_exam_column = "exam_name" in probe.data[0].keys()
 
     if has_exam_column:
-        db.table("questions").update({"exam_name": new_name}).eq("exam_name", folder_name).execute()
+        q = db.table("questions").update({"exam_name": new_name}).eq("exam_name", folder_name)
+        if request.branch:
+            q = q.eq("branch", request.branch)
+        q.execute()
     else:
         # Spectral Tag Rename: Fetch and batch update
         tag_old = f"⟦EXAM:{folder_name}⟧"

@@ -293,6 +293,7 @@ class BulkImportRequest(BaseModel):
 
 class FolderRenameRequest(BaseModel):
     new_name: str
+    branch: Optional[str] = None
 
 class FolderEditBranchRequest(BaseModel):
     new_branches: List[str]

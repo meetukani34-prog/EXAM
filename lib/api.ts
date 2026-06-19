@@ -421,13 +421,19 @@ export async function cleanupStaleSessions(): Promise<{ count: number }> {
 
 // ── Orbital Node Management (Folder CRUD) ─────────────────────
 
-export async function deleteAdminFolder(folderName: string): Promise<void> {
-  await adminFetch(`/admin/folders/${encodeURIComponent(folderName)}`, {
+export async function deleteAdminFolder(folderName: string, branch?: string): Promise<void> {
+  const url = branch ? `/admin/folders/${encodeURIComponent(folderName)}?branch=${encodeURIComponent(branch)}` : `/admin/folders/${encodeURIComponent(folderName)}`;
+  await adminFetch(url, {
     method: "DELETE",
   });
 }
 
-export async function renameAdminFolder(oldName: string, newName: string): Promise<void> {
+export async function renameAdminFolder(oldName: string, newName: string, branch?: string): Promise<void> {
+  await adminFetch(`/admin/folders/${encodeURIComponent(oldName)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ new_name: newName, branch: branch }),
+  });
+}
   await adminFetch(`/admin/folders/${encodeURIComponent(oldName)}`, {
     method: "PATCH",
     body: JSON.stringify({ new_name: newName }),

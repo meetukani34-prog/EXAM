@@ -587,6 +587,9 @@ function PyHuntObserver({ fetchStudentsGlobal }: { fetchStudentsGlobal: (examNam
                       </td>
                       <td>
                         <div className={adminStyles.actionGroup}>
+                          <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => handleRenameFolder(name, branch)}>Rename</button>
+                          <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => handleEditBranchFolder(name)}>Edit Branch</button>
+                          <button className="btn btn-outline btn-danger" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => handleDeleteFolder(name, branch)}>Delete Folder</button>
                           <button className={`${adminStyles.actionBtn} ${adminStyles.btnReset}`} onClick={() => handleReExam(p)}>RESET</button>
                           <button className={`${adminStyles.actionBtn} ${adminStyles.btnStop}`} onClick={() => handleToggleBlock(p)}>
                             {p.is_blocked ? "RESUME" : "STOP"}
@@ -2338,13 +2341,17 @@ function QuestionsTab() {
     }
   };
 
-  const handleDeleteFolder = async (folderName: string) => {
-    if (!confirm(`WARNING: This will permanently delete the entire Isolation Node '${folderName}' and ALL questions inside it. Continue?`)) return;
+  const handleDeleteFolder = async (folderName: string, branch: string) => {
+    if (!confirm(`WARNING: This will permanently delete the entire Isolation Node '${folderName}' for branch '${branch}' and ALL questions inside it. Continue?`)) return;
     try {
       setLoading(true);
-      await deleteAdminFolder(folderName);
-      setQuestions(questions.filter((q) => q.exam_name !== folderName));
-      setExpandedClusters(prev => ({ ...prev, [folderName]: false }));
+      await deleteAdminFolder(folderName, branch);
+      setQuestions(questions.filter((q) => !(q.exam_name === folderName && q.branch === branch)));
+      setExpandedClusters(prev => {
+        const next = { ...prev };
+        delete next[`${folderName}|${branch}`];
+        return next;
+      });
     } catch (error: any) {
       alert(`Failed to delete folder: ${error.message}`);
     } finally {
@@ -2352,21 +2359,21 @@ function QuestionsTab() {
     }
   };
 
-  const handleRenameFolder = async (folderName: string) => {
-    const newName = prompt(`Enter new name for Isolation Node '${folderName}':`, folderName);
+  const handleRenameFolder = async (folderName: string, branch: string) => {
+    const newName = prompt(`Enter new name for Isolation Node '${folderName}' (${branch}):`, folderName);
     if (!newName || newName.trim() === folderName) return;
 
     try {
       setLoading(true);
-      await renameAdminFolder(folderName, newName.trim());
-      // Update local state: find and update all questions in this folder
+      await renameAdminFolder(folderName, newName.trim(), branch);
+      // Update local state: find and update all questions in this folder & branch
       setQuestions(questions.map(q =>
-        q.exam_name === folderName ? { ...q, exam_name: newName.trim() } : q
+        (q.exam_name === folderName && q.branch === branch) ? { ...q, exam_name: newName.trim() } : q
       ));
       setExpandedClusters(prev => {
         const next = { ...prev };
-        delete next[folderName];
-        next[newName.trim()] = true;
+        delete next[`${folderName}|${branch}`];
+        next[`${newName.trim()}|${branch}`] = true;
         return next;
       });
     } catch (error: any) {
@@ -2865,7 +2872,7 @@ function QuestionsTab() {
                     <div style={{ display: "flex", gap: 6, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }} onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Enter') e.stopPropagation(); }}  role="button" tabIndex={0}>
                       <button
                         style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: `1px solid var(--border)`, background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontWeight: 600 }}
-                        onClick={(e) => { e.stopPropagation(); handleRenameFolder(name); }}
+                        onClick={(e) => { e.stopPropagation(); handleRenameFolder(name, branch); }}
                       >Rename</button>
                       <button
                         style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: `1px solid var(--border)`, background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontWeight: 600 }}
@@ -2873,7 +2880,7 @@ function QuestionsTab() {
                       >Edit Branch</button>
                       <button
                         style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(211,47,47,0.2)", background: "transparent", color: "var(--danger)", cursor: "pointer", fontWeight: 600, marginLeft: "auto" }}
-                        onClick={(e) => { e.stopPropagation(); handleDeleteFolder(name); }}
+                        onClick={(e) => { e.stopPropagation(); handleDeleteFolder(name, branch); }}
                       >Delete</button>
                     </div>
 
