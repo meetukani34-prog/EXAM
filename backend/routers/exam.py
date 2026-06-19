@@ -626,15 +626,17 @@ def submit_exam(
 
     # 5. Mark submitted and ensure attempt is counted for THIS exam
     try:
-        # Fetch existing status to preserve attempts_count
+        # Fetch existing status to preserve attempts_count and warnings
         curr_res = db_execute_with_retry(
-            lambda: db.table("exam_status").select("attempts_count, id").eq("student_id", student_id).eq("exam_name", exam_title).execute()
+            lambda: db.table("exam_status").select("attempts_count, warnings, id").eq("student_id", student_id).eq("exam_name", exam_title).execute()
         )
         
         curr_count = 1
+        curr_warnings = 0
         if curr_res.data:
             curr_count = curr_res.data[0].get("attempts_count", 1) or 1
-            print(f"[SUBMIT] Finalizing active attempt count: {curr_count}")
+            curr_warnings = curr_res.data[0].get("warnings", 0) or 0
+            print(f"[SUBMIT] Finalizing active attempt count: {curr_count}, preserving {curr_warnings} warnings")
         
         status_payload = {
             "student_id": student_id,
@@ -642,7 +644,7 @@ def submit_exam(
             "status": "submitted", 
             "submitted_at": submitted_at,
             "attempts_count": curr_count,
-            "warnings": 0  # Clear warnings on submission
+            "warnings": curr_warnings
         }
         
         db_execute_with_retry(
