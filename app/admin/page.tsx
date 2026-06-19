@@ -3309,7 +3309,14 @@ function QuestionsTab() {
                   <div className={adminStyles.optionsGrid}>
                     {formData.options.map((opt, i) => (
                       <input key={`item-${i}`} className={adminStyles.input} placeholder={`Option ${String.fromCharCode(65 + i)}`} value={opt}
-                        onChange={(e) => { const n = [...formData.options]; n[i] = e.target.value; setFormData(prev => ({ ...prev, options: n })); }} />
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData(prev => {
+                            const n = [...prev.options];
+                            n[i] = val;
+                            return { ...prev, options: n };
+                          });
+                        }} />
                     ))}
                   </div>
                 </div>
