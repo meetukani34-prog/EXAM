@@ -2062,6 +2062,7 @@ function WarningBadge({ count }: { count: number }) {
 function QuestionsTab() {
   const [questions, setQuestions] = useState<AdminQuestion[]>([]);
   const [configs, setConfigs] = useState<ExamConfig[]>([]);
+  const [folderConfigModal, setFolderConfigModal] = useState<ExamConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AdminQuestion | null>(null);
@@ -2381,26 +2382,31 @@ function QuestionsTab() {
     }
   };
 
-  const handleEditMarksFolder = async (folderName: string) => {
-    const marksStr = prompt(`Enter new marks for ALL questions in "${folderName}":`, "1");
-    if (!marksStr || marksStr.trim() === "") return;
-    const marks = parseInt(marksStr, 10);
-    if (isNaN(marks) || marks < 0) {
-      return alert("Please enter a valid positive integer for marks.");
+  const handleOpenFolderConfig = (folderName: string) => {
+    let conf = configs.find(c => c.exam_title === folderName);
+    if (!conf) {
+      conf = {
+        exam_title: folderName,
+        is_active: false,
+        category: "other",
+        exam_description: "",
+        duration_hours: 1,
+        duration_minutes: 0,
+        duration_seconds: 0,
+        total_questions: 10,
+        total_marks: 10,
+        marks_per_question: 1,
+        negative_marks: 0,
+        max_attempts: 1,
+        show_answers_after: false,
+        shuffle_questions: false,
+        shuffle_options: false,
+        scheduled_start: null,
+        scheduled_end: null,
+        enable_schedule: false,
+      } as ExamConfig;
     }
-
-    try {
-      setLoading(true);
-      await editAdminFolderMarks(folderName, marks);
-      // Update local state: find and update all questions in this folder
-      setQuestions(questions.map(q =>
-        (q.exam_name === folderName) ? { ...q, marks: marks } : q
-      ));
-    } catch (error: any) {
-      alert(`Failed to update marks: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
+    setFolderConfigModal(conf);
   };
 
   const handleEditBranchFolder = (folderName: string) => {
@@ -2900,7 +2906,7 @@ function QuestionsTab() {
                       >Edit Branch</button>
                       <button
                         style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: `1px solid var(--border)`, background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontWeight: 600 }}
-                        onClick={(e) => { e.stopPropagation(); handleEditMarksFolder(name); }}
+                        onClick={(e) => { e.stopPropagation(); handleOpenFolderConfig(name); }}
                       >Edit Marks</button>
                       <button
                         style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(211,47,47,0.2)", background: "transparent", color: "var(--danger)", cursor: "pointer", fontWeight: 600, marginLeft: "auto" }}
@@ -3646,6 +3652,112 @@ function QuestionsTab() {
                   setPreviewCode(starter);
                 }}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {folderConfigModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setFolderConfigModal(null)}>
+          <div style={{ background: "var(--bg-card)", padding: 32, borderRadius: 16, width: "100%", maxWidth: 500, display: "flex", flexDirection: "column", gap: 24, border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: "var(--text)" }}>Quiz Controls: {folderConfigModal.exam_title}</h3>
+              <button onClick={() => setFolderConfigModal(null)} style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 20 }}>×</button>
+            </div>
+
+            {/* Preview Quiz */}
+            <button onClick={() => window.open(`/dashboard?preview=true&exam=${encodeURIComponent(folderConfigModal.exam_title)}`, '_blank')} style={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center", gap: 8, padding: "10px 0", background: "transparent", border: "none", color: "var(--text)", fontWeight: 600, cursor: "pointer" }}>
+              👁️ Preview Quiz
+            </button>
+
+            {/* Shuffle Controls */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <button
+                style={{ background: "var(--bg-secondary)", border: folderConfigModal.shuffle_questions ? "1px solid var(--primary)" : "1px solid var(--border)", padding: "12px 16px", borderRadius: 8, color: "var(--text)", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", transition: "all 0.2s" }}
+                onClick={() => setFolderConfigModal({ ...folderConfigModal, shuffle_questions: !folderConfigModal.shuffle_questions })}
+              >
+                <span style={{ color: folderConfigModal.shuffle_questions ? "var(--primary)" : "var(--text-muted)" }}>🔀</span> Shuffle Questions
+              </button>
+              <button
+                style={{ background: "var(--bg-secondary)", border: folderConfigModal.shuffle_options ? "1px solid var(--primary)" : "1px solid var(--border)", padding: "12px 16px", borderRadius: 8, color: "var(--text)", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", transition: "all 0.2s" }}
+                onClick={() => setFolderConfigModal({ ...folderConfigModal, shuffle_options: !folderConfigModal.shuffle_options })}
+              >
+                <span style={{ color: folderConfigModal.shuffle_options ? "var(--primary)" : "var(--text-muted)" }}>🔁</span> Shuffle Options
+              </button>
+            </div>
+
+            {/* Marks Config */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase" }}>MARKS PER QUESTION</label>
+                <select
+                  style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", padding: "12px 16px", borderRadius: 8, color: "var(--text)", fontWeight: 500, outline: "none", width: "100%" }}
+                  value={folderConfigModal.marks_per_question}
+                  onChange={(e) => setFolderConfigModal({ ...folderConfigModal, marks_per_question: Number(e.target.value) })}
+                >
+                  {[1, 2, 3, 4, 5, 6, 10].map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase" }}>NEGATIVE MARKS</label>
+                <select
+                  style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", padding: "12px 16px", borderRadius: 8, color: "var(--text)", fontWeight: 500, outline: "none", width: "100%" }}
+                  value={folderConfigModal.negative_marks}
+                  onChange={(e) => setFolderConfigModal({ ...folderConfigModal, negative_marks: Number(e.target.value) })}
+                >
+                  {[0, -0.25, -0.5, -1, -2].map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 16 }}>
+              <button
+                style={{ padding: "10px 20px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--text)", fontWeight: 600, cursor: "pointer" }}
+                onClick={() => setFolderConfigModal(null)}
+              >
+                Cancel
+              </button>
+              <button
+                style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "var(--primary)", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    
+                    const res = await fetch(`/api/admin/exam/config`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "x-admin-secret": "supersecretadmin123",
+                      },
+                      body: JSON.stringify(folderConfigModal),
+                    });
+                    if (!res.ok) throw new Error("Save failed");
+                    const savedConfig = await res.json();
+                    
+                    if (folderConfigModal.marks_per_question !== undefined) {
+                      await editAdminFolderMarks(folderConfigModal.exam_title, folderConfigModal.marks_per_question);
+                      setQuestions(questions.map(q => q.exam_name === folderConfigModal.exam_title ? { ...q, marks: folderConfigModal.marks_per_question! } : q));
+                    }
+                    
+                    setConfigs(prev => {
+                      const existing = prev.find(c => c.exam_title === folderConfigModal.exam_title);
+                      if (existing) return prev.map(c => c.exam_title === folderConfigModal.exam_title ? savedConfig : c);
+                      return [...prev, savedConfig];
+                    });
+                    setFolderConfigModal(null);
+                  } catch (e: any) {
+                    alert("Failed to save: " + e.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                Save Controls
+              </button>
             </div>
           </div>
         </div>
