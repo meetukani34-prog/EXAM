@@ -14,7 +14,9 @@ def db_execute_with_retry(fn, max_retries=3):
             print(f"[DB_RETRY] Attempt {attempt} failed: {str(e)}")
             if attempt < max_retries:
                 time.sleep(random.uniform(0.1, 0.4) * attempt)
-    raise last_err
+    if last_err is not None:
+        raise last_err
+    raise Exception("Max retries exceeded")
 
 from models.schemas import (
     QuestionsResponse, QuestionOut,
