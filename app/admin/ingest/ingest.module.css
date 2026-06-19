@@ -599,6 +599,11 @@
   border-color: var(--border-focus);
 }
 
+.orbInput option, .input option {
+  background: #0f172a;
+  color: var(--text-primary);
+}
+
 /* ── Question Images ─────────────────────────────────────────── */
 .qImageContainer {
   margin: 12px 0;

@@ -247,7 +247,7 @@
 }
 
 .quizContextSelect option {
-  background-color: var(--bg-secondary);
+  background: #0f172a;
   color: var(--text-primary);
 }
 
@@ -724,7 +724,7 @@
 }
 
 .settingsSelect option, .markSelect option {
-  background-color: var(--bg-secondary);
+  background: #0f172a;
   color: var(--text-primary);
 }
 

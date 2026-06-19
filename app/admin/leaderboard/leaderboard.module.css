@@ -83,7 +83,7 @@
 }
 
 .filterSelect option {
-  background: var(--bg-card);
+  background: #0f172a;
   color: var(--text-primary);
 }
 
