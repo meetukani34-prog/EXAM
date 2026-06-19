@@ -2945,7 +2945,7 @@ function QuestionsTab() {
                             <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }}
                               onClick={() => handleEditBranchFolder(name)}>Edit Branch</button>
                             <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }}
-                              onClick={() => handleEditMarksFolder(name)}>Edit Marks</button>
+                              onClick={() => handleOpenFolderConfig(name)}>Edit Marks</button>
                             <button className="btn btn-outline btn-danger" style={{ fontSize: 12, padding: "4px 12px" }}
                               onClick={() => handleDeleteFolder(name, branch)}>Delete Folder</button>
                           </div>
