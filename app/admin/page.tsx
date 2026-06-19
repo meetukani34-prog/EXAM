@@ -3728,16 +3728,7 @@ function QuestionsTab() {
                   try {
                     setLoading(true);
                     
-                    const res = await fetch(`/api/admin/exam/config`, {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        "x-admin-secret": "supersecretadmin123",
-                      },
-                      body: JSON.stringify(folderConfigModal),
-                    });
-                    if (!res.ok) throw new Error("Save failed");
-                    const savedConfig = await res.json();
+                    const savedConfig = await updateExamConfig(folderConfigModal);
                     
                     if (folderConfigModal.marks_per_question !== undefined) {
                       await editAdminFolderMarks(folderConfigModal.exam_title, folderConfigModal.marks_per_question);
