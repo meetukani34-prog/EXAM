@@ -470,10 +470,10 @@ async def reset_student_exam(student_id: str, payload: Optional[AdminExamResetRe
 
     if exam_name:
         # Delete only specific exam records (Hard delete to allow fresh start)
-        db.table("exam_status").delete().eq("student_id", student_id).eq("exam_name", exam_name).execute()
-        db.table("exam_results").delete().eq("student_id", student_id).eq("exam_name", exam_name).execute()
-        db.table("student_responses").delete().eq("student_id", student_id).eq("exam_name", exam_name).execute()
-        db.table("live_alerts").delete().eq("student_id", student_id).eq("exam_name", exam_name).execute()
+        db.table("exam_status").delete().eq("student_id", student_id).ilike("exam_name", exam_name).execute()
+        db.table("exam_results").delete().eq("student_id", student_id).ilike("exam_name", exam_name).execute()
+        db.table("student_responses").delete().eq("student_id", student_id).ilike("exam_name", exam_name).execute()
+        db.table("live_alerts").delete().eq("student_id", student_id).ilike("exam_name", exam_name).execute()
     else:
         # Reset ALL exams (legacy behavior)
         db.table("exam_status").update({
