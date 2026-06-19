@@ -444,7 +444,7 @@ def submit_exam(
         lambda: db.table("exam_status")
         .select("status")
         .eq("student_id", student_id)
-        .ilike("exam_name", exam_title)
+        .eq("exam_name", exam_title)
         .limit(1)
         .execute()
     )
