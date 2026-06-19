@@ -152,6 +152,11 @@ async def _call_inception_api(raw_text: str, chunk_index: int = 0) -> dict:
             await asyncio.sleep(2)
 
     data = response.json()
+    
+    if "choices" not in data:
+        error_msg = data.get("error", data)
+        raise ValueError(f"API Error: Missing 'choices'. Response: {error_msg}")
+        
     message = data["choices"][0]["message"]
     raw_content = message.get("content") or ""
     reasoning = message.get("reasoning_content") or ""
