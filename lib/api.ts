@@ -19,7 +19,7 @@ async function apiFetch<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const token = getToken();
-  const isPreview = typeof window !== "undefined" && sessionStorage.getItem("exam_preview") === "true";
+  const isPreview = typeof window !== "undefined" && localStorage.getItem("exam_preview") === "true";
   const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET || "admin@examguard2024";
 
   const headers: HeadersInit = {
@@ -112,8 +112,9 @@ export async function loginStudent(
 
 export async function logoutStudent(): Promise<void> {
   await apiFetch("/auth/logout", { method: "POST" }).catch(() => { });
-  sessionStorage.removeItem("exam_token");
-  sessionStorage.removeItem("exam_student");
+  localStorage.removeItem("exam_token");
+  localStorage.removeItem("exam_student");
+  localStorage.removeItem("exam_preview");
 }
 
 export async function updateProfile(data: { name?: string; email?: string; avatar_url?: string }): Promise<void> {

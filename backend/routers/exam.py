@@ -250,12 +250,20 @@ def get_questions(
     try:
         branch = current.get("branch", "CS")
         
+        # Fetch total_questions from config
+        limit_val = 100
+        try:
+            config_res = db.table("exam_config").select("total_questions").ilike("exam_title", title).limit(1).execute()
+            if config_res.data and config_res.data[0].get("total_questions"):
+                limit_val = int(config_res.data[0]["total_questions"])
+        except Exception: pass
+        
         # ── Strategy 1: Strict Branch + Strict Title Match ──
         query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type")
         if branch != "ALL":
             query = query.eq("branch", branch)
         
-        result = query.eq("exam_name", title).order("order_index").limit(100).execute()
+        result = query.eq("exam_name", title).order("order_index").limit(limit_val).execute()
 
         # ── Strategy 2 (Swapped): Global Title Match (Cross-Branch Fallback) ──
         if not result.data:
@@ -264,7 +272,7 @@ def get_questions(
                 .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type")
                 .eq("exam_name", title)
                 .order("order_index")
-                .limit(100)
+                .limit(limit_val)
                 .execute()
             )
 
@@ -273,7 +281,7 @@ def get_questions(
             query = db.table("questions").select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type")
             if branch != "ALL":
                 query = query.eq("branch", branch)
-            result = query.ilike("exam_name", f"%{title}%").order("order_index").limit(100).execute()
+            result = query.ilike("exam_name", f"%{title}%").order("order_index").limit(limit_val).execute()
             
         # ── Strategy 4: Global Fuzzy Title Match ──
         if not result.data:
@@ -282,7 +290,7 @@ def get_questions(
                 .select("id, text, options, branch, order_index, marks, exam_name, image_url, audio_url, category, programming_type")
                 .ilike("exam_name", f"%{title}%")
                 .order("order_index")
-                .limit(100)
+                .limit(limit_val)
                 .execute()
             )
 
