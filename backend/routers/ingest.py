@@ -659,20 +659,19 @@ async def commit_questions(
     
     # Check for existing node collision (Column OR Tag prefix)
     collision = False
+    max_order_index = -1
+    
     if "exam_name" in db_columns:
-        res = db.table("questions").select("id").eq("exam_name", safe_exam_name).limit(1).execute()
-        if res.data: collision = True
+        res = db.table("questions").select("id, order_index").eq("exam_name", safe_exam_name).execute()
+        if res.data: 
+            collision = True
+            max_order_index = max([r.get("order_index", 0) or 0 for r in res.data], default=-1)
     
     if not collision:
-        res = db.table("questions").select("id").like("text", f"{tag_prefix}%").limit(1).execute()
-        if res.data: collision = True
-
-    if collision and not request.replace_existing:
-        logger.warning(f"Gravity-Alert: Isolation breach on node '{safe_exam_name}'")
-        raise HTTPException(
-            status_code=409, 
-            detail=f"GRAVITY_ALERT: Isolation Node '{safe_exam_name}' is already populated. Ingestion into legacy nodes is strictly prohibited to ensure data purity."
-        )
+        res = db.table("questions").select("id, order_index").like("text", f"{tag_prefix}%").execute()
+        if res.data: 
+            collision = True
+            max_order_index = max([r.get("order_index", 0) or 0 for r in res.data], default=-1)
 
     # ── Step 3: Deployment & Node Clearing ──
     if request.replace_existing:
@@ -683,6 +682,7 @@ async def commit_questions(
         # Also clear Spectral Tag legacy format for this folder
         db.table("questions").delete().like("text", f"{tag_prefix}%").execute()
         logger.info(f"Isolation Node '{safe_exam_name}' purged across all branches for fresh harvest.")
+        max_order_index = -1  # Reset index since we cleared the exam
 
     # ── Step 3: Schema-Safe Payload Refinement ──
     rows_to_insert = []
@@ -701,7 +701,7 @@ async def commit_questions(
             "correct_answer": q.correct_answer,
             "marks": q.marks,
             "branch": q.branch,
-            "order_index": q.order_index if q.order_index > 0 else i,
+            "order_index": (max_order_index + 1 + i),
             "exam_name": safe_exam_name,
             "image_url": q.image_url,
             "audio_url": q.audio_url,

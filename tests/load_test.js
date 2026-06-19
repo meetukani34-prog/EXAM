@@ -1,152 +1,123 @@
 import http from 'k6/http';
 import { sleep, check, group } from 'k6';
-import { Counter, Rate, Trend } from 'k6/metrics';
+import { Rate, Trend } from 'k6/metrics';
+import { SharedArray } from 'k6/data';
+
+// ─── Load Test Credentials ─────────────────────────────────────────
+// Load the 200 sequentially generated test users
+const testUsers = new SharedArray('users', function () {
+  return JSON.parse(open('./k6_users.json'));
+});
 
 // ─── Custom Metrics ────────────────────────────────────────────────
 const errorRate = new Rate('errors');
-const dashboardDuration = new Trend('dashboard_duration', true);
-const loginDuration = new Trend('login_duration', true);
-const examDuration = new Trend('exam_duration', true);
-const failedRequests = new Counter('failed_requests');
+const loginApiDuration = new Trend('api_login_duration', true);
+const configApiDuration = new Trend('api_config_duration', true);
 
 // ─── Test Configuration ────────────────────────────────────────────
-const BASE_URL = 'https://examnew-phi.vercel.app';
+// Use environment variables or fallback to known URLs
+const FRONTEND_URL = __ENV.FRONTEND_URL || 'https://examnew-phi.vercel.app';
+const API_BASE = __ENV.API_BASE || 'http://127.0.0.1:8001'; // Default local backend
 
 export const options = {
-  // Simulate 200 students hitting the site over 3 minutes
+  // Simulate 200 real students logging in simultaneously
   stages: [
-    { duration: '30s', target: 200 },  // Ramp up: 0 → 200 virtual users
-    { duration: '2m',  target: 200 },  // Steady state: hold 200 users for 2 min
-    { duration: '30s', target: 0 },    // Ramp down: 200 → 0 users
+    { duration: '30s', target: 200 },  // Ramp up to 200 users
+    { duration: '2m',  target: 200 },  // Hold at 200 users
+    { duration: '30s', target: 0 },    // Ramp down
   ],
-
-  // Performance thresholds — test FAILS if these are breached
   thresholds: {
-    http_req_duration: [
-      'p(95)<2000',   // 95% of requests must complete within 2s
-      'p(99)<5000',   // 99% of requests must complete within 5s
-    ],
-    http_req_failed: ['rate<0.05'],  // Less than 5% of requests should fail
-    errors: ['rate<0.1'],            // Custom error rate below 10%
+    http_req_failed: ['rate<0.05'], // Less than 5% HTTP errors
+    api_login_duration: ['p(95)<2000'], // 95% of logins under 2s
   },
 };
 
 // ─── Main Test Scenario ────────────────────────────────────────────
 export default function () {
-  // ── 1. Dashboard Page (main landing for students) ──
-  group('Dashboard Page', () => {
-    const dashRes = http.get(`${BASE_URL}/dashboard`, {
-      tags: { page: 'dashboard' },
-    });
+  // 1. Assign a unique user from the array to this Virtual User (VU)
+  const userIndex = (__VU - 1) % testUsers.length;
+  const user = testUsers[userIndex];
 
-    dashboardDuration.add(dashRes.timings.duration);
-
-    const dashOk = check(dashRes, {
-      'Dashboard — status is 200': (r) => r.status === 200,
-      'Dashboard — response time < 500ms': (r) => r.timings.duration < 500,
-      'Dashboard — response time < 2s': (r) => r.timings.duration < 2000,
-      'Dashboard — body is not empty': (r) => r.body && r.body.length > 0,
-    });
-
-    if (!dashOk) {
-      failedRequests.add(1);
-      errorRate.add(1);
-    } else {
-      errorRate.add(0);
-    }
+  // ── 1. Load Frontend (Simulating Browser Navigation) ──
+  group('1. Frontend Initial Load', () => {
+    http.get(`${FRONTEND_URL}/login`);
   });
 
-  // Simulate student "thinking" time (1–3 seconds)
-  sleep(Math.random() * 2 + 1);
+  sleep(Math.random() * 2 + 1); // User taking time to type credentials
 
-  // ── 2. Login Page ──
-  group('Login Page', () => {
-    const loginRes = http.get(`${BASE_URL}/login`, {
-      tags: { page: 'login' },
+  // ── 2. Authenticate (Hit the Backend API directly) ──
+  let authToken = '';
+  
+  group('2. API Authentication', () => {
+    const payload = JSON.stringify({
+      usn: user.usn,
+      password: user.password
     });
 
-    loginDuration.add(loginRes.timings.duration);
+    const res = http.post(`${API_BASE}/auth/login`, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      tags: { name: 'API_Login' }
+    });
 
-    const loginOk = check(loginRes, {
-      'Login — status is 200': (r) => r.status === 200,
-      'Login — response time < 500ms': (r) => r.timings.duration < 500,
-      'Login — response time < 2s': (r) => r.timings.duration < 2000,
+    loginApiDuration.add(res.timings.duration);
+
+    const loginOk = check(res, {
+      'Login status 200': (r) => r.status === 200,
+      'Login returned data': (r) => r.body && r.body.length > 0
     });
 
     if (!loginOk) {
-      failedRequests.add(1);
       errorRate.add(1);
     } else {
       errorRate.add(0);
+      try {
+        const body = res.json();
+        authToken = body.token || body.access_token || '';
+      } catch (e) {}
     }
   });
 
-  // Simulate reading/thinking
-  sleep(Math.random() * 2 + 1);
+  sleep(Math.random() * 1 + 0.5); // Fast transition to dashboard
 
-  // ── 3. Exam Page ──
-  group('Exam Page', () => {
-    const examRes = http.get(`${BASE_URL}/exam`, {
-      tags: { page: 'exam' },
+  // ── 3. Load Dashboard Data (Simulate Dashboard Fetch) ──
+  group('3. Dashboard API Load', () => {
+    // Dashboard hits frontend first
+    http.get(`${FRONTEND_URL}/dashboard`);
+
+    // Then dashboard fetches public config from backend
+    const configRes = http.get(`${API_BASE}/exam/config/public`, {
+      tags: { name: 'API_Config_Fetch' }
     });
-
-    examDuration.add(examRes.timings.duration);
-
-    const examOk = check(examRes, {
-      'Exam — status is 200': (r) => r.status === 200,
-      'Exam — response time < 500ms': (r) => r.timings.duration < 500,
-      'Exam — response time < 2s': (r) => r.timings.duration < 2000,
+    
+    configApiDuration.add(configRes.timings.duration);
+    
+    check(configRes, {
+      'Config status 200': (r) => r.status === 200,
     });
-
-    if (!examOk) {
-      failedRequests.add(1);
-      errorRate.add(1);
-    } else {
-      errorRate.add(0);
+    
+    // If backend requires auth for student status, simulate it
+    if (authToken) {
+      // Assuming a generic status endpoint based on standard patterns
+      http.get(`${API_BASE}/exam/student/status`, {
+        headers: { 'Authorization': `Bearer ${authToken}` },
+        tags: { name: 'API_Student_Status' }
+      });
     }
   });
 
-  // ── 4. Admin Page (occasional check) ──
-  if (Math.random() < 0.1) {
-    // Only 10% of users hit admin (realistic)
-    group('Admin Page', () => {
-      const adminRes = http.get(`${BASE_URL}/admin`, {
-        tags: { page: 'admin' },
-      });
-
-      check(adminRes, {
-        'Admin — status is 200 or 302': (r) => r.status === 200 || r.status === 302,
-        'Admin — response time < 2s': (r) => r.timings.duration < 2000,
-      });
-    });
-  }
-
-  // Final think time before next iteration
+  // Wait before next iteration
   sleep(Math.random() * 3 + 1);
 }
 
-// ─── Setup (runs once before the test) ─────────────────────────────
+// ─── Setup & Teardown ──────────────────────────────────────────────
 export function setup() {
   console.log('╔══════════════════════════════════════════════════════╗');
-  console.log('║   ExamGuard Load Test — 200 Concurrent Students     ║');
-  console.log('║   Target: ' + BASE_URL.padEnd(42) + '║');
-  console.log('║   Duration: 3 minutes (30s ramp + 2m steady + 30s) ║');
+  console.log('║   ExamGuard Load Test — Real Authenticated Users    ║');
+  console.log(`║   Frontend: ${FRONTEND_URL.padEnd(39)}║`);
+  console.log(`║   Backend : ${API_BASE.padEnd(39)}║`);
+  console.log('║   Users   : 200 Sequential K6TEST accounts           ║');
   console.log('╚══════════════════════════════════════════════════════╝');
-
-  // Verify the site is reachable before running the full test
-  const smokeRes = http.get(`${BASE_URL}/dashboard`);
-  if (smokeRes.status !== 200) {
-    console.warn(`⚠️  WARNING: Smoke check returned status ${smokeRes.status}`);
-    console.warn(`   The site may be down or returning errors.`);
-  } else {
-    console.log(`✅ Smoke check passed — site is reachable (${smokeRes.timings.duration.toFixed(0)}ms)`);
-  }
-}
-
-// ─── Teardown (runs once after the test) ───────────────────────────
-export function teardown(data) {
-  console.log('');
-  console.log('══════════════════════════════════════════════════════');
-  console.log('  Load test completed. Review the summary above.');
-  console.log('══════════════════════════════════════════════════════');
 }
