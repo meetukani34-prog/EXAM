@@ -965,6 +965,13 @@ async def edit_folder_branch(folder_name: str, request: FolderEditBranchRequest,
             if new_rows:
                 db.table("questions").insert(new_rows).execute()
 
+    # 6. Update exam_config branch if it exists
+    try:
+        new_branch_val = target_branches[0] if len(target_branches) == 1 else "ALL"
+        db.table("exam_config").update({"branch": new_branch_val}).eq("exam_title", folder_name).execute()
+    except Exception as e:
+        print(f"Failed to sync exam_config branch: {e}")
+
     return {"status": "success", "folder": folder_name, "branches": target_branches}
 
 
