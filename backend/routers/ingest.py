@@ -570,6 +570,88 @@ def _parse_excel(data: bytes) -> Tuple[List[ParsedQuestion], List[str]]:
 
     return questions, warnings
 
+def _parse_json(data: bytes) -> Tuple[List[ParsedQuestion], List[str]]:
+    """Directly parse uploaded JSON containing an array of questions."""
+    import json
+    questions: List[ParsedQuestion] = []
+    warnings: List[str] = []
+    
+    try:
+        json_data = json.loads(data.decode("utf-8", errors="replace"))
+        
+        # Determine if it's a direct list or wrapped in { "questions": [...] }
+        q_list = json_data
+        if isinstance(json_data, dict):
+            if "questions" in json_data and isinstance(json_data["questions"], list):
+                q_list = json_data["questions"]
+            else:
+                q_list = [json_data] # Try parsing the object itself as a single question
+        
+        if not isinstance(q_list, list):
+            raise ValueError("JSON root must be an array or an object containing a 'questions' array.")
+            
+        for i, q in enumerate(q_list):
+            if not isinstance(q, dict):
+                warnings.append(f"Row {i}: Expected object, skipping.")
+                continue
+                
+            q_text = str(q.get("text") or q.get("question") or "").strip()
+            if not q_text:
+                warnings.append(f"Row {i}: Missing question text, skipping.")
+                continue
+                
+            # Handle options formats: list of strings, or object with A, B, C, D
+            opts_raw = q.get("options", [])
+            opts = []
+            if isinstance(opts_raw, list):
+                opts = [str(o) for o in opts_raw]
+            elif isinstance(opts_raw, dict):
+                opts = [
+                    str(opts_raw.get("A", opts_raw.get("a", ""))),
+                    str(opts_raw.get("B", opts_raw.get("b", ""))),
+                    str(opts_raw.get("C", opts_raw.get("c", ""))),
+                    str(opts_raw.get("D", opts_raw.get("d", "")))
+                ]
+            else:
+                warnings.append(f"Row {i}: Invalid options format, expected list.")
+                opts = ["", "", "", ""]
+                
+            # Ensure we have at least 4 options to avoid breaking UI assumptions
+            while len(opts) < 4:
+                opts.append("")
+                
+            correct = str(q.get("correct_answer", "A")).strip().upper()
+            if correct not in ["A", "B", "C", "D"]:
+                correct = "A"
+                
+            try:
+                marks = int(float(q.get("marks", 1)))
+            except Exception:
+                marks = 1
+
+            questions.append(
+                ParsedQuestion(
+                    text=q_text,
+                    options=opts,
+                    correct_answer=correct,
+                    marks=marks,
+                    branch=str(q.get("branch", "CS")),
+                    order_index=i,
+                    category=str(q.get("category", "other")),
+                    image_url=q.get("image_url"),
+                    programming_type=q.get("programming_type"),
+                    starter_code=q.get("starter_code"),
+                    starter_code_c=q.get("starter_code_c"),
+                    starter_code_cpp=q.get("starter_code_cpp"),
+                    test_cases=q.get("test_cases") if isinstance(q.get("test_cases"), str) else (json.dumps(q.get("test_cases")) if q.get("test_cases") else None),
+                    target_output=q.get("target_output")
+                )
+            )
+            
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"JSON parse error: {e}")
+        
+    return questions, warnings
 
 # ── Routes ─────────────────────────────────────────────────────
 
@@ -579,6 +661,7 @@ ALLOWED_TYPES = {
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
     "application/vnd.ms-excel": "xls",
     "text/plain": "txt",
+    "application/json": "json",
 }
 
 
@@ -609,6 +692,10 @@ async def upload_and_parse(
     # Excel: structured format — skip AI, use direct column mapping
     if file_type in ("xlsx", "xls"):
         questions, warnings = _parse_excel(data)
+
+    # JSON: structured format — skip AI, parse directly
+    elif file_type == "json":
+        questions, warnings = _parse_json(data)
 
     # Text-based: try AI first, fallback to regex
     elif file_type in ("pdf", "docx", "txt"):

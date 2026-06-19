@@ -164,6 +164,7 @@ export default function IngestPage() {
   const [examName, setExamName] = useState("");
   const [maxQuestions, setMaxQuestions] = useState<number | "">("");
   const [showGatekeeperAlert, setShowGatekeeperAlert] = useState(false);
+  const [mode, setMode] = useState<"ai" | "json">("ai");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [existingExamNames, setExistingExamNames] = useState<string[]>([]);
@@ -390,6 +391,24 @@ export default function IngestPage() {
             </div>
           </div>
 
+          {/* Mode Switcher */}
+          <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "16px", marginTop: "24px" }}>
+            <button 
+              className={`btn ${mode === "ai" ? "btn-primary" : "btn-outline"}`}
+              style={{ borderRadius: "20px", fontSize: "13px", height: "36px" }}
+              onClick={() => setMode("ai")}
+            >
+              ✦ AI Extraction
+            </button>
+            <button 
+              className={`btn ${mode === "json" ? "btn-primary" : "btn-outline"}`}
+              style={{ borderRadius: "20px", fontSize: "13px", height: "36px" }}
+              onClick={() => setMode("json")}
+            >
+              {'{ }'} Direct JSON Upload
+            </button>
+          </div>
+
           <div
             className={`${styles.dropZone} ${dragging ? styles.dropZoneActive : ""} ${!examName ? styles.dropZoneLatent : ""}`}
             onDragOver={(e) => { e.preventDefault(); if (examName) setDragging(true); else setShowGatekeeperAlert(true); }}
@@ -416,32 +435,53 @@ export default function IngestPage() {
                 <MolecularizeAnimation />
                 <div className={styles.molecularizeLabel}>
                   <span className={styles.aiPulse}>⬡</span>
-                  Spectral AI Parsing…
+                  {mode === "ai" ? "Spectral AI Parsing…" : "Parsing JSON Payload…"}
                 </div>
               </div>
             ) : (
               <>
-                <div className={styles.dropIcon}>🌌</div>
+                <div className={styles.dropIcon}>{mode === "ai" ? "🌌" : "📦"}</div>
                 <div className={styles.dropTitle}>Drop your question bank here</div>
                 <div className={styles.dropSubtitle}>
-                  Powered by Inception AI — High-fidelity extraction with legacy regex fallback.
+                  {mode === "ai" 
+                    ? "Powered by Inception AI — High-fidelity extraction with legacy regex fallback."
+                    : "Upload a structured JSON array for direct, instant importing without AI."}
                 </div>
               </>
             )}
 
             <div className={styles.dropBadges}>
-              <span className={`${styles.typeBadge} ${styles.typePdf}`}>PDF</span>
-              <span className={`${styles.typeBadge} ${styles.typeDocx}`}>DOCX</span>
-              <span className={`${styles.typeBadge} ${styles.typeXlsx}`}>XLSX</span>
+              {mode === "ai" ? (
+                <>
+                  <span className={`${styles.typeBadge} ${styles.typePdf}`}>PDF</span>
+                  <span className={`${styles.typeBadge} ${styles.typeDocx}`}>DOCX</span>
+                  <span className={`${styles.typeBadge} ${styles.typeXlsx}`}>XLSX</span>
+                </>
+              ) : (
+                <span className={`${styles.typeBadge}`} style={{ background: "var(--info-bg)", color: "var(--info)" }}>JSON</span>
+              )}
             </div>
+            
             <input
               ref={inputRef}
               type="file"
-              accept=".pdf,.docx,.xlsx,.xls,.txt"
+              accept={mode === "ai" ? ".pdf,.docx,.xlsx,.xls,.txt" : ".json"}
               style={{ display: "none" }}
               onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); }}
             />
           </div>
+
+          {mode === "json" && (
+            <div style={{ textAlign: "center", marginTop: "12px" }}>
+              <a 
+                href="data:application/json;charset=utf-8,%5B%7B%22text%22%3A%22Sample%20Question%3F%22%2C%22options%22%3A%5B%22A%22%2C%22B%22%2C%22C%22%2C%22D%22%5D%2C%22correct_answer%22%3A%22A%22%2C%22marks%22%3A1%7D%5D" 
+                download="sample_questions.json"
+                style={{ fontSize: "12px", color: "var(--info)", textDecoration: "underline", cursor: "pointer" }}
+              >
+                Download Sample JSON Template
+              </a>
+            </div>
+          )}
 
           {file && (
             <div className={`${styles.fileCard} ${evaporating ? styles.evaporating : ""}`}>
