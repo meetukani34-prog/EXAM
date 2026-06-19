@@ -2404,6 +2404,7 @@ function QuestionsTab() {
         scheduled_start: null,
         scheduled_end: null,
         enable_schedule: false,
+        branch: "",
       } as ExamConfig;
     }
     setFolderConfigModal(conf);
