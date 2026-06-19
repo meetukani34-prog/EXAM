@@ -633,8 +633,8 @@ def submit_exam(
         
         curr_count = 1
         if curr_res.data:
-            curr_count = (curr_res.data[0].get("attempts_count", 0) or 0) + 1
-            print(f"[SUBMIT] Incremented active attempt count: {curr_count}")
+            curr_count = curr_res.data[0].get("attempts_count", 1) or 1
+            print(f"[SUBMIT] Finalizing active attempt count: {curr_count}")
         
         status_payload = {
             "student_id": student_id,

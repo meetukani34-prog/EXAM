@@ -37,6 +37,7 @@ export default function InstructionsPage() {
     const selectedTitle = localStorage.getItem("exam_selected_title");
     const selectedDuration = localStorage.getItem("exam_selected_duration");
     const selectedStart = localStorage.getItem("exam_selected_start");
+    const selectedQuestions = localStorage.getItem("exam_selected_total_questions");
     
     setScheduledStart(selectedStart);
 
@@ -48,7 +49,7 @@ export default function InstructionsPage() {
           usn: parsed.usn || "Candidate",
           examTitle: selectedTitle || parsed.examTitle || "Online Assessment",
           duration: selectedDuration ? parseInt(selectedDuration) : (parsed.examDurationMinutes || 20),
-          totalQuestions: parsed.totalQuestions || 30,
+          totalQuestions: selectedQuestions ? parseInt(selectedQuestions) : (parsed.totalQuestions || 0),
         });
       } catch (err) {
         console.error("Could not parse student data", err);
@@ -59,7 +60,7 @@ export default function InstructionsPage() {
         usn: "Candidate",
         examTitle: selectedTitle,
         duration: selectedDuration ? parseInt(selectedDuration) : 20,
-        totalQuestions: 30
+        totalQuestions: selectedQuestions ? parseInt(selectedQuestions) : 0
       });
     }
 

@@ -200,6 +200,7 @@ export default function DashboardPage() {
     localStorage.setItem("exam_selected_title", exam.exam_name);
     localStorage.setItem("exam_selected_duration", String(exam.duration_minutes));
     localStorage.setItem("exam_selected_start", exam.scheduled_start || "");
+    localStorage.setItem("exam_selected_total_questions", String(exam.question_count || 0));
     router.push("/instructions");
   };
 
