@@ -286,8 +286,12 @@ export default function LoginPage() {
           >
             {isRegistering ? "Back to Login" : "Forgot Password?"}
           </div>
-          <div className={styles.link} onClick={() => setIsRegistering(!isRegistering)}>
-            {isRegistering ? "" : "New student? Create account"}
+          <div className={styles.link} style={{ textAlign: "right", lineHeight: 1.4 }} onClick={() => setIsRegistering(!isRegistering)}>
+            {isRegistering ? "" : (
+              <>
+                New student?<br />Create account
+              </>
+            )}
           </div>
         </div>
       </m.div>
