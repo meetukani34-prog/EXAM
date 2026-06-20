@@ -240,12 +240,15 @@ def _check_exam_active(title: str):
         pass  # If table doesn't exist yet, default to active
 
 
-def update_last_active(student_id: str):
+def update_last_active(student_id: str, exam_name: str = None):
     """Background task to update student's last active timestamp."""
     db = get_supabase()
-    db.table("exam_status").update(
+    query = db.table("exam_status").update(
         {"last_active": datetime.now(timezone.utc).isoformat()}
-    ).eq("student_id", student_id).execute()
+    ).eq("student_id", student_id)
+    if exam_name:
+        query = query.eq("exam_name", exam_name)
+    query.execute()
 
 
 
@@ -263,7 +266,7 @@ def get_questions(
     db = get_supabase()
 
     # Update last_active in background
-    background_tasks.add_task(update_last_active, current["student_id"])
+    background_tasks.add_task(update_last_active, current["student_id"], title)
 
     try:
         branch = current.get("branch", "CS")
@@ -423,7 +426,7 @@ def save_answer(
         ).execute()
 
     # Update last_active in background
-    background_tasks.add_task(update_last_active, student_id)
+    background_tasks.add_task(update_last_active, student_id, exam_name)
 
     return SaveAnswerResponse(saved=True, question_id=request.question_id)
 
