@@ -73,11 +73,17 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(secs / 3600)}h ago`;
 }
 
-function getElapsedTime(started: string | null, ended: string | null): string {
+function getElapsedTime(started: string | null, ended: string | null, maxDurationMinutes?: number): string {
   if (!started) return "—";
   const t0 = new Date(started).getTime();
   const t1 = ended ? new Date(ended).getTime() : Date.now();
-  const secs = Math.floor(Math.max(0, t1 - t0) / 1000);
+  let secs = Math.floor(Math.max(0, t1 - t0) / 1000);
+  
+  if (maxDurationMinutes) {
+    const maxSecs = maxDurationMinutes * 60;
+    if (secs > maxSecs) secs = maxSecs;
+  }
+
   const m = Math.floor(secs / 60);
   const s = secs % 60;
   return `${m}m ${s}s`;
@@ -1367,7 +1373,8 @@ export default function AdminPage() {
               branch: q.branch,
               exam_name: q.exam_name,
               question_count: qs.filter(x => x.branch === q.branch && x.exam_name === q.exam_name).length,
-              is_active: config ? config.is_active : true
+              is_active: config ? config.is_active : true,
+              duration_minutes: config ? config.duration_minutes : 60
             } as any);
             seen.add(key);
           }
@@ -1380,7 +1387,8 @@ export default function AdminPage() {
               branch: "CS",
               exam_name: c.exam_title || c.exam_name,
               question_count: 0,
-              is_active: c.is_active
+              is_active: c.is_active,
+              duration_minutes: c.duration_minutes || 60
             } as any);
           }
         });
@@ -1875,7 +1883,13 @@ export default function AdminPage() {
                       <td><WarningBadge count={s.warnings} /></td>
                       <td><StatusBadge status={s.status} lastActive={s.last_active} isBlocked={s.is_blocked} examName={s.exam_name} round={s.current_round} /></td>
                       <td style={{ fontSize: 12 }}>{s.started_at ? new Date(s.started_at).toLocaleTimeString() : "—"}</td>
-                      <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{getElapsedTime(s.started_at, s.submitted_at)}</td>
+                      <td style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                        {(() => {
+                          const quizInfo = quizzes.find((q: any) => q.exam_name === s.exam_name);
+                          const maxDuration = quizInfo ? (quizInfo as any).duration_minutes : undefined;
+                          return getElapsedTime(s.started_at, s.submitted_at, maxDuration);
+                        })()}
+                      </td>
                       <td style={{ fontSize: 12, color: "var(--text-muted)" }}>
                         {s.submitted_at ? new Date(s.submitted_at).toLocaleTimeString() : "—"}
                       </td>
