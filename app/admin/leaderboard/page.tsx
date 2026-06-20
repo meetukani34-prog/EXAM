@@ -155,7 +155,7 @@ export default function LeaderboardPage() {
             <div className={styles.podium}>
               {top3.map((entry, i) => (
                 <div
-                  key={entry.student_id}
+                  key={`${entry.student_id}-${entry.exam_name}`}
                   className={`${styles.podiumCard} ${styles[`rank${i + 1}` as "rank1" | "rank2" | "rank3"]}`}
                   style={{ animationDelay: `${i * 100}ms` }}
                 >
@@ -181,7 +181,7 @@ export default function LeaderboardPage() {
             <div className={styles.rankList}>
               {rest.map((entry, i) => (
                 <div
-                  key={entry.student_id}
+                  key={`${entry.student_id}-${entry.exam_name}`}
                   className={styles.rankCard}
                   style={{ animationDelay: `${Math.min(i * 40, 400)}ms` }}
                 >
