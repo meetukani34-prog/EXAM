@@ -147,14 +147,14 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                minLength={4}
+                minLength={6}
                 maxLength={16}
                 spellCheck="false"
                 required
               />
             </div>
             <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '4px', textAlign: 'left' }}>
-              Password must be 4-16 characters
+              Password must be 6-16 characters
             </span>
           </div>
 
