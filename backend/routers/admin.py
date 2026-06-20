@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Header, Depends, File, UploadFile, Query, Request
+from fastapi import APIRouter, HTTPException, status, Header, Depends, File, UploadFile, Query, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse, JSONResponse
 from typing import Optional, List
 from core.config import get_settings
@@ -174,10 +174,102 @@ async def upload_question_image(
 
 # ── Students Management ───────────────────────────────────────
 
+async def auto_submit_expired_exams(db, exam_filter: Optional[str] = None):
+    try:
+        res = db.table("exam_config").select("*").execute()
+        configs = res.data or []
+        for dyn in DYNAMIC_CONFIGS:
+            if not any(row.get("exam_title") == dyn["exam_title"] for row in configs):
+                configs.append(dyn)
+                
+        config_map = {c.get("exam_title", "ExamGuard Assessment"): c.get("duration_minutes", 60) for c in configs}
+        
+        query = db.table("exam_status").select("id, student_id, exam_name, started_at").eq("status", "active")
+        if exam_filter:
+            query = query.eq("exam_name", exam_filter)
+            
+        status_res = query.execute()
+        if not status_res.data: return
+        
+        now = datetime.now(timezone.utc)
+        for session in status_res.data:
+            started_at = session.get("started_at")
+            exam_name = session.get("exam_name", "General Assessment")
+            if not started_at: continue
+            
+            duration_minutes = config_map.get(exam_name, 60)
+            
+            try:
+                start_dt = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+                elapsed_seconds = (now - start_dt).total_seconds()
+                
+                # Check if time is up (add a 10-second grace period)
+                if elapsed_seconds > (duration_minutes * 60) + 10:
+                    student_id = session.get("student_id")
+                    
+                    results_res = db.table("exam_results").select("answers").eq("student_id", student_id).eq("exam_name", exam_name).execute()
+                    answers = results_res.data[0].get("answers") or {} if results_res.data else {}
+                    
+                    student_res = db.table("students").select("branch").eq("id", student_id).execute()
+                    branch = student_res.data[0]["branch"] if student_res.data else "CS"
+                    
+                    qs_res = db.table("questions").select("id, correct_answer, marks").eq("branch", branch).eq("exam_name", exam_name).execute()
+                    correct_map = {q["id"]: (q["correct_answer"], q["marks"]) for q in (qs_res.data or [])}
+                    
+                    score = 0
+                    total_marks = sum(m for _, m in correct_map.values())
+                    correct_count = 0
+                    wrong_count = 0
+                    for q_id, selected in answers.items():
+                        if q_id in correct_map:
+                            correct_ans, marks = correct_map[q_id]
+                            if selected == correct_ans:
+                                score += marks
+                                correct_count += 1
+                            elif selected:
+                                wrong_count += 1
+                                
+                    submitted_at = now.isoformat()
+                    
+                    if results_res.data:
+                        db.table("exam_results").update({
+                            "score": score,
+                            "total_marks": total_marks,
+                            "correct_count": correct_count,
+                            "wrong_count": wrong_count,
+                            "submitted_at": submitted_at
+                        }).eq("student_id", student_id).eq("exam_name", exam_name).execute()
+                    else:
+                        db.table("exam_results").insert({
+                            "student_id": student_id,
+                            "exam_name": exam_name,
+                            "answers": answers,
+                            "score": score,
+                            "total_marks": total_marks,
+                            "correct_count": correct_count,
+                            "wrong_count": wrong_count,
+                            "submitted_at": submitted_at
+                        }).execute()
+                        
+                    db.table("exam_status").update({
+                        "status": "submitted",
+                        "submitted_at": submitted_at
+                    }).eq("student_id", student_id).eq("exam_name", exam_name).execute()
+                    
+                    print(f"[AUTO-SUBMIT] Time expired for {student_id} on {exam_name}")
+            except Exception as inner_e:
+                print(f"[AUTO-SUBMIT ERROR] {session.get('student_id')}: {inner_e}")
+                
+    except Exception as e:
+        print(f"[AUTO-SUBMIT GLOBAL ERROR] {e}")
+
 @router.get("/students", response_model=list[StudentStatus])
-async def get_all_students(exam: Optional[str] = Query(None), _: bool = Depends(verify_admin)):
+async def get_all_students(background_tasks: BackgroundTasks, exam: Optional[str] = Query(None), _: bool = Depends(verify_admin)):
     try:
         db = get_supabase()
+        
+        # Spawn background task to auto submit expired exams
+        background_tasks.add_task(auto_submit_expired_exams, db, exam)
         # Query students joined with ALL their exam_status and exam_results records
         result = db.table("students").select("*, exam_status(id, student_id, exam_name, status, warnings, last_active, submitted_at, started_at), odyssey_progress(current_round, round_1_state), exam_results(score, total_marks, exam_name)").execute()
 
