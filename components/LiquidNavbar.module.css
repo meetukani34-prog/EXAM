@@ -9,35 +9,42 @@
 .navbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  padding: 8px;
+  padding: 6px;
   border-radius: 9999px; /* Pill shape */
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   position: relative;
-  overflow: hidden;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  max-width: 100%;
+}
+
+.navbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Edge */
 }
 
 .tabBtn {
   position: relative;
   background: transparent;
   border: none;
-  padding: 10px 20px;
+  padding: 8px 16px;
   border-radius: 9999px;
   cursor: pointer;
   outline: none;
   -webkit-tap-highlight-color: transparent;
   color: rgba(255, 255, 255, 0.6);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   transition: color 0.3s ease;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .tabBtn:hover {
