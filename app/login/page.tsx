@@ -287,7 +287,7 @@ export default function LoginPage() {
             {isRegistering ? "Back to Login" : "Forgot Password?"}
           </div>
           <div className={styles.link} onClick={() => setIsRegistering(!isRegistering)}>
-            {isRegistering ? "" : "Request Access"}
+            {isRegistering ? "" : "New student? Create account"}
           </div>
         </div>
       </m.div>
