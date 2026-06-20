@@ -253,11 +253,22 @@ export default function ExamPage() {
 
   // ── Heartbeat (Block Lockdown) ────────────────────────────
   useEffect(() => {
-    const pulse = () => heartbeat().catch(() => {});
+    const pulse = async () => {
+      try {
+        const res = await heartbeat(examTitle || undefined);
+        if (res.status === "submitted") {
+          setError("ALREADY_SUBMITTED");
+          clearExamStorage();
+          setIsSubmitted(true);
+        }
+      } catch (e) {
+        // Ignore network errors
+      }
+    };
     pulse(); // Immediate check
     const id = setInterval(pulse, 30_000); // Check every 30s
     return () => clearInterval(id);
-  }, []);
+  }, [examTitle]);
 
   // ── Handle answer select (with save indicator) ────────────
   const handleSelect = useCallback(

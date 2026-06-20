@@ -205,8 +205,11 @@ export async function startExam(title: string): Promise<{ started_at: string }> 
   });
 }
 
-export async function heartbeat(): Promise<void> {
-  await apiFetch("/exam/heartbeat", { method: "POST" });
+export async function heartbeat(examName?: string): Promise<{status: string}> {
+  return await apiFetch<{status: string}>("/exam/heartbeat", { 
+    method: "POST",
+    body: examName ? JSON.stringify({ exam_name: examName }) : undefined
+  });
 }
 
 

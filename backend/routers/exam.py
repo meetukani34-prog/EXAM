@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks, Query
+from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks, Query, Request
 from typing import Optional, List
 from datetime import datetime, timezone
 import time
@@ -58,8 +58,19 @@ async def get_exam_status(current: dict = Depends(get_current_student)):
         return []
 
 @router.post("/heartbeat")
-async def heartbeat(current: dict = Depends(get_current_student)):
-    """Simple authenticated ping to check if student is blocked/authorized."""
+async def heartbeat(request: Request, current: dict = Depends(get_current_student)):
+    """Simple authenticated ping to check if student is blocked/authorized. Also kicks out if exam is force-submitted."""
+    db = get_supabase()
+    student_id = current["student_id"]
+    try:
+        body = await request.json()
+        exam_name = body.get("exam_name")
+        if exam_name:
+            status_row = db.table("exam_status").select("status").eq("student_id", student_id).eq("exam_name", exam_name).limit(1).execute()
+            if status_row.data and status_row.data[0].get("status") == "submitted":
+                return {"status": "submitted"}
+    except Exception:
+        pass
     return {"status": "ok"}
 
 DYNAMIC_CONFIGS = [
