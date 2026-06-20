@@ -249,6 +249,7 @@ class LeaderboardEntry(BaseModel):
     percentage: float
     time_taken_seconds: Optional[int]
     submitted_at: Optional[str]
+    exam_name: Optional[str] = None
 
 class LeaderboardResponse(BaseModel):
     entries: List[LeaderboardEntry]
