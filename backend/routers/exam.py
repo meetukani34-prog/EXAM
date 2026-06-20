@@ -394,10 +394,8 @@ def save_answer(
         .execute()
     )
     if status_row.data and status_row.data[0].get("status") == "submitted":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Exam '{exam_name}' already submitted. Cannot save answers.",
-        )
+        # Silently return success so frontend doesn't crash during auto-submit flush
+        return SaveAnswerResponse(saved=True, question_id=request.question_id)
 
     # Fetch existing answers for THIS specific exam
     existing = (
@@ -488,18 +486,21 @@ def submit_exam(
                 .limit(1)
                 .execute()
             )
-        r = result_row.data[0] if result_row.data else {}
-        total = r.get("total_marks", 0)
-        score = r.get("score", 0)
-        return SubmitExamResponse(
-            submitted=True,
-            score=score,
-            total_marks=total,
-            correct_count=r.get("correct_count", 0),
-            wrong_count=r.get("wrong_count", 0),
-            percentage=round(score / total * 100, 1) if total else 0,
-            submitted_at=r.get("submitted_at", datetime.now(timezone.utc).isoformat()),
-        )
+        if result_row.data:
+            r = result_row.data[0]
+            total = r.get("total_marks", 0)
+            score = r.get("score", 0)
+            return SubmitExamResponse(
+                submitted=True,
+                score=score,
+                total_marks=total,
+                correct_count=r.get("correct_count", 0),
+                wrong_count=r.get("wrong_count", 0),
+                percentage=round(score / total * 100, 1) if total else 0,
+                submitted_at=r.get("submitted_at", datetime.now(timezone.utc).isoformat()),
+            )
+        # If result_row.data is empty, it means auto-submit marked it submitted,
+        # but the score calculation never happened. Fall through to calculate score.
 
     branch = current.get("branch", "CS")
 

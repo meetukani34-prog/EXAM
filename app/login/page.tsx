@@ -39,6 +39,11 @@ export default function LoginPage() {
       return;
     }
 
+    if (password.length < 6 || password.length > 16) {
+      setError("Password must be between 6 and 16 characters.");
+      return;
+    }
+
     if (isRegistering && (!name.trim() || !email.trim())) {
       setError("Incomplete registration profile.");
       return;
