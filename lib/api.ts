@@ -187,15 +187,12 @@ export interface SubmitResponse {
   submitted_at: string;
 }
 
-export async function submitExam(
-  answers: Record<string, string>,
-  title: string
-): Promise<SubmitResponse> {
-  const payload = { ...answers, __exam_title: title };
-  return withRetry(() => apiFetch<SubmitResponse>("/exam/submit-exam", {
+export async function submitExam(answers: Record<string, string>, examTitle: string): Promise<any> {
+  const payload = { ...answers, __exam_title: examTitle };
+  return withRetry(() => apiFetch("/exam/submit-exam", {
     method: "POST",
     body: JSON.stringify({ answers: payload }),
-  }));
+  }), 3, 2000);
 }
 
 export async function getExamStatus(): Promise<any[]> {
