@@ -409,8 +409,11 @@ export async function resetAdminStudent(id: string, examName?: string): Promise<
   });
 }
 
-export async function forceSubmitAdminStudent(id: string): Promise<{ score: number }> {
-  return adminFetch<{ score: number }>(`/admin/students/${id}/force-submit`, { method: "POST" });
+export async function forceSubmitAdminStudent(id: string, examName?: string): Promise<{ score: number }> {
+  return adminFetch<{ score: number }>(`/admin/students/${id}/force-submit`, {
+    method: "POST",
+    body: examName ? JSON.stringify({ exam_name: examName }) : undefined,
+  });
 }
 
 export async function cleanupStaleSessions(): Promise<{ count: number }> {

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Header, Depends, File, UploadFile, Query
+from fastapi import APIRouter, HTTPException, status, Header, Depends, File, UploadFile, Query, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from typing import Optional, List
 from core.config import get_settings
@@ -523,32 +523,46 @@ async def cleanup_stale_sessions(_: bool = Depends(verify_admin)):
     return {"count": len(stale_ids)}
 
 @router.post("/students/{student_id}/force-submit")
-async def force_submit_student(student_id: str, _: bool = Depends(verify_admin)):
+async def force_submit_student(student_id: str, request: Request, _: bool = Depends(verify_admin)):
     """Admin tool to force submission of a student session using current saved answers."""
     db = get_supabase()
     
+    try:
+        body = await request.json()
+        exam_name = body.get("exam_name", "General Assessment")
+    except Exception:
+        exam_name = "General Assessment"
+
     # 1. Fetch student for context (branch)
     student_res = db.table("students").select("branch").eq("id", student_id).execute()
     if not student_res.data:
         raise HTTPException(status_code=404, detail="Student not found")
     branch = student_res.data[0]["branch"]
 
-    # 2. Get saved answers (Safe check - may not exist if 0 answers)
-    results_res = db.table("exam_results").select("answers").eq("student_id", student_id).execute()
+    # 2. Get saved answers for THIS specific exam
+    results_res = db.table("exam_results").select("answers").eq("student_id", student_id).eq("exam_name", exam_name).execute()
     answers = results_res.data[0].get("answers") or {} if results_res.data else {}
     
     # 3. Calculate Score
-    # Fetch questions for this branch
-    qs_res = db.table("questions").select("id, correct_answer, marks").eq("branch", branch).execute()
+    # Fetch questions for this branch and exam
+    qs_res = db.table("questions").select("id, correct_answer, marks").eq("branch", branch).eq("exam_name", exam_name).execute()
     correct_map = {q["id"]: (q["correct_answer"], q["marks"]) for q in (qs_res.data or [])}
 
     score = 0
     total_marks = sum(m for _, m in correct_map.values())
+    
+    # Initialize counts for migration schema compatibility
+    correct_count = 0
+    wrong_count = 0
+    
     for q_id, selected in answers.items():
         if q_id in correct_map:
             correct_ans, marks = correct_map[q_id]
             if selected == correct_ans:
                 score += marks
+                correct_count += 1
+            elif selected:
+                wrong_count += 1
 
     submitted_at = datetime.now(timezone.utc).isoformat()
     
@@ -557,25 +571,25 @@ async def force_submit_student(student_id: str, _: bool = Depends(verify_admin))
         db.table("exam_results").update({
             "score": score,
             "total_marks": total_marks,
+            "correct_count": correct_count,
+            "wrong_count": wrong_count,
             "submitted_at": submitted_at
-        }).eq("student_id", student_id).execute()
+        }).eq("student_id", student_id).eq("exam_name", exam_name).execute()
     else:
         db.table("exam_results").insert({
             "student_id": student_id,
+            "exam_name": exam_name,
             "answers": answers,
             "score": score,
             "total_marks": total_marks,
+            "correct_count": correct_count,
+            "wrong_count": wrong_count,
             "submitted_at": submitted_at
         }).execute()
 
     db.table("exam_status").update({
         "status": "submitted",
         "submitted_at": submitted_at
-    }).eq("student_id", student_id).execute()
-
-    db.table("students").update({
-        "is_active_session": False,
-        "current_token": None
     }).eq("id", student_id).execute()
 
     return {"status": "success", "score": score}

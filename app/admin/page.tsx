@@ -1426,7 +1426,7 @@ export default function AdminPage() {
   const handleForceSubmit = async (s: AdminStudent) => {
     if (!confirm(`Force submit exam for ${s.name}? This will calculate score based on currently saved answers.`)) return;
     try {
-      await forceSubmitAdminStudent(s.student_id);
+      await forceSubmitAdminStudent(s.student_id, s.exam_name || undefined);
       fetchStudents(quizFilter === "all" ? undefined : quizFilter);
     } catch (err: any) {
       alert("Force submit failed: " + err.message);
