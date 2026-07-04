@@ -44,3 +44,4 @@ api/venv/
 scratch/
 __pycache__/
 *.py[cod]
+tests/k6/k6-v0.54.0-windows-amd64/
