@@ -1,0 +1,273 @@
+/* ── Quantum Leaderboard Styles ─────────────────────────────── */
+
+.page {
+  padding: 32px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.liveIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--success-bg);
+  border: 1px solid var(--success);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: livePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.3); }
+}
+
+.filterSelect {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.filterSelect:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-focus);
+}
+
+.filterSelect:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.filterSelect option {
+  background: #0f172a;
+  color: var(--text-primary);
+}
+
+/* ── Podium (Top 3) ──────────────────────────────────────────── */
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.podiumCard {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: 20px;
+  padding: 24px 20px;
+  text-align: center;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+  box-shadow: var(--shadow-card);
+}
+
+.podiumCard:hover { 
+  transform: translateY(-4px); 
+  box-shadow: var(--shadow-elevated);
+}
+
+.podiumCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% -20%, var(--glow-color) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.rank1 {
+  --glow-color: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.35);
+  animation: victoryGlow 3s ease-in-out infinite;
+}
+
+.rank2 {
+  --glow-color: rgba(148, 163, 184, 0.15);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.rank3 {
+  --glow-color: rgba(180, 83, 9, 0.12);
+  border-color: rgba(180, 83, 9, 0.25);
+}
+
+@keyframes victoryGlow {
+  0%, 100% { box-shadow: 0 0 40px rgba(251, 191, 36, 0.15), var(--shadow-card); }
+  50%       { box-shadow: 0 0 60px rgba(251, 191, 36, 0.30), var(--shadow-elevated); }
+}
+
+.podiumCrown { font-size: 28px; margin-bottom: 8px; }
+.podiumRank {
+  font-size: 48px;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 10px;
+  opacity: 0.12;
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.rank1 .podiumRank { color: #fbbf24; opacity: 0.18; }
+.rank2 .podiumRank { color: #94a3b8; }
+.rank3 .podiumRank { color: #b45309; }
+
+.podiumName {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+.podiumUsn  { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-bottom: 12px; }
+.podiumScore {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+.rank1 .podiumScore { color: #fbbf24; }
+.rank2 .podiumScore { color: #94a3b8; }
+.rank3 .podiumScore { color: #cd7c3a; }
+
+.podiumMeta { font-size: 12px; color: var(--text-muted); }
+.podiumBranch {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+
+/* ── Full Rankings List ───────────────────────────────────────── */
+.rankList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rankCard {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 0;
+  animation: rankSlide 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  box-shadow: var(--shadow-card);
+}
+
+.rankCard:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  transform: translateX(4px);
+  box-shadow: var(--shadow-elevated);
+}
+
+@keyframes rankSlide {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.rankNum {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rankInfo { display: flex; flex-direction: column; gap: 2px; }
+.rankName { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.rankMeta { font-size: 12px; color: var(--text-muted); display: flex; gap: 10px; align-items: center; }
+
+.rankScore {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.rankPct {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rankTime {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ── Delta badges ────────────────────────────────────────────── */
+.deltaUp   { color: var(--success); font-size: 11px; font-weight: 700; }
+.deltaDown { color: var(--danger); font-size: 11px; font-weight: 700; }
+
+/* ── Empty / Loading ─────────────────────────────────────────── */
+.empty {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text-muted);
+  font-size: 15px;
+}

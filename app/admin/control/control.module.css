@@ -1,0 +1,872 @@
+/* ── Control Dashboard CSS — T&D Quiz Style ───────────────────── */
+
+.page {
+  padding: 28px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  background: var(--bg-secondary);
+  min-height: calc(100vh - 100px);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Page Header ────────────────────────────────────────────── */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  margin: 0 0 4px 0;
+}
+
+.pageSubtitle {
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.7);
+  margin: 0;
+}
+
+.viewToggle {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.viewTab {
+  padding: 8px 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: rgba(148, 163, 184, 0.8);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.viewTab:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.viewTabActive {
+  background: var(--accent-bg) !important;
+  color: var(--accent) !important;
+  border: 1px solid var(--accent);
+}
+
+/* ── Stats Grid ─────────────────────────────────────────────── */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 540px) {
+  .statsGrid { grid-template-columns: 1fr; }
+}
+
+.statCard {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.statCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.statCard:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+}
+
+.statCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.statCardLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.statCardIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.statCardValue {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.statCardSublabel {
+  font-size: 12px;
+  color: var(--info);
+  margin-top: 4px;
+}
+
+/* ── Main Grid ──────────────────────────────────────────────── */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  gap: 20px;
+}
+
+@media (max-width: 860px) {
+  .mainGrid { grid-template-columns: 1fr; }
+}
+
+/* ── Panels ─────────────────────────────────────────────────── */
+.panel {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+.panelIcon {
+  font-size: 18px;
+}
+
+.panelTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ── Quiz Context Bar ───────────────────────────────────────── */
+.quizContextBar {
+  display: flex;
+  gap: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: -4px;
+  margin-bottom: 4px;
+}
+
+.quizDropdownGroup, .quizLinkGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quizDropdownGroup {
+  flex: 1;
+  max-width: 40%;
+}
+
+.quizLinkGroup {
+  flex: 2;
+}
+
+.quizContextLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.quizContextSelect {
+  width: 100%;
+  padding: 10px 30px 10px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary) !important;
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 12px) center;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.quizContextSelect option {
+  background: #0f172a;
+  color: var(--text-primary);
+}
+
+.quizContextSelect:focus {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.quizLinkInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quizLinkInput {
+  flex: 1;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--accent) !important;
+  font-size: 13px;
+  font-family: var(--font-mono, 'Courier New', monospace);
+  outline: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.quizCopyBtn {
+  background: var(--info-bg);
+  border: 1px solid var(--info);
+  color: var(--info);
+  border-radius: 10px;
+  width: 40px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.quizCopyBtn:hover {
+  background: var(--info-bg);
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+/* ── Action Cards Grid ──────────────────────────────────────── */
+.actionGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.actionCard {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.actionCard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.actionCard:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  background: var(--bg-secondary);
+}
+
+.actionCard:hover::after {
+  opacity: 1;
+}
+
+.actionIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.actionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.actionDesc {
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.6);
+}
+
+/* ── Media Types ────────────────────────────────────────────── */
+.mediaTypes {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mediaLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(148, 163, 184, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.mediaIcons {
+  display: flex;
+  gap: 14px;
+}
+
+.mediaIcons span {
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Status Toggle ──────────────────────────────────────────── */
+.statusToggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 5px;
+}
+
+.statusBtn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: rgba(148, 163, 184, 0.7);
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.statusBtnActive {
+  background: var(--success-bg) !important;
+  color: var(--success) !important;
+  border: 1px solid var(--success) !important;
+  box-shadow: 0 0 16px var(--success-bg);
+}
+
+.statusBtnInactive {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(148, 163, 184, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ── Preview Button ─────────────────────────────────────────── */
+.previewBtn {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--info);
+  background: var(--info-bg);
+  color: var(--info);
+  transition: all 0.2s ease;
+}
+
+.previewBtn:hover {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+/* ── Shuffle Row ────────────────────────────────────────────── */
+.shuffleRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.shuffleBtn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(148, 163, 184, 0.8);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.shuffleBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.shuffleBtnActive {
+  background: var(--accent-bg) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  box-shadow: 0 0 10px var(--accent-bg);
+}
+
+/* ── Marks Row ──────────────────────────────────────────────── */
+.marksRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.markField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.markLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.markSelect {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary) !important;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 10px) center;
+  padding-right: 30px;
+}
+
+.markSelect:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* ── Quiz Status ────────────────────────────────────────────── */
+.quizStatusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.quizStatusLabel {
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.7);
+  font-weight: 500;
+}
+
+.quizStatusBadge {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.quizStatusActive {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.quizStatusInactive {
+  background: rgba(148, 163, 184, 0.08);
+  color: rgba(148, 163, 184, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+/* ── Save Button ────────────────────────────────────────────── */
+.saveBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  letter-spacing: 0.01em;
+}
+
+.saveBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(139, 92, 246, 0.5);
+}
+
+.saveBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.saveBtnSuccess {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SETTINGS VIEW
+   ───────────────────────────────────────────────────────────── */
+
+.settingsLayout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .settingsLayout { grid-template-columns: 1fr; }
+}
+
+.settingsMain {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settingsSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 16px;
+}
+
+/* Minimal card for inputs */
+.settingsCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settingsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .settingsRow { grid-template-columns: 1fr; }
+}
+
+.settingsSectionCard {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sectionCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.sectionCardTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.settingsLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.settingsInput {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-primary) !important;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.25s ease;
+  resize: vertical;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.settingsInput:focus {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.settingsInput::placeholder {
+  color: rgba(148, 163, 184, 0.35);
+}
+
+.settingsSelect {
+  width: 100%;
+  padding: 12px 36px 12px 14px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-primary) !important;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 12px) center;
+  font-family: inherit;
+}
+
+.settingsSelect:focus {
+  border-color: var(--accent);
+  background-color: var(--bg-secondary);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.settingsSelect option, .markSelect option {
+  background: #0f172a;
+  color: var(--text-primary);
+}
+
+/* ── Formula Box ────────────────────────────────────────────── */
+.formulaBox {
+  background: var(--success-bg);
+  border: 1px solid var(--success);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formulaLabel {
+  font-size: 11px;
+  color: var(--success);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.formulaCode {
+  font-size: 14px;
+  color: var(--success);
+  font-family: var(--font-mono, 'Courier New', monospace);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ── Timer Settings ─────────────────────────────────────────── */
+.timerRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.timerField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.durationDisplay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--info-bg);
+  border: 1px solid var(--info);
+  border-radius: 12px;
+}
+
+.durationLabel {
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.7);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.durationTime {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--info);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono, 'Courier New', monospace);
+  letter-spacing: 0.02em;
+}
+
+/* ── Schedule & Checkbox ────────────────────────────────────── */
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #8b5cf6;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checkboxLabel {
+  font-size: 13px;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.scheduleRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.scheduleField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.confirmScheduleBtn {
+  width: 100%;
+  padding: 11px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: linear-gradient(135deg, rgba(59,130,246,0.3), rgba(139,92,246,0.3));
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.confirmScheduleBtn:hover {
+  background: linear-gradient(135deg, rgba(59,130,246,0.4), rgba(139,92,246,0.4));
+  transform: translateY(-1px);
+}
+
+.scheduleDisabledNote {
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.45);
+  font-style: italic;
+  margin: 0;
+  text-align: center;
+}
+
+/* ── Current Status Row ─────────────────────────────────────── */
+.currentStatusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.currentStatusLabel {
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.55);
+  font-weight: 500;
+}

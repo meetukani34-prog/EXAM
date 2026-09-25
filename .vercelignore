@@ -1,0 +1,7 @@
+Dockerfile
+railway.json
+render.yaml
+.env
+.env.local
+node_modules
+.next

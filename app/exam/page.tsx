@@ -1,0 +1,1098 @@
+/* react-doctor-disable label-has-associated-control, no-inline-exhaustive-style, rendering-hydration-mismatch-time, no-tiny-text, design-no-bold-heading, rerender-state-only-in-handlers, no-array-index-as-key, react-compiler-destructure-method, click-events-have-key-events, no-static-element-interactions, prefer-useReducer, no-large-animated-blur, no-giant-component, nextjs-no-img-element, no-transition-all, use-lazy-motion, rerender-functional-setstate, no-cascading-set-state, design-no-three-period-ellipsis, js-combine-iterations, client-localstorage-no-version, no-z-index-9999, js-cache-storage, nextjs-no-client-side-redirect, no-wide-letter-spacing, react-doctor/label-has-associated-control, react-doctor/no-inline-exhaustive-style, react-doctor/rendering-hydration-mismatch-time, react-doctor/no-tiny-text, react-doctor/design-no-bold-heading, react-doctor/rerender-state-only-in-handlers, react-doctor/no-array-index-as-key, react-doctor/react-compiler-destructure-method, react-doctor/click-events-have-key-events, react-doctor/no-static-element-interactions, react-doctor/prefer-useReducer, react-doctor/no-large-animated-blur, react-doctor/no-giant-component, react-doctor/nextjs-no-img-element, react-doctor/no-transition-all, react-doctor/use-lazy-motion, react-doctor/rerender-functional-setstate, react-doctor/no-cascading-set-state, react-doctor/design-no-three-period-ellipsis, react-doctor/js-combine-iterations, react-doctor/client-localstorage-no-version, react-doctor/no-z-index-9999, react-doctor/js-cache-storage, react-doctor/nextjs-no-client-side-redirect, react-doctor/no-wide-letter-spacing */
+"use client";
+
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { fetchQuestions, submitExam, fetchPublicExamConfig, heartbeat, saveAnswer, startExam, type Question, type SubmitResponse } from "@/lib/api";
+import { useExamState, clearExamStorage } from "@/hooks/useExamState";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useFullscreen } from "@/hooks/useFullscreen";
+import ExamTimer from "@/components/ExamTimer";
+import { getSyncTime, syncClock } from "@/lib/clock";
+import QuestionCard from "@/components/QuestionCard";
+import CodingInterface from "@/components/CodingInterface";
+import AntiCheat from "@/components/AntiCheat";
+import Skeleton from "@/components/Skeleton";
+import { usePyodide } from "@/hooks/usePyodide";
+import { useWasmCompiler } from "@/hooks/useWasmCompiler";
+import styles from "./exam.module.css";
+
+interface StudentInfo {
+  id: string;
+  name: string;
+  usn: string;
+  examStartTime: string | null;
+  examDurationMinutes: number;
+}
+
+const FINAL_THEMES = ["glass-aura", "glass-galaxy", "glass-ocean"];
+
+export default function ExamPage() {
+  const router = useRouter();
+  const { enter: enterFullscreen } = useFullscreen();
+
+  const [student, setStudent] = useState<StudentInfo | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitResult, setSubmitResult] = useState<SubmitResponse | null>(null);
+  const [showResultDetails, setShowResultDetails] = useState(true);
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [examInactive, setExamInactive] = useState(false);
+  const [examScheduled, setExamScheduled] = useState<string | null>(null);
+  const [examTitle, setExamTitle] = useState("");
+  const [saveIndicator, setSaveIndicator] = useState<"idle" | "saving" | "saved">("idle");
+
+  // Pagination state
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
+  const [flagged, setFlagged] = useState<Set<number>>(new Set());
+  const [preStart, setPreStart] = useState(true);
+
+  // Result Timer (3:00 minutes)
+  const [resultTimerSeconds, setResultTimerSeconds] = useState(180);
+
+  // Compiler state & hooks
+  const { runTestSuite: runPythonTestSuite, loading: pyLoading } = usePyodide();
+  const { runTestSuite: runWasmTestSuite, isCompiling } = useWasmCompiler();
+  const [selectedLanguage, setSelectedLanguage] = useState<"python" | "c" | "cpp">("python");
+  const [compilerOutputs, setCompilerOutputs] = useState<Record<string, string>>({});
+  const [compilerTestResults, setCompilerTestResults] = useState<Record<string, any>>({});
+
+  const handleRunCode = async (q: Question) => {
+    const codeToRun = answers[q.id] || (selectedLanguage === "python" ? q.starter_code : selectedLanguage === "c" ? q.starter_code_c : q.starter_code_cpp) || "";
+    if (!codeToRun) return;
+
+    let testCases = [];
+    try {
+      if (q.test_cases) testCases = JSON.parse(q.test_cases);
+    } catch (e) {
+      console.warn("Failed to parse test cases", e);
+    }
+
+    // Default validation: exact match on trimmed output
+    const validateFn = (stdout: string, expected: string) => stdout.trim() === expected.trim();
+
+    if (selectedLanguage === "python") {
+      const results = await runPythonTestSuite(codeToRun, testCases, validateFn);
+      setCompilerTestResults(prev => ({ ...prev, [q.id]: results }));
+
+      let outputText = "";
+      if (results?.results && results.results.length > 0) {
+        const failedCase = results.results.find((r: any) => !r.passed);
+        if (failedCase) {
+          if (failedCase.error) {
+            outputText = `❌ Execution Error on Test Case:\n${failedCase.error}`;
+          } else {
+            outputText = `❌ Mismatch on Test Case:\nExpected:\n${failedCase.expected}\n\nActual:\n${failedCase.actual}`;
+          }
+        } else {
+          const firstResult = results.results[0];
+          outputText = `✓ All Test Cases Passed!\n\nOutput of Test Case 1:\n${firstResult.actual || "(No output)"}`;
+        }
+      } else {
+        outputText = "No test cases configured.";
+      }
+      setCompilerOutputs(prev => ({ ...prev, [q.id]: outputText }));
+    } else {
+      const results = await runWasmTestSuite(codeToRun, testCases, validateFn);
+      setCompilerTestResults(prev => ({ ...prev, [q.id]: results }));
+
+      let outputText = "";
+      if (results?.results && results.results.length > 0) {
+        const failedCase = results.results.find((r: any) => !r.passed);
+        if (failedCase) {
+          if (failedCase.error) {
+            outputText = `❌ Execution Error on Test Case:\n${failedCase.error}`;
+          } else {
+            outputText = `❌ Mismatch on Test Case:\nExpected:\n${failedCase.expected}\n\nActual:\n${failedCase.actual}`;
+          }
+        } else {
+          const firstResult = results.results[0];
+          outputText = `✓ All Test Cases Passed!\n\nOutput of Test Case 1:\n${firstResult.actual || "(No output)"}`;
+        }
+      } else {
+        outputText = "No test cases configured.";
+      }
+      setCompilerOutputs(prev => ({ ...prev, [q.id]: outputText }));
+    }
+  };
+
+  // Randomized final theme for this student's session
+  const [finalTheme, setFinalTheme] = useState("glass-aura");
+
+  const { answers, dirtyIds, selectAnswer, clearDirty, getAnsweredCount } = useExamState();
+  const saveIndicatorTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Stable start time ref — prevents timer from resetting on re-render
+  const stableStartTime = useRef<string | null>(null);
+
+  const { flush } = useAutoSave({
+    answers,
+    dirtyIds,
+    clearDirty,
+    isSubmitted,
+    examName: examTitle,
+  });
+
+  // ── Load student + questions ──────────────────────────────
+  useEffect(() => {
+    syncClock();
+    const isPreview = localStorage.getItem("exam_preview") === "true";
+    const raw = localStorage.getItem("exam_student");
+    const token = localStorage.getItem("exam_token");
+
+    if (!isPreview && (!raw || !token)) {
+      router.replace("/login");
+      return;
+    }
+
+    const selectedDuration = localStorage.getItem("exam_selected_duration");
+    const info = raw ? JSON.parse(raw) : { 
+      id: "PREVIEW", 
+      name: "Admin Preview", 
+      usn: "PREVIEW_USN",
+      examStartTime: null, 
+      examDurationMinutes: selectedDuration ? parseInt(selectedDuration) : 20,
+      examTitle: "Online Assessment"
+    };
+    
+    // Use selected duration if available
+    if (selectedDuration) {
+      info.examDurationMinutes = parseInt(selectedDuration);
+    }
+    
+    setStudent(info);
+
+    const quizTitle = localStorage.getItem("exam_selected_title") || info.examTitle || "Online Assessment";
+    setExamTitle(quizTitle);
+    
+    // Pick random final theme on mount
+    setFinalTheme(FINAL_THEMES[Math.floor(Math.random() * FINAL_THEMES.length)]);
+
+    // ── Lock stableStartTime ──
+    if (!stableStartTime.current) {
+      stableStartTime.current = info.examStartTime || new Date(getSyncTime()).toISOString();
+    }
+
+    const ensureStarted = async () => {
+      // If we don't have a start time in localStorage, we must sync with backend
+      if (!info.examStartTime && info.id !== "PREVIEW") {
+        try {
+          const res = await startExam(quizTitle);
+          stableStartTime.current = res.started_at;
+          info.examStartTime = res.started_at;
+          localStorage.setItem("exam_student", JSON.stringify({
+            ...info,
+            examStartTime: res.started_at
+          }));
+        } catch (err: any) {
+          console.error("Start exam error:", err);
+          if (err.status === 403 || (err.message && err.message.includes("submitted"))) {
+             setError("ALREADY_SUBMITTED");
+             setLoading(false);
+             return;
+          }
+          setError("Failed to sync exam session. Please refresh.");
+        }
+      }
+      
+      // Load questions
+      try {
+        const res = await fetchQuestions(quizTitle);
+        if (res.questions && res.questions.length > 0) {
+          setQuestions(res.questions);
+        } else {
+          setError("No questions available for this exam.");
+        }
+      } catch (err) {
+        setError("Failed to load exam data. Please check your connection.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    ensureStarted();
+  }, [router]);
+
+  // ── Exam config polling (inactive guard) ──────────────────
+  useEffect(() => {
+    const checkConfig = async () => {
+      if (!examTitle) return;
+      try {
+        const configs = await fetchPublicExamConfig();
+        // Fallback to find by case-insensitive name if needed
+        const cfg = configs.find(c => c.exam_title === examTitle) || 
+                    configs.find(c => c.exam_title?.toLowerCase() === examTitle.toLowerCase());
+        
+        if (cfg && cfg.is_active === false) {
+          setExamInactive(true);
+          setExamScheduled(null);
+        } else if (cfg && cfg.scheduled_start) {
+          const start = new Date(cfg.scheduled_start);
+          if (start > new Date(getSyncTime())) {
+            setExamScheduled(cfg.scheduled_start);
+            setExamInactive(false);
+          } else {
+            setExamInactive(false);
+            setExamScheduled(null);
+          }
+        } else {
+          // No config found or active, allow entry
+          setExamInactive(false);
+          setExamScheduled(null);
+        }
+      } catch {
+        // Silently ignore — default to last known state
+      }
+    };
+    checkConfig();
+    const id = setInterval(checkConfig, 15_000);
+    return () => clearInterval(id);
+  }, [examTitle]);
+
+  // ── Heartbeat (Block Lockdown) ────────────────────────────
+  useEffect(() => {
+    const pulse = async () => {
+      try {
+        const res = await heartbeat(examTitle || undefined);
+        if (res.status === "submitted") {
+          setError("ALREADY_SUBMITTED");
+          clearExamStorage();
+          setIsSubmitted(true);
+        }
+      } catch (e) {
+        // Ignore network errors
+      }
+    };
+    pulse(); // Immediate check
+    const id = setInterval(pulse, 30_000); // Check every 30s
+    return () => clearInterval(id);
+  }, [examTitle]);
+
+  // ── Handle answer select (with save indicator) ────────────
+  const handleSelect = useCallback(
+    (qId: string, option: string) => {
+      selectAnswer(qId, option);
+      setSaveIndicator("saving");
+      clearTimeout(saveIndicatorTimer.current);
+      saveIndicatorTimer.current = setTimeout(() => {
+        setSaveIndicator("saved");
+        setTimeout(() => setSaveIndicator("idle"), 2000);
+      }, 500);
+    },
+    [selectAnswer]
+  );
+
+  const toggleFlag = () => {
+    const newFlags = new Set(flagged);
+    if (newFlags.has(activeQuestionIndex)) newFlags.delete(activeQuestionIndex);
+    else newFlags.add(activeQuestionIndex);
+    setFlagged(newFlags);
+  };
+
+  // ── Submit handler ────────────────────────────────────────
+  const handleSubmit = useCallback(
+    async (auto = false) => {
+      if (isSubmitted || submitting) return;
+      setSubmitting(true);
+      setConfirmSubmit(false);
+      setError("");
+
+      try {
+        await flush(); // Save any dirty answers first
+        const res = await submitExam(answers, examTitle);
+        clearExamStorage();
+        setIsSubmitted(true);
+        setSubmitResult(res);
+        setSubmitting(false);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Submission failed.";
+        setError(auto ? `Auto-submit error: ${msg}` : msg);
+        setSubmitting(false);
+      }
+    },
+    [isSubmitted, submitting, flush, answers]
+  );
+
+  const handleAutoSubmit = useCallback(() => {
+    handleSubmit(true);
+  }, [handleSubmit]);
+
+  // ── Result Countdown Timer ──────────────────────────────
+  useEffect(() => {
+    if (!isSubmitted) return;
+    
+    const interval = setInterval(() => {
+      setResultTimerSeconds(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [isSubmitted]);
+
+  const formatResultTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // ── Derived State (must be before early returns) ──────────
+  // Repeating Name/USN Watermark Style
+  const watermarkStyle = useMemo(() => {
+    if (!student) return {};
+    const studentUsn = (student.usn || "PREVIEW_USN").toUpperCase();
+    const studentName = student.name || "Admin Preview";
+    const watermarkText = `${studentUsn} • ${studentName}`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="350" viewBox="0 0 500 350">
+      <text x="250" y="175" fill="rgba(255,255,255,0.12)" font-family="'Inter', sans-serif" font-size="32" font-weight="900" text-anchor="middle" transform="rotate(-25 250 175)">${watermarkText}</text>
+    </svg>`;
+    return {
+      backgroundImage: `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`,
+      position: "fixed" as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      pointerEvents: "none" as const,
+      userSelect: "none" as const,
+      zIndex: 1,
+    };
+  }, [student]);
+
+  const answeredCount = getAnsweredCount(questions.length);
+  const progressPercentage = questions.length > 0 ? (activeQuestionIndex + 1) / questions.length : 0;
+
+  // Calculate dynamic theme based on chunks of 20%
+  const activeTheme = useMemo(() => {
+    if (progressPercentage < 0.2) return "phase-1";
+    if (progressPercentage < 0.4) return "ocean";
+    if (progressPercentage < 0.6) return "galaxy";
+    if (progressPercentage < 0.8) return "nebula";
+    return finalTheme;
+  }, [progressPercentage, finalTheme]);
+
+  const activeQuestion = questions[activeQuestionIndex];
+
+  // ── Loading state ─────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className={styles.wrapper} style={{ padding: 28 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 1200, margin: "0 auto", width: "100%" }}>
+          <Skeleton height={80} borderRadius={20} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 260px", gap: 20 }}>
+            <Skeleton height={400} borderRadius={28} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <Skeleton height={200} borderRadius={20} />
+              <Skeleton height={150} borderRadius={20} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (preStart && !error && !isSubmitted) {
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 10000,
+        background: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        padding: 40
+      }}>
+        {/* Background glow */}
+        <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(13,148,136,0.1) 0%, transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none' }} />
+        
+        <div style={{ position: 'relative', maxWidth: 500 }}>
+          <div style={{ fontSize: 64, marginBottom: 24, filter: 'drop-shadow(0 0 20px rgba(13,148,136,0.3))' }}>🛡️</div>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 16 }}>Ready to Begin?</h1>
+          <p style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: 40 }}>
+            You are about to enter the secure proctored environment. 
+            Ensure you have a stable connection and stay within the browser window.
+          </p>
+          <button 
+            onClick={async () => {
+              try {
+                await enterFullscreen();
+              } catch (e) {
+                console.warn("Fullscreen trigger failed:", e);
+              }
+              setPreStart(false);
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #0d9488 0%, #115e59 100%)',
+              color: '#fff',
+              border: 'none',
+              padding: '16px 40px',
+              borderRadius: '16px',
+              fontSize: '18px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 10px 30px rgba(13,148,136,0.3)',
+              transition: 'transform 0.2s ease'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            Launch Secure Environment
+          </button>
+          <div style={{ marginTop: 24, fontSize: 13, color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Proctoring system initialized and ready.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !isSubmitted) {
+    if (error === "ALREADY_SUBMITTED") {
+      return (
+        <div className="page-center">
+          <div className={styles.errorBox} style={{ textAlign: 'center', maxWidth: 450 }}>
+            <h2 style={{ color: "var(--text-primary)", marginBottom: 12 }}>Exam Already Submitted</h2>
+            <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+              Our records show that you have already completed or submitted this exam. 
+              If you believe this is an error, please contact the proctor.
+            </p>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => router.push("/dashboard")}
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    // Extract detail if JSON string is embedded
+    let displayError = error;
+    try {
+      const startIdx = error.indexOf('{');
+      if (startIdx !== -1) {
+        const parsed = JSON.parse(error.substring(startIdx).replace(/'/g, '"'));
+        const prefix = startIdx > 0 ? error.substring(0, startIdx) : "";
+        displayError = prefix + (parsed.detail || parsed.message || error.substring(startIdx));
+      }
+    } catch (e) {}
+
+    // Fallback for raw Cloudflare HTML dumps
+    if (typeof displayError === "string" && displayError.includes("<!DOCTYPE html>")) {
+      displayError = "Our database service is temporarily unreachable (Worker Exception). Your answers are saved locally. Please try again shortly.";
+    }
+
+    return (
+      <div className="page-center">
+        <div className={styles.errorBox} style={{ maxWidth: 500, padding: 40 }}>
+          <div style={{ fontSize: 48, marginBottom: 20 }}>⚠️</div>
+          <h2 style={{ color: "#ef4444", marginBottom: 16 }}>Mission Interrupted</h2>
+          <p style={{ color: "rgba(255,255,255,0.7)", marginBottom: 32, fontSize: 15, lineHeight: 1.6 }}>
+            {displayError}
+          </p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+            <button 
+              className="btn btn-primary" 
+              style={{ background: "#ef4444", border: "none" }}
+              disabled={submitting}
+              onClick={() => window.location.reload()}
+            >
+              {submitting ? "Retrying..." : "Retry Session"}
+            </button>
+            <button 
+              className="btn" 
+              style={{ background: "rgba(255,255,255,0.1)", color: "var(--text-primary)", border: "1px solid rgba(255,255,255,0.1)" }}
+              onClick={() => router.push("/dashboard")}
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitting) {
+    return (
+      <div className={styles.wrapper} style={{ display: "grid", placeItems: "center" }}>
+        <div style={{ textAlign: "center", zIndex: 10 }}>
+          <div className="skeleton" style={{ width: 300, height: 60, borderRadius: 30, marginBottom: 20, margin: "0 auto" }} />
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)" }}>Submitting exam...</h2>
+          <p style={{ opacity: 0.7 }}>Securely uploading your responses</p>
+        </div>
+        <div className="skeleton" style={{ position: "absolute", inset: 0, opacity: 0.05 }} />
+      </div>
+    );
+  }
+
+  // ── Results screen (Capsule Mockup) ──────────────────────
+  if (isSubmitted && submitResult) {
+    return (
+      <div className={styles.submittedWrapper}>
+        {/* Decorative Nebula Orbs */}
+        <div style={{ position: "fixed", top: "10%", left: "15%", width: 400, height: 400, background: "radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
+        <div style={{ position: "fixed", bottom: "10%", right: "15%", width: 400, height: 400, background: "radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
+
+        <div className={styles.successCapsule}>
+          {/* Hourglass Background Graphic */}
+          <div className={styles.hourglassBg}>
+            <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+              <path d="M5 2h14" />
+              <path d="M5 22h14" />
+              <path d="M19 2a33 33 0 0 1-14 0" />
+              <path d="M19 22a33 33 0 0 0-14 0" />
+              <path d="M15 2v1c0 5-6 5-6 10s6 5 6 10v1" />
+              <path d="M9 2v1c0 5 6 5 6 10s-6 5-6 10v1" />
+            </svg>
+          </div>
+
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <h1 className={styles.thankYouTitle}>THANK YOU!</h1>
+            
+            <div className={styles.resultMetaRow}>
+              <div className={styles.subStatus}>
+                Exam Submitted <span style={{ background: "#22c55e", borderRadius: "4px", padding: "1px 5px", fontSize: "14px", marginLeft: "2px" }}>✓</span>
+              </div>
+
+              <div className={styles.answeredCount}>
+                Answered: {getAnsweredCount(questions.length)}/{questions.length}
+              </div>
+
+            </div>
+
+
+            {/* Detailed Breakdown */}
+            {showResultDetails && submitResult && (
+              <div className={styles.resultCard}>
+                <div className={styles.resultDetail}>
+                  <div className={styles.detailValue} style={{ color: "#4ade80" }}>{submitResult.correct_count ?? 0}</div>
+                  <div className={styles.detailLabel} style={{ color: "rgba(255,255,255,0.7)" }}>Correct</div>
+                </div>
+                <div className={styles.resultDetail}>
+                  <div className={styles.detailValue} style={{ color: "#f87171" }}>{submitResult.wrong_count ?? 0}</div>
+                  <div className={styles.detailLabel} style={{ color: "rgba(255,255,255,0.7)" }}>Wrong</div>
+                </div>
+                <div className={styles.resultDetail}>
+                  <div className={styles.detailValue} style={{ color: "#cbd5e1" }}>
+                    {Math.max(0, (questions.length || 0) - ((submitResult.correct_count || 0) + (submitResult.wrong_count || 0)))}
+                  </div>
+                  <div className={styles.detailLabel} style={{ color: "rgba(255,255,255,0.7)" }}>Skipped</div>
+                </div>
+                
+                <div style={{ gridColumn: "1 / -1", marginTop: 12, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                   <div style={{ textAlign: "left" }}>
+                      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.7, color: "#fff", marginBottom: 4 }}>Attempted</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>
+                        {(submitResult.correct_count || 0) + (submitResult.wrong_count || 0)} <span style={{ opacity: 0.5, fontSize: 14, fontWeight: 400 }}>/ {questions.length}</span>
+                      </div>
+                   </div>
+                   <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.7, color: "#fff", marginBottom: 4 }}>Total Score</div>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: "var(--accent-light)", textShadow: "0 0 20px rgba(94,234,212,0.4)" }}>
+                        {submitResult.score}<span style={{ opacity: 0.6, fontSize: 16, fontWeight: 500 }}>/{submitResult.total_marks}</span>
+                      </div>
+                   </div>
+                </div>
+
+                <div style={{ gridColumn: "1 / -1", marginTop: 24, display: "flex", justifyContent: "center" }}>
+                   <button 
+                     onClick={() => router.push("/dashboard")}
+                     className={styles.dashboardBtn}
+                     style={{
+                       background: "rgba(255,255,255,0.1)",
+                       border: "1px solid rgba(255,255,255,0.2)",
+                       color: "#fff",
+                       padding: "10px 32px",
+                       borderRadius: "12px",
+                       fontWeight: 600,
+                       cursor: "pointer",
+                       transition: "all 0.2s ease",
+                       backdropFilter: "blur(10px)",
+                       fontSize: 14
+                     }}
+                   >
+                     Return to Dashboard
+                   </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Floating Sparkles */}
+        <div style={{ position: "fixed", bottom: 40, right: 40, opacity: 0.4 }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10L12 0Z" fill="white" />
+          </svg>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${styles.wrapper} no-select`} data-theme={activeTheme}>
+      {/* Dynamic diagonal Name/USN security watermark */}
+      <div style={watermarkStyle} />
+
+      {/* ── Weightless Exam Overlay (inactive / scheduled) ── */}
+      {(examInactive || examScheduled) && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          background: "rgba(10, 10, 20, 0.85)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          animation: "fadeIn 0.5s ease forwards",
+          gap: 16,
+          padding: 24,
+          textAlign: "center",
+        }}>
+          <div style={{ fontSize: 64, marginBottom: 8, filter: "drop-shadow(0 0 20px rgba(139,92,246,0.6))" }}>
+            {examInactive ? "🛸" : "⏳"}
+          </div>
+          <h2 style={{
+            fontSize: 26,
+            fontWeight: 800,
+            letterSpacing: "-0.03em",
+            background: "linear-gradient(135deg, #8b5cf6, #3b82f6)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}>
+            {examInactive ? "Exam Unavailable" : "Exam Not Started Yet"}
+          </h2>
+          <p style={{ color: "rgba(148,163,184,0.8)", fontSize: 15, maxWidth: 360 }}>
+            {examInactive
+              ? "The exam has been temporarily deactivated by your administrator. Please wait for further instructions."
+              : `Your exam is scheduled to begin at ${examScheduled ? new Date(examScheduled).toLocaleString() : "—"}. Please stand by.`
+            }
+          </p>
+        </div>
+      )}
+
+      {/* Anti-cheat: all proctoring attached here */}
+      <AntiCheat isSubmitted={isSubmitted} examName={examTitle} onAutoSubmit={handleAutoSubmit} />
+
+      {/* ── Welcome Banner (always visible, matching mockup) ── */}
+      <div style={{ padding: "16px 28px 0", zIndex: 2, position: "relative" }}>
+        <div style={{
+          background: "var(--bg-card)",
+          backdropFilter: "blur(40px)",
+          WebkitBackdropFilter: "blur(40px)",
+          padding: "16px 28px",
+          borderRadius: "20px",
+          boxShadow: "var(--shadow-card)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          border: "1px solid var(--border)",
+        }}>
+          <h2 style={{ fontSize: "16px", margin: 0, fontWeight: 700, color: "var(--text-primary)" }}>
+            Welcome, {student?.name || "Student"}!{" "}
+            <span style={{ fontWeight: 400, opacity: 0.7, color: "var(--text-secondary)" }}>
+              Deep breaths and stay focused. You&apos;ve got this.
+            </span>
+          </h2>
+          {/* Avatar circle */}
+          <div style={{
+            width: 42, height: 42, borderRadius: "50%",
+            background: "linear-gradient(135deg, #14b8a6, #2dd4bf)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#fff", fontWeight: 700, fontSize: "16px",
+            boxShadow: "0 4px 12px rgba(20,184,166,0.3)",
+            flexShrink: 0
+          }}>
+            {(student?.name || "S").charAt(0).toUpperCase()}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main layout ───────────────────────────────────── */}
+      <main className={styles.main}>
+        <div className={styles.questionColumn} style={{ display: "flex", flexDirection: "column", gap: 16, overflow: "hidden" }}>
+          {/* Exam Title & Timer Row */}
+          <div style={{
+             display: "flex",
+             alignItems: "center",
+             justifyContent: "space-between",
+             background: "var(--bg-card)",
+             backdropFilter: "blur(40px)",
+             WebkitBackdropFilter: "blur(40px)",
+             padding: "16px 28px",
+             borderRadius: "20px",
+             boxShadow: "var(--shadow-card)",
+             border: "1px solid var(--border)",
+          }}>
+             <h1 style={{ margin: 0, fontSize: "20px", color: "var(--text-primary)", fontWeight: 700 }}>
+               {examTitle}
+             </h1>
+             {student && stableStartTime.current && (
+               <ExamTimer
+                 startTime={stableStartTime.current}
+                 durationMinutes={student.examDurationMinutes}
+                 onExpire={handleAutoSubmit}
+               />
+             )}
+          </div>
+
+          <div className={styles.questionList}>
+            {activeQuestion && (
+              activeQuestion.programming_type === "compiler" ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <CodingInterface
+                    problem={{
+                      prompt: activeQuestion.text,
+                      imageUrl: activeQuestion.image_url || undefined,
+                      test_cases: activeQuestion.test_cases,
+                      target_output: activeQuestion.target_output,
+                      starter_code: activeQuestion.starter_code,
+                      starter_code_c: activeQuestion.starter_code_c,
+                      starter_code_cpp: activeQuestion.starter_code_cpp,
+                    }}
+                    code={answers[activeQuestion.id] || ""}
+                    setCode={(code) => handleSelect(activeQuestion.id, code)}
+                    output={compilerOutputs[activeQuestion.id] || ""}
+                    onRun={() => handleRunCode(activeQuestion)}
+                    onSubmit={() => setConfirmSubmit(true)}
+                    pyLoading={pyLoading}
+                    currentRound={1}
+                    labelConfig={{ phase: "Exam", orbit: "Compiler" }}
+                    selectedLanguage={selectedLanguage}
+                    onLanguageChange={setSelectedLanguage}
+                    testResults={compilerTestResults[activeQuestion.id]?.results}
+                    isCompiling={isCompiling}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+                    <button
+                      type="button"
+                      style={{
+                        background: "rgba(13, 148, 136, 0.08)",
+                        border: "1.5px solid rgba(13, 148, 136, 0.3)",
+                        color: "#0d9488",
+                        padding: "12px 24px",
+                        borderRadius: "12px",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        opacity: activeQuestionIndex === 0 ? 0.3 : 1,
+                        pointerEvents: activeQuestionIndex === 0 ? "none" : "auto",
+                        transition: "all 0.2s ease",
+                      }}
+                      onClick={() => setActiveQuestionIndex((prev) => Math.max(0, prev - 1))}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      style={{
+                        background: flagged.has(activeQuestionIndex) ? "rgba(234,179,8,0.08)" : "transparent",
+                        border: flagged.has(activeQuestionIndex) ? "1.5px solid #eab308" : "1.5px solid rgba(0,0,0,0.1)",
+                        color: flagged.has(activeQuestionIndex) ? "#ca8a04" : "#475569",
+                        padding: "12px 24px",
+                        borderRadius: "12px",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                      onClick={toggleFlag}
+                    >
+                      {flagged.has(activeQuestionIndex) ? "🚩 Marked" : "Mark for Review"}
+                    </button>
+                    {activeQuestionIndex < questions.length - 1 ? (
+                      <button
+                        type="button"
+                        style={{
+                          background: "#0d9488",
+                          color: "#fff",
+                          border: "none",
+                          padding: "12px 28px",
+                          borderRadius: "12px",
+                          fontWeight: 700,
+                          fontSize: "14px",
+                          cursor: "pointer",
+                          boxShadow: "0 4px 14px rgba(13,148,136,0.3)",
+                          transition: "all 0.3s ease",
+                        }}
+                        onClick={async () => {
+                          await flush();
+                          setActiveQuestionIndex((prev) => Math.min(questions.length - 1, prev + 1));
+                        }}
+                      >
+                        Save &amp; Next
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        style={{
+                          background: "#ef4444",
+                          color: "#fff",
+                          border: "none",
+                          padding: "12px 28px",
+                          borderRadius: "12px",
+                          fontWeight: 700,
+                          fontSize: "14px",
+                          cursor: "pointer",
+                          boxShadow: "0 4px 14px rgba(239,68,68,0.3)",
+                        }}
+                        onClick={() => setConfirmSubmit(true)}
+                        disabled={submitting}
+                      >
+                        {submitting ? "Submitting..." : "Submit Exam"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <QuestionCard
+                  key={activeQuestion.id}
+                  question={activeQuestion}
+                  questionNumber={activeQuestionIndex + 1}
+                  totalQuestions={questions.length}
+                  selectedAnswer={answers[activeQuestion.id]}
+                  onSelect={handleSelect}
+                  isSubmitted={isSubmitted}
+                >
+                  {/* Previous */}
+                  <button
+                    type="button"
+                    style={{
+                      background: "rgba(13, 148, 136, 0.08)",
+                      border: "1.5px solid rgba(13, 148, 136, 0.3)",
+                      color: "#0d9488",
+                      padding: "12px 24px",
+                      borderRadius: "12px",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      opacity: activeQuestionIndex === 0 ? 0.3 : 1,
+                      pointerEvents: activeQuestionIndex === 0 ? "none" : "auto",
+                      transition: "all 0.2s ease",
+                    }}
+                    onClick={() => setActiveQuestionIndex((prev) => Math.max(0, prev - 1))}
+                  >
+                    Previous
+                  </button>
+
+                  {/* Mark for Review */}
+                  <button
+                    type="button"
+                    style={{
+                      background: flagged.has(activeQuestionIndex) ? "rgba(234,179,8,0.08)" : "transparent",
+                      border: flagged.has(activeQuestionIndex) ? "1.5px solid #eab308" : "1.5px solid rgba(0,0,0,0.1)",
+                      color: flagged.has(activeQuestionIndex) ? "#ca8a04" : "#475569",
+                      padding: "12px 24px",
+                      borderRadius: "12px",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                    onClick={toggleFlag}
+                  >
+                    {flagged.has(activeQuestionIndex) ? "🚩 Marked" : "Mark for Review"}
+                  </button>
+
+                  {/* Save & Next / Submit */}
+                  {activeQuestionIndex < questions.length - 1 ? (
+                    <button
+                      type="button"
+                      style={{
+                        background: "#0d9488",
+                        color: "#fff",
+                        border: "none",
+                        padding: "12px 28px",
+                        borderRadius: "12px",
+                        fontWeight: 700,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        boxShadow: "0 4px 14px rgba(13,148,136,0.3)",
+                        transition: "all 0.3s ease",
+                      }}
+                      onClick={async () => {
+                        await flush(); // Instant save when moving forward
+                        setActiveQuestionIndex((prev) => Math.min(questions.length - 1, prev + 1));
+                      }}
+                    >
+                      Save &amp; Next
+                    </button>
+                  ) : (
+                    <button
+                      id="submit-exam-btn"
+                      type="button"
+                      style={{
+                        background: "#ef4444",
+                        color: "#fff",
+                        border: "none",
+                        padding: "12px 28px",
+                        borderRadius: "12px",
+                        fontWeight: 700,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        boxShadow: "0 4px 14px rgba(239,68,68,0.3)",
+                      }}
+                      onClick={() => setConfirmSubmit(true)}
+                      disabled={submitting}
+                    >
+                      {submitting ? "Submitting..." : "Submit Exam"}
+                    </button>
+                  )}
+                </QuestionCard>
+              )
+            )}
+          </div>
+
+          {/* ── Progress Footer (Mockup Request) ── */}
+          <div className={styles.progressFooter}>
+            <div className={styles.progressInfo}>
+              <div className={styles.progressLabels}>
+                <span className={styles.progressLabel}>Progress</span>
+                <span className={styles.progressCount}>
+                  {answeredCount} / {questions.length} answered
+                </span>
+              </div>
+              <div className={styles.progressBarContainer}>
+                <div 
+                  className={styles.progressBarFill} 
+                  style={{ width: `${(answeredCount / questions.length) * 100}%` }} 
+                />
+              </div>
+            </div>
+            
+            <button
+              className={styles.submitBtn}
+              onClick={() => setConfirmSubmit(true)}
+              disabled={submitting}
+            >
+              {submitting ? "Submitting..." : "Submit Exam"}
+            </button>
+          </div>
+        </div>
+
+
+        {/* ── Sidebar ── */}
+        <aside className={styles.sidebar}>
+          {/* Progress Card */}
+          <div className={styles.sideCard}>
+            <h3 className={styles.sideTitle}>Progress</h3>
+            <div className={styles.navGrid}>
+              {questions.map((q, i) => {
+                const isAnswered = !!answers[q.id];
+                const isActive = i === activeQuestionIndex;
+                const isFlagged = flagged.has(i);
+
+                return (
+                  <button
+                    key={q.id}
+                    onClick={() => setActiveQuestionIndex(i)}
+                    className={`${styles.navBtn} ${isAnswered ? styles.navAnswered : ""} ${isActive ? styles.navActive : ""} ${isFlagged ? styles.navFlagged : ""}`}
+                    aria-label={`Question ${i + 1}`}
+                  >
+                    {isAnswered ? (
+                      <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    ) : (
+                      i + 1
+                    )}
+                    {isFlagged && (
+                       <span style={{ position: "absolute", top: -3, right: -3, width: 10, height: 10, background: "#eab308", borderRadius: "50%", border: "2px solid #fff", boxShadow: "0 0 6px rgba(234,179,8,0.6)" }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Legend */}
+            <div className={styles.legend}>
+              <div className={styles.legendItem}>
+                <span className={styles.legendDot} style={{ background: "#0d9488" }} />
+                <span>Current</span>
+              </div>
+              <div className={styles.legendItem}>
+                <span className={styles.legendDot} style={{ background: "#0d9488", opacity: 0.4 }} />
+                <span>Answered</span>
+              </div>
+              <div className={styles.legendItem}>
+                <span className={styles.legendDot} style={{ background: "#eab308" }} />
+                <span>Flagged</span>
+              </div>
+              <div className={styles.legendItem}>
+                <span className={styles.legendDot} style={{ background: "rgba(255,255,255,0.08)" }} />
+                <span>Not Visited</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Moon / Cloud Decorative Card (matching mockup) */}
+          <div style={{
+            background: "var(--bg-card-strong)",
+            backdropFilter: "blur(40px)",
+            WebkitBackdropFilter: "blur(40px)",
+            borderRadius: "20px",
+            border: "1px solid var(--border)",
+            padding: "24px",
+            display: "grid",
+            placeItems: "center",
+            boxShadow: "var(--shadow-card)",
+            position: "relative",
+            overflow: "hidden",
+            flexShrink: 0,
+          }}>
+             {/* Moon */}
+             <div style={{
+               width: 60, height: 60, borderRadius: "50%",
+               background: "radial-gradient(circle at 30% 30%, #2dd4bf, #0d9488)",
+               boxShadow: "0 0 35px rgba(20, 184, 166, 0.5)",
+               marginBottom: 12,
+             }} />
+             {/* Clouds */}
+             <div style={{ position: "absolute", bottom: -5, left: "-5%", opacity: 0.08, filter: "blur(8px)", fontSize: "36px" }}>☁️</div>
+             <div style={{ position: "absolute", bottom: 15, right: "8%", opacity: 0.12, filter: "blur(4px)", fontSize: "18px" }}>☁️</div>
+             {/* Sparkle stars */}
+             <div style={{ position: "absolute", top: 14, right: 20, fontSize: "14px", opacity: 0.4, color: "var(--text-secondary)" }}>✦</div>
+             <div style={{ position: "absolute", top: 30, right: 35, fontSize: "10px", opacity: 0.2, color: "var(--text-secondary)" }}>✦</div>
+          </div>
+        </aside>
+      </main>
+
+      {/* ── Submit confirmation dialog ──────────────────────── */}
+      {confirmSubmit && (
+        <div className={styles.confirmOverlay}>
+          <div className={styles.confirmModal}>
+            <h2 style={{color: "var(--text-primary)"}}>Submit Exam?</h2>
+            <p style={{color: "var(--text-secondary)"}}>
+              You have answered <strong style={{color:"var(--accent)"}}>{answeredCount}</strong> out of{" "}
+              <strong>{questions.length}</strong> questions.
+            </p>
+            {answeredCount < questions.length && (
+              <p className={styles.confirmWarn}>
+                ⚠️ {questions.length - answeredCount} question(s) still unanswered.
+              </p>
+            )}
+            <p style={{color: "var(--text-secondary)"}}>This action cannot be undone.</p>
+            <div className={styles.confirmActions}>
+              <button className="btn" style={{ background: "rgba(255,255,255,0.1)", color: "var(--text-primary)" }} onClick={() => setConfirmSubmit(false)}>
+                Cancel — Keep Exam
+              </button>
+              <button
+                id="confirm-submit-btn"
+                className="btn btn-danger btn-lg"
+                onClick={() => handleSubmit(false)}
+              >
+                Yes, Submit Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
